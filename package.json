@@ -3,6 +3,7 @@
   "displayName": "AIDU - AIDE For You",
   "version": "4.2.1",
   "description": "Adaptive Immersive Deep English learning assistant.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",

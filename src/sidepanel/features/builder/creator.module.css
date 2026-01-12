@@ -1,0 +1,317 @@
+/* Creator Modal Styles */
+
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modalContent {
+    background: #F8FAFC;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 700px;
+    height: 85vh;
+    /* Taller for textarea */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.2s ease-out;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.modalTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #0F172A;
+    margin: 0;
+}
+
+.closeBtn {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #64748B;
+    cursor: pointer;
+    line-height: 1;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    padding: 0 24px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E2E8F0;
+    gap: 24px;
+}
+
+.tab {
+    background: transparent;
+    border: none;
+    padding: 16px 4px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #64748B;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.tab:hover {
+    color: #334155;
+}
+
+.tab.active {
+    color: var(--color-brand-primary, #2563EB);
+    border-bottom-color: var(--color-brand-primary, #2563EB);
+}
+
+.tabContent {
+    flex: 1;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.formGroup {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.flexGrow {
+    flex: 1;
+}
+
+.label {
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.input,
+.textarea {
+    padding: 12px 16px;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    font-family: var(--font-sans, system-ui);
+    font-size: 0.95rem;
+    background: #FFFFFF;
+    color: #0F172A;
+    transition: var(--transition-base, all 0.2s);
+}
+
+.textarea {
+    flex: 1;
+    resize: none;
+    min-height: 200px;
+    line-height: 1.6;
+}
+
+.codeArea {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
+    background: #1E293B;
+    color: #E2E8F0;
+    border-color: #334155;
+    padding: 16px;
+}
+
+.input:focus,
+.textarea:focus {
+    outline: none;
+    border-color: var(--color-brand-primary, #2563EB);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.helperSection {
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.helperText {
+    font-size: 0.9rem;
+    color: #334155;
+}
+
+.helperText small {
+    color: #64748B;
+}
+
+.btnSmall {
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    color: #475569;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btnSmall:hover {
+    background: #F8FAFC;
+    border-color: #94A3B8;
+}
+
+.textareaWrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Dual Action Footer */
+.footer {
+    border-top: 1px solid #E2E8F0;
+    padding: 20px 24px;
+    margin: 0 -24px -24px -24px;
+    /* Expand to edges */
+    background: #FFFFFF;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 16px;
+}
+
+.dualActionFooter {
+    justify-content: space-between;
+    /* Spread buttons */
+}
+
+/* Button Base */
+.btnPrimary,
+.btnSecondary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Center text */
+    justify-content: center;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 150px;
+    position: relative;
+    overflow: hidden;
+}
+
+.icon {
+    font-size: 1.4rem;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.btnPrimary small,
+.btnSecondary small {
+    font-size: 0.7rem;
+    font-weight: 500;
+    opacity: 0.85;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+/* Queue Button (Left) - Surface variant */
+.btnSecondary {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    color: #475569;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btnSecondary:hover {
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+    color: #1E293B;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Analyze Button (Right) - Brand Gradient */
+.btnPrimary {
+    background: linear-gradient(135deg, var(--color-brand-primary, #2563EB), #1D4ED8);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3), 0 0 0 1px rgba(37, 99, 235, 0.2);
+}
+
+.btnPrimary:hover {
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4), 0 0 0 1px rgba(37, 99, 235, 0.3);
+}
+
+.btnPrimary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+/* Input/Textarea Polish */
+.input,
+.textarea {
+    padding: 14px 18px;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    font-family: var(--font-sans, system-ui);
+    font-size: 0.95rem;
+    background: #FFFFFF;
+    color: #0F172A;
+    transition: all 0.2s ease;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.input:focus,
+.textarea:focus {
+    outline: none;
+    border-color: var(--color-brand-primary, #2563EB);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0);
+    background: #F8FAFC;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(10px);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}

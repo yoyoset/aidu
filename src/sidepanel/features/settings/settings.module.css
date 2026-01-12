@@ -1,0 +1,394 @@
+/* Global Variables (Scoped to this module if possible, but using var for integration) */
+/* Assuming --color-brand-primary is defined globally. If not, fallback to blue. */
+
+/* Container & Overlay */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.4);
+    /* Slate-900 with opacity */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.modalContent {
+    background: #F8FAFC;
+    /* Slate-50 (Canvas Background) */
+    border-radius: 16px;
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    width: 90%;
+    max-width: 600px;
+    height: 85vh;
+    max-height: 800px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Header */
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E2E8F0;
+    /* Slate-200 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    z-index: 10;
+}
+
+.headerLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.modalTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #0F172A;
+    /* Slate-900 */
+    margin: 0;
+}
+
+/* Profile Selector specific styles */
+.profileSelectWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.profileSelect {
+    border: 1px solid #CBD5E1;
+    /* Slate-300 */
+    background-color: #F8FAFC;
+    /* Slate-50 */
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: #475569;
+    /* Slate-600 */
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 32px 6px 12px;
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 8px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    transition: all 0.2s;
+    min-width: 140px;
+}
+
+.profileSelect:hover {
+    color: var(--color-brand-primary, #3B82F6);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%233B82F6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+.closeBtn {
+    background: transparent;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748B;
+    /* Slate-500 */
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    line-height: 0;
+    flex-shrink: 0;
+}
+
+.closeBtn:hover {
+    background: #F1F5F9;
+    /* Slate-100 */
+    color: #0F172A;
+}
+
+/* Scroll Area */
+.scrollArea {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* CARDS: key visual feedback implementation */
+.formSection {
+    background: #FFFFFF;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow:
+        0 1px 3px 0 rgba(0, 0, 0, 0.1),
+        0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    border: 1px solid #E2E8F0;
+    /* Slate-200 */
+    transition: transform 0.2s;
+}
+
+.formSection:hover {
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.sectionTitle {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #64748B;
+    /* Slate-500 */
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+}
+
+/* Form Groups */
+.formGroup {
+    margin-bottom: 16px;
+}
+
+.formGroup:last-child {
+    margin-bottom: 0;
+}
+
+.label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #334155;
+    /* Slate-700 */
+}
+
+/* Inputs & Selects */
+.input,
+.select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #CBD5E1;
+    /* Slate-300 */
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #0F172A;
+    background: #F8FAFC;
+    /* Slight contrast input bg */
+    transition: all 0.2s;
+    box-sizing: border-box;
+    /* Critical for layout */
+}
+
+.input:focus,
+.select:focus {
+    outline: none;
+    border-color: var(--color-brand-primary, #3B82F6);
+    background: #FFFFFF;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.input::placeholder {
+    color: #94A3B8;
+}
+
+.select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+}
+
+/* Mode Selection (2-Col) */
+.modeContainer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 500px) {
+    .modeContainer {
+        grid-template-columns: 1fr;
+    }
+}
+
+.modeColumn .label {
+    color: #0F172A;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Radio Cards */
+.radioGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.radioLabel {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #F8FAFC;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.radioLabel input {
+    margin-top: 3px;
+    margin-right: 12px;
+    accent-color: var(--color-brand-primary, #3B82F6);
+}
+
+.radioLabel:hover {
+    border-color: #94A3B8;
+    background: #FFFFFF;
+}
+
+.radioLabel:has(input:checked) {
+    background: #EFF6FF;
+    /* Blue-50 */
+    border-color: var(--color-brand-primary, #3B82F6);
+    color: #1E3A8A;
+}
+
+.radioText {
+    display: flex;
+    flex-direction: column;
+}
+
+.radioText strong {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.radioLabel:has(input:checked) .radioText strong {
+    color: var(--color-brand-primary, #1D4ED8);
+}
+
+.radioText small {
+    font-size: 0.75rem;
+    color: #64748B;
+    margin-top: 2px;
+}
+
+/* Delete Button */
+.deleteSection {
+    display: flex;
+    justify-content: flex-start;
+    padding-top: 10px;
+}
+
+.btnDestructive {
+    background: transparent;
+    color: #EF4444;
+    /* Red-500 */
+    border: none;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.btnDestructive:hover {
+    background: #FEF2F2;
+    /* Red-50 */
+    color: #DC2626;
+}
+
+/* Footer */
+.modalFooter {
+    padding: 20px 24px;
+    background: #FFFFFF;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    z-index: 10;
+}
+
+.btnPrimary {
+    background: var(--color-brand-primary, #2563EB);
+    color: white;
+    font-weight: 500;
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    transition: all 0.15s;
+    cursor: pointer;
+}
+
+.btnPrimary:hover {
+    background: #1D4ED8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btnSecondary {
+    background: #FFFFFF;
+    color: #475569;
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid #CBD5E1;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btnSecondary:hover {
+    background: #F8FAFC;
+    color: #0F172A;
+    border-color: #94A3B8;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}

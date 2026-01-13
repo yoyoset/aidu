@@ -1,0 +1,16 @@
+name = "aidu-sync"
+main = "worker/index.js"
+compatibility_date = "2024-01-01"
+
+# KV Namespace Binding
+# NOTE: You must create the namespace first via:
+# npx wrangler kv:namespace create "AIDU_DB"
+# Then replace the ID below with the one generated.
+kv_namespaces = [
+  { binding = "DB", id = "eed0445976d94ba4943cea222b208aaa" }
+]
+
+[vars]
+# You can set secrets via: npx wrangler secret put AUTH_TOKEN
+# Or for dev/preview only (not recommended for prod secrets in file):
+# AUTH_TOKEN = "changeme"

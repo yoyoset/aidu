@@ -41,9 +41,19 @@ Aidu is a powerful Chrome Extension designed to bridge the gap between casual re
 *   **Magic Wand (🪄)**: If a word is missing a sentence, the AI automatically generates a unique, creative example to help you understand it.
 *   **Management Tools**: Batch delete, export, and manage your vocabulary list efficiently.
 
-#### 4. 📉 Memory Reinforcement (记忆强化)
-*   **Spaced Repetition (SRS)**: Built-in algorithm (similar to Anki) schedules reviews at the perfect time to prevent forgetting.
-*   **Cram Mode (突击复习)**: Focused review sessions for specific batches of words.
+#### 4. 👥 Multi-User Ready (多用户支持)
+*   **Profile Isolation**: 这里的每一位用户（爸爸、妈妈、孩子）都拥有独立的生词本和学习进度，互不干扰。
+*   **Auto-Switch**: 一键切换账号，无缝衔接。
+
+#### 5. 📉 Memory Reinforcement (记忆强化)
+*   **🧠 Adaptive SRS Memory**: Powered by FSRS algorithms, it schedules reviews based on your memory strength, ensuring efficient long-term retention.
+*   **☁️ Cloud Sync (Home Server Mode)**: 
+    *   Supports **GitHub Gist** (Free & Private) for simple sync.
+    *   Supports **Cloudflare Worker** (Self-Hosted) for high-speed, reliable synchronization in China.
+*   **🛡️ Data Sovereignty**: 
+    *   Full **Import/Export** support (JSON).
+    *   Local-first architecture; your data lives in your browser and your own cloud storage.
+*   **📊 Visual Dashboard**: Track your vocabulary mastery, daily progress, and review queues in a beautiful, responsive UI.
 *   **Mastery Tracking**: Mark words as "Mastered" to see your library grow.
 
 ### 🛠️ Installation (安装指南)
@@ -122,6 +132,19 @@ For those who want to modify the code:
 2.  `npm install`
 3.  `npm run build`
 4.  加载 `dist` 目录
+
+---
+
+## ☁️ Cloud Sync & Data (数据与同步)
+
+Aidu 支持两种跨设备同步方案，确保您的数据安全。
+
+1.  **GitHub Gist**: 简单、免费，适合大多数用户。
+2.  **Cloudflare Worker (推荐/极速)**: 
+    *   **自托管 (Self-Hosted)**: 您完全掌控数据。
+    *   **国内优化**: 相比 Gist，Worker 在国内访问速度极快且稳定。
+
+👉 **[查看 Cloudflare 同步部署教程](docs/sync_guide_cloudflare.md)**
 
 ---
 

@@ -7,6 +7,7 @@ import { CreatorModal } from './creator_modal.js';
 import { ReaderView } from '../reader/reader_view.js';
 import { ConfirmationModal } from '../../components/confirmation_modal.js';
 import { VocabView } from '../vocab/vocab_view.js';
+import { vocabService } from '../../../services/vocab_service.js';
 
 export class PreparationDashboard extends Component {
     constructor(element) {
@@ -26,6 +27,18 @@ export class PreparationDashboard extends Component {
 
     async init() {
         const modalContainer = document.querySelector('body');
+
+        // Load User Settings for Profile Context
+        try {
+            const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
+            // If no profile, it defaults to 'default' inside service
+            if (settings.activeProfileId) {
+                console.log(`Dashboard: Initializing Vocab for profile '${settings.activeProfileId}'`);
+                vocabService.setProfile(settings.activeProfileId);
+            }
+        } catch (e) {
+            console.error('Failed to load profile settings', e);
+        }
 
         this.settingsModal = new SettingsModal(modalContainer);
         this.creatorModal = new CreatorModal(modalContainer, {

@@ -80,10 +80,13 @@ export class DictionaryService {
      * @returns {Promise<string>} The example sentence.
      */
     async generateExample(word) {
-        const systemPrompt = `You are a helpful language tutor. 
-        Generate ONE UNIQUE, RANDOM, and creative English sentence using the word "${word}".
-        The sentence should be different from common examples.
-        Output ONLY the sentence. No quotes, no explanations.`;
+        const systemPrompt = `You are a helpful language tutor for a young student. 
+        Generate ONE English sentence using the word "${word}".
+        Constraints:
+        1. Structure: Interesting and varied (not just Subject-Verb-Object).
+        2. Vocabulary: Simple and easy to understand (CEFR A2 level).
+        3. Content: Engaging for a child or young learner.
+        4. Output: ONLY the sentence. No quotes.`;
 
         // Add random seed to user prompt to ensure variety
         const userPrompt = `Word: "${word}" (Random Seed: ${Date.now()})`;

@@ -1,6 +1,7 @@
 import { Component } from '../../components/component.js';
 import { StorageHelper, StorageKeys } from '../../../utils/storage.js';
 import styles from './creator.module.css';
+import { t } from '../../../locales/index.js';
 
 export class CreatorModal extends Component {
     constructor(element, callbacks) {
@@ -39,7 +40,7 @@ export class CreatorModal extends Component {
         const title = document.createElement('h3');
         title.className = styles.modalTitle;
         // Logic: If initialData exists and has ID -> Edit. Else -> Create.
-        title.textContent = (this.initialData && this.initialData.id) ? 'Edit Draft' : 'Create New Draft';
+        title.textContent = (this.initialData && this.initialData.id) ? t('creator.edit') : t('creator.create');
         headerLeft.appendChild(title);
 
         const closeBtn = document.createElement('button');
@@ -58,7 +59,7 @@ export class CreatorModal extends Component {
             const btn = document.createElement('button');
             btn.className = `${styles.tab} ${this.activeTab === mode ? styles.active : ''}`;
             btn.dataset.tab = mode;
-            btn.textContent = mode === 'text' ? '📝 Content' : '🤖 Manual AI';
+            btn.textContent = mode === 'text' ? t('creator.tab.content') : t('creator.tab.manualAi');
             btn.onclick = () => {
                 // Save state before switching logic
                 if (this.activeTab === 'text') {
@@ -104,12 +105,12 @@ export class CreatorModal extends Component {
         group1.className = styles.formGroup;
         const label1 = document.createElement('label');
         label1.className = styles.label;
-        label1.textContent = 'Title';
+        label1.textContent = t('creator.title');
         const input = document.createElement('input');
         input.type = 'text';
         input.id = 'draft-title';
         input.className = styles.input;
-        input.placeholder = 'Article Title';
+        input.placeholder = t('creator.title.placeholder');
         input.value = this.initialData?.title || '';
         group1.appendChild(label1);
         group1.appendChild(input);
@@ -120,11 +121,11 @@ export class CreatorModal extends Component {
         group2.className = `${styles.formGroup} ${styles.flexGrow}`;
         const label2 = document.createElement('label');
         label2.className = styles.label;
-        label2.textContent = 'Content (Source Text)';
+        label2.textContent = t('creator.content');
         const textarea = document.createElement('textarea');
         textarea.id = 'draft-content';
         textarea.className = styles.textarea;
-        textarea.placeholder = 'Paste English text to analyze...';
+        textarea.placeholder = t('creator.content.placeholder');
         textarea.value = this.initialData?.rawText || '';
         group2.appendChild(label2);
         group2.appendChild(textarea);
@@ -142,9 +143,9 @@ export class CreatorModal extends Component {
         queueBtn.id = 'queue-btn';
         queueBtn.className = `${styles.btnSecondary} ${styles.btnLeft}`;
         if (isEdit) {
-            queueBtn.innerHTML = '<span class="icon">&#128190;</span> Save Changes';
+            queueBtn.innerHTML = `<span class="icon">&#128190;</span> ${t('creator.saveChanges')}`;
         } else {
-            queueBtn.innerHTML = '<span class="icon">&#128229;</span> Save Draft';
+            queueBtn.innerHTML = `<span class="icon">&#128229;</span> ${t('creator.save')}`;
         }
         queueBtn.onclick = () => this.handleTextAction(false);
 
@@ -152,15 +153,15 @@ export class CreatorModal extends Component {
         const processBtn = document.createElement('button');
         processBtn.id = 'process-btn';
         processBtn.className = `${styles.btnSecondary} ${styles.btnMiddle}`;
-        processBtn.innerHTML = '<span class="icon">&#8987;</span> BG Process'; // Hourglass
-        processBtn.title = 'Run in Background (Channel B)';
+        processBtn.innerHTML = `<span class="icon">&#8987;</span> ${t('creator.bgProcess')}`;
+        processBtn.title = t('creator.bgProcess.hint');
         processBtn.onclick = () => this.handleTextAction(true, 'background');
 
         // 3. Analyze Now (Right)
         const analyzeBtn = document.createElement('button');
         analyzeBtn.id = 'analyze-btn';
         analyzeBtn.className = `${styles.btnPrimary} ${styles.btnRight}`;
-        analyzeBtn.innerHTML = '<span class="icon">&#9889;</span> Analyze Now';
+        analyzeBtn.innerHTML = `<span class="icon">&#9889;</span> ${t('creator.analyze')}`;
         analyzeBtn.onclick = () => this.handleTextAction(true, 'realtime');
 
         footer.appendChild(queueBtn);
@@ -179,12 +180,12 @@ export class CreatorModal extends Component {
         helper.className = styles.helperSection;
         const textDiv = document.createElement('div');
         textDiv.className = styles.helperText;
-        textDiv.innerHTML = `<strong>Manual AI Workflow</strong><br><small>1. Copy Prompt & Text -> 2. Paste to External AI -> 3. Paste Result Here</small>`; // Safe static HTML
+        textDiv.innerHTML = `<strong>${t('creator.manualAi.title')}</strong><br><small>${t('creator.manualAi.steps')}</small>`;
 
         const copyBtn = document.createElement('button');
         copyBtn.id = 'copy-prompt-btn';
         copyBtn.className = styles.btnPrimary; // Prominent
-        copyBtn.textContent = '📋 Copy Prompt + Text';
+        copyBtn.textContent = t('creator.manualAi.copy');
         copyBtn.onclick = () => this.copySystemPrompt();
 
         helper.appendChild(textDiv);
@@ -197,7 +198,7 @@ export class CreatorModal extends Component {
         const textarea = document.createElement('textarea');
         textarea.id = 'json-content';
         textarea.className = `${styles.textarea} ${styles.codeArea}`;
-        textarea.placeholder = '{"sentences": [...]}';
+        textarea.placeholder = t('creator.manualAi.placeholder');
         wrapper.appendChild(textarea);
         container.appendChild(wrapper);
 
@@ -207,7 +208,7 @@ export class CreatorModal extends Component {
         const importBtn = document.createElement('button');
         importBtn.id = 'import-btn';
         importBtn.className = styles.btnPrimary;
-        importBtn.textContent = 'Import & Render';
+        importBtn.textContent = t('creator.manualAi.import');
         importBtn.onclick = () => this.handleJsonAction();
         footer.appendChild(importBtn);
         container.appendChild(footer);
@@ -216,10 +217,10 @@ export class CreatorModal extends Component {
     }
 
     async handleTextAction(autoStart, mode = 'realtime') {
-        const title = this.overlay.querySelector('#draft-title').value.trim() || 'Untitled Draft';
+        const title = this.overlay.querySelector('#draft-title').value.trim() || t('dashboard.draft.untitled');
         const text = this.overlay.querySelector('#draft-content').value.trim();
 
-        if (!text) return alert('Please input content.');
+        if (!text) return alert(t('creator.error.noContent'));
 
         // Status: 'draft' if queue, 'processing' (trigger) if analyze
         const status = autoStart ? 'processing' : 'draft';
@@ -235,11 +236,11 @@ export class CreatorModal extends Component {
     async handleJsonAction() {
         // Implementation for JSON Import
         const jsonStr = this.overlay.querySelector('#json-content').value.trim();
-        if (!jsonStr) return alert('Paste JSON.');
+        if (!jsonStr) return alert(t('creator.error.noJson'));
         try {
             const data = JSON.parse(jsonStr);
             // Basic Schema Check based on D.2
-            if (!data.sentences) throw new Error('Missing "sentences" array (Cooked Meat Schema violation)');
+            if (!data.sentences) throw new Error(t('creator.error.missingSentences'));
 
             const title = "Imported " + new Date().toLocaleTimeString();
             const draft = await this.createDraftObject(title, "", 'ready');
@@ -247,7 +248,7 @@ export class CreatorModal extends Component {
             this.callbacks.onDraftCreated(draft, false);
             this.close();
         } catch (e) {
-            alert('Invalid Schema: ' + e.message);
+            alert(t('creator.error.invalidSchema', { error: e.message }));
         }
     }
 
@@ -320,8 +321,8 @@ export class CreatorModal extends Component {
         const btn = this.overlay.querySelector('#copy-prompt-btn');
         const originalText = btn.textContent;
         // Mode Name defined in Settings (1=Trans, 2=Std, 3=Deep)
-        const modeLabels = { '1': 'Translation', '2': 'Standard', '3': 'Deep' };
-        btn.textContent = `📋 Copied (${modeLabels[mode]} Mode)!`;
+        const modeLabels = { '1': t('settings.mode.translation'), '2': t('settings.mode.standard'), '3': t('settings.mode.deep') };
+        btn.textContent = t('creator.manualAi.copied', { mode: modeLabels[mode] });
         setTimeout(() => btn.textContent = originalText, 2000);
     }
 
@@ -345,8 +346,8 @@ export class CreatorModal extends Component {
 
             overlay.innerHTML = `
                 <div style="font-size: 2rem; margin-bottom: 1rem;">⏳</div>
-                <h3 style="margin: 0; color: #1e293b;">Analyzing...</h3>
-                <p style="color: #64748b; font-size: 0.9em;">Please wait while AI processes your text.</p>
+                <h3 style="margin: 0; color: #1e293b;">${t('creator.analyzing')}</h3>
+                <p style="color: #64748b; font-size: 0.9em;">${t('creator.analyzing.hint')}</p>
                 <div class="progress-bar-container" style="width: 200px; height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 15px; overflow: hidden;">
                     <div class="progress-bar-fill" style="width: 0%; height: 100%; background: #3b82f6; transition: width 0.3s ease;"></div>
                 </div>

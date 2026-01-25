@@ -3,6 +3,7 @@ import styles from './reader.module.css';
 import { ReaderAudio } from './reader_audio.js';
 import { ReaderDictionary } from './reader_dictionary.js';
 import { vocabService } from '../../../services/vocab_service.js';
+import { t } from '../../../locales/index.js';
 
 export class ReaderView extends Component {
     constructor(element, callbacks) {
@@ -30,13 +31,16 @@ export class ReaderView extends Component {
             this.render();
         } catch (e) {
             console.error("ReaderView Show Error:", e);
-            this.element.innerHTML = `<div style="padding:20px; color:red">Error loading reader: ${e.message}</div>`;
+            this.element.innerHTML = `<div style="padding:20px; color:red">${t('reader.error', { error: e.message })}</div>`;
         }
     }
 
     async render() {
         this.element.innerHTML = '';
         this.dictionary = new ReaderDictionary(this.element); // Pass container for popovers
+
+        // Auto-Refresh Listener
+        this.startStorageListener();
 
         // Preload saved words for highlighting
         let savedSet = new Set();
@@ -64,7 +68,7 @@ export class ReaderView extends Component {
         };
 
         if (this.sentences.length === 0) {
-            content.innerHTML = '<div style="padding:20px; color:#999; text-align:center;">No content available.</div>';
+            content.innerHTML = `<div style="padding:20px; color:#999; text-align:center;">${t('reader.empty')}</div>`;
         } else {
             this.sentences.forEach((sentence, index) => {
                 const block = this.createAtomicBlock(sentence, index, savedSet);
@@ -92,7 +96,7 @@ export class ReaderView extends Component {
 
         const title = document.createElement('div');
         title.className = styles.readerTitle || 'readerTitle';
-        title.textContent = (this.draft?.title || 'Reader Mode').substring(0, 20) + '...';
+        title.textContent = (this.draft?.title || t('reader.title')).substring(0, 20) + '...';
 
         const controls = document.createElement('div');
         controls.className = styles.headerControls || 'headerControls';
@@ -101,7 +105,7 @@ export class ReaderView extends Component {
         const transBtn = document.createElement('button');
         transBtn.className = styles.iconBtn || 'iconBtn';
         transBtn.innerHTML = this.showTranslations ? '👁️' : '👁️‍🗨️';
-        transBtn.title = "Toggle Translations";
+        transBtn.title = t('reader.toggleTrans');
         transBtn.onclick = () => {
             this.showTranslations = !this.showTranslations;
             transBtn.innerHTML = this.showTranslations ? '👁️' : '👁️‍🗨️';
@@ -140,9 +144,9 @@ export class ReaderView extends Component {
         settingsPanel.style.display = 'none';
 
         settingsPanel.innerHTML = `
-            <div class="${styles.settingGroup}"><label>Voice:</label><select id="tts-voice" style="max-width:120px;"><option>Loading...</select></div>
-            <div class="${styles.settingGroup}"><label>Speed:</label><select id="tts-speed"><option value="0.8">0.8x</option><option value="1.0" selected>1.0x</option><option value="1.2">1.2x</option></select></div>
-            <div class="${styles.settingGroup}"><label>Size:</label><button id="font-dec">-</button><span id="font-val">${this.fontSize}%</span><button id="font-inc">+</button></div>
+            <div class="${styles.settingGroup}"><label>${t('reader.settings.voice')}:</label><select id="tts-voice" style="max-width:120px;"><option>${t('common.loading')}</option></select></div>
+            <div class="${styles.settingGroup}"><label>${t('reader.settings.speed')}:</label><select id="tts-speed"><option value="0.8">0.8x</option><option value="1.0" selected>1.0x</option><option value="1.2">1.2x</option></select></div>
+            <div class="${styles.settingGroup}"><label>${t('reader.settings.size')}:</label><button id="font-dec">-</button><span id="font-val">${this.fontSize}%</span><button id="font-inc">+</button></div>
         `;
 
         container.appendChild(settingsPanel);
@@ -171,13 +175,28 @@ export class ReaderView extends Component {
         block.dataset.index = index;
 
         block.onclick = (e) => {
-            // Ignore if clicking bubble
+            // Ignore if clicking bubble or button
+            if (e.target.tagName === 'BUTTON' || (e.target.closest && e.target.closest('button'))) return;
             if (styles.bubble && e.target.closest && e.target.closest(`.${styles.bubble}`)) return;
             this.playSequence(index);
         };
 
+        // --- 1. Original Text Row ---
         const originalDiv = document.createElement('div');
-        originalDiv.className = styles.originalRow || 'originalRow';
+        originalDiv.className = `${styles.originalRow || 'originalRow'} ${styles.controlRow || 'controlRow'}`;
+
+        // Play Button
+        const playBtn = document.createElement('button');
+        playBtn.className = `${styles.controlBtn || 'controlBtn'} ${styles.playBtn || 'playBtn'} js-play-btn`;
+        playBtn.innerHTML = '▶️';
+        playBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.playSequence(index);
+        };
+        originalDiv.appendChild(playBtn);
+
+        const textContainer = document.createElement('div');
+        textContainer.style.flex = '1';
 
         if (sentence.segments && Array.isArray(sentence.segments)) {
             sentence.segments.forEach(seg => {
@@ -189,6 +208,8 @@ export class ReaderView extends Component {
 
                 if (isInteractive) {
                     bubble.classList.add(styles.interactive || 'interactive');
+
+                    if (lemma) bubble.dataset.lemma = lemma.toLowerCase(); // For auto-update
 
                     if (savedSet && savedSet.has(lemma?.toLowerCase())) {
                         bubble.classList.add(styles.savedBubble || 'savedBubble');
@@ -209,43 +230,107 @@ export class ReaderView extends Component {
                         );
                     };
                 }
-                originalDiv.appendChild(bubble);
+                textContainer.appendChild(bubble);
             });
         } else {
-            originalDiv.textContent = sentence.original_text;
+            textContainer.textContent = sentence.original_text;
         }
+        originalDiv.appendChild(textContainer);
         block.appendChild(originalDiv);
 
-        // Translation
+        // --- 2. Translation Row ---
         const transDiv = document.createElement('div');
-        transDiv.className = `${styles.translationRow || 'translationRow'} js-translation`;
-        transDiv.textContent = sentence.translation;
+        transDiv.className = `${styles.translationRow || 'translationRow'} ${styles.controlRow || 'controlRow'}`;
 
-        // Single Click Reveal
-        transDiv.onclick = (e) => {
+        // Toggle Button
+        const transToggle = document.createElement('button');
+        transToggle.className = `${styles.controlBtn || 'controlBtn'} ${styles.transBtn || 'transBtn'} js-trans-toggle`;
+        transToggle.innerHTML = this.showTranslations ? '👁️' : '👁️‍🗨️';
+
+        transToggle.onclick = (e) => {
             e.stopPropagation();
-            if (transDiv.classList.contains(styles.obscured || 'obscured')) {
-                transDiv.classList.remove(styles.obscured || 'obscured');
+            const textEl = transDiv.querySelector('.js-trans-text');
+            if (textEl) {
+                const isObscured = textEl.classList.contains(styles.obscured || 'obscured');
+                if (isObscured) {
+                    textEl.classList.remove(styles.obscured || 'obscured');
+                    transToggle.innerHTML = '👁️';
+                } else {
+                    textEl.classList.add(styles.obscured || 'obscured');
+                    transToggle.innerHTML = '👁️‍🗨️';
+                }
+            }
+        };
+        transDiv.appendChild(transToggle);
+
+        const transText = document.createElement('span');
+        transText.className = 'js-trans-text';
+        transText.textContent = sentence.translation;
+        transText.style.flex = '1';
+
+        // Initialize visibility
+        if (!this.showTranslations) {
+            transText.classList.add(styles.obscured || 'obscured');
+        }
+
+        // Keep existing click-to-reveal on text logic as backup/complement
+        transText.onclick = (e) => {
+            e.stopPropagation();
+            if (transText.classList.contains(styles.obscured || 'obscured')) {
+                transText.classList.remove(styles.obscured || 'obscured');
+                transToggle.innerHTML = '👁️';
             }
         };
 
+        transDiv.appendChild(transText);
         block.appendChild(transDiv);
 
-        // Explanation
+        // --- 3. Explanation Row ---
         if (sentence.explanation) {
             const expDiv = document.createElement('div');
-            expDiv.className = 'js-explanation';
-            expDiv.style.fontSize = '0.85em';
+            expDiv.className = `${styles.explanationRow || 'explanationRow'} ${styles.controlRow || 'controlRow'}`;
             expDiv.style.marginTop = '4px';
-            expDiv.style.color = '#795548';
-            expDiv.textContent = `💡 ${sentence.explanation}`;
 
-            expDiv.onclick = (e) => {
+            const expToggle = document.createElement('button');
+            expToggle.className = `${styles.controlBtn || 'controlBtn'} ${styles.transBtn || 'transBtn'} js-exp-toggle`;
+            expToggle.innerHTML = this.showTranslations ? '👁️' : '👁️‍🗨️';
+
+            expToggle.onclick = (e) => {
                 e.stopPropagation();
-                if (expDiv.classList.contains(styles.obscured || 'obscured')) {
-                    expDiv.classList.remove(styles.obscured || 'obscured');
+                const textEl = expDiv.querySelector('.js-exp-text');
+                if (textEl) {
+                    const isObscured = textEl.classList.contains(styles.obscured || 'obscured');
+                    if (isObscured) {
+                        textEl.classList.remove(styles.obscured || 'obscured');
+                        expToggle.innerHTML = '👁️';
+                    } else {
+                        textEl.classList.add(styles.obscured || 'obscured');
+                        expToggle.innerHTML = '👁️‍🗨️';
+                    }
                 }
             };
+            expDiv.appendChild(expToggle);
+
+            const expText = document.createElement('span');
+            expText.className = 'js-exp-text';
+            expText.style.fontSize = '0.85em';
+            expText.style.color = '#795548';
+            expText.textContent = `💡 ${sentence.explanation}`;
+            expText.style.flex = '1';
+
+            if (!this.showTranslations) {
+                expText.classList.add(styles.obscured || 'obscured');
+            }
+
+            expText.onclick = (e) => {
+                e.stopPropagation();
+                if (expText.classList.contains(styles.obscured || 'obscured')) {
+                    expText.classList.remove(styles.obscured || 'obscured');
+                    expToggle.innerHTML = '👁️';
+                }
+            };
+
+            expDiv.appendChild(expText);
             block.appendChild(expDiv);
         }
 
@@ -253,14 +338,17 @@ export class ReaderView extends Component {
     }
 
     updateTranslationVisibility() {
-        // Mode 1: All Visible (showTranslations = true) -> Remove 'obscured'
-        // Mode 2: Blur Mode (showTranslations = false) -> Add 'obscured'
-
         const method = this.showTranslations ? 'remove' : 'add';
         const cls = styles.obscured || 'obscured';
+        const icon = this.showTranslations ? '👁️' : '👁️‍🗨️';
 
-        this.element.querySelectorAll('.js-translation').forEach(el => el.classList[method](cls));
-        this.element.querySelectorAll('.js-explanation').forEach(el => el.classList[method](cls));
+        // Update Text
+        this.element.querySelectorAll('.js-trans-text').forEach(el => el.classList[method](cls));
+        this.element.querySelectorAll('.js-exp-text').forEach(el => el.classList[method](cls));
+
+        // Update Buttons
+        this.element.querySelectorAll('.js-trans-toggle').forEach(btn => btn.innerHTML = icon);
+        this.element.querySelectorAll('.js-exp-toggle').forEach(btn => btn.innerHTML = icon);
     }
 
     toggleTTS(btn) {
@@ -274,6 +362,10 @@ export class ReaderView extends Component {
 
     stopPlayback() {
         this.audio.cancel();
+
+        // Reset all individual play buttons
+        this.element.querySelectorAll('.js-play-btn').forEach(b => b.innerHTML = '▶️');
+
         this.highlightSentence(null);
         const btn = this.element.querySelector('#tts-btn');
         if (btn) btn.innerHTML = '🔊';
@@ -296,6 +388,14 @@ export class ReaderView extends Component {
 
         this.currentIndex = index;
 
+        // Update individual buttons
+        this.element.querySelectorAll('.js-play-btn').forEach(b => b.innerHTML = '▶️');
+        const currentBlock = this.contentArea.querySelector(`div[data-index="${index}"]`);
+        if (currentBlock) {
+            const playBtn = currentBlock.querySelector('.js-play-btn');
+            if (playBtn) playBtn.innerHTML = '⏹️';
+        }
+
         // Manual interactions should highlight immediately for feedback
         if (!isAuto) {
             this.highlightSentence(index);
@@ -314,6 +414,12 @@ export class ReaderView extends Component {
                     // Only continue if we are still in "playing" mode (user didn't stop)
                     if (this.audio.isPlaying) {
                         this.playSequence(index + 1, true);
+                    } else {
+                        // If stopped naturally (e.g. end of sequence but isPlaying false?), ensure button reset
+                        // But isPlaying is likely true here if we are chaining.
+                        // If we are here, it means this sentence finished. 
+                        // If we DON'T recurse, we should reset buttons.
+                        // But playSequence recurses.
                     }
                 },
                 (e) => {
@@ -348,6 +454,42 @@ export class ReaderView extends Component {
                 newBlock.classList.add(styles.active || 'active');
                 newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
+        }
+    }
+
+    startStorageListener() {
+        if (this.isListening) return;
+        this.isListening = true;
+
+        chrome.storage.onChanged.addListener((changes, area) => {
+            if (area === 'local') {
+                // Check if changes involve vocab (any key starting with vocab_)
+                const hasVocabChange = Object.keys(changes).some(k => k.startsWith('vocab_'));
+                if (hasVocabChange) {
+                    this.updateHighlights();
+                }
+            }
+        });
+    }
+
+    async updateHighlights() {
+        try {
+            const savedSet = await vocabService.getSavedSet();
+            const bubbles = this.element.querySelectorAll(`.${styles.interactive || 'interactive'}`);
+
+            bubbles.forEach(bubble => {
+                const lemma = bubble.dataset.lemma;
+                if (!lemma) return;
+
+                if (savedSet.has(lemma)) {
+                    bubble.classList.add(styles.savedBubble || 'savedBubble');
+                } else {
+                    bubble.classList.remove(styles.savedBubble || 'savedBubble');
+                }
+            });
+            // console.log('ReaderView: Highlights updated automatically');
+        } catch (e) {
+            console.error("ReaderView: Failed to update highlights", e);
         }
     }
 }

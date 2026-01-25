@@ -1,0 +1,15 @@
+{
+    "name": "Aidu Reviewer",
+    "short_name": "Aidu",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#f3f4f6",
+    "theme_color": "#2563eb",
+    "icons": [
+        {
+            "src": "../src/icons/icon128.png",
+            "sizes": "128x128",
+            "type": "image/png"
+        }
+    ]
+}

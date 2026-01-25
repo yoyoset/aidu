@@ -1,0 +1,296 @@
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1e40af;
+    --bg-color: #f3f4f6;
+    --card-bg: #ffffff;
+    --text-main: #1f2937;
+    --text-sub: #6b7280;
+    --success: #16a34a;
+    --warning: #ca8a04;
+    --danger: #dc2626;
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Views --- */
+.view {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.view.active {
+    display: flex;
+}
+
+/* --- Components --- */
+h1,
+h2 {
+    margin-top: 0;
+    text-align: center;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: var(--text-sub);
+}
+
+input[type="text"],
+input[type="password"],
+input[type="url"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 16px;
+    /* Prevents iOS zoom */
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+    margin-bottom: 10px;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+}
+
+.btn-secondary {
+    background-color: #e5e7eb;
+    color: var(--text-main);
+}
+
+.btn-success {
+    background-color: var(--success);
+    color: white;
+}
+
+.btn-warning {
+    background-color: var(--warning);
+    color: white;
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    color: white;
+}
+
+/* --- Flashcard --- */
+.flashcard-container {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1000px;
+    margin: 20px 0;
+}
+
+.flashcard {
+    width: 100%;
+    max-width: 400px;
+    height: 60vh;
+    position: relative;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    /* Critical for iOS */
+    transition: transform 0.6s;
+    cursor: pointer;
+}
+
+.flashcard.flipped {
+    transform: rotateY(180deg);
+    -webkit-transform: rotateY(180deg);
+}
+
+.card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    /* Critical for iOS */
+    background: var(--card-bg);
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    text-align: center;
+    /* Ensure no transparency leak */
+    z-index: 2;
+}
+
+.card-back {
+    transform: rotateY(180deg);
+    -webkit-transform: rotateY(180deg);
+    justify-content: flex-start;
+    padding-top: 40px;
+    z-index: 1;
+    /* Initially behind */
+}
+
+/* When flipped, the backface-visibility handles the z-order visual */
+
+.word-orig {
+    font-size: 2.5em;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 10px;
+}
+
+.phonetic {
+    color: var(--text-sub);
+    font-family: "Courier New", monospace;
+    margin-bottom: 20px;
+}
+
+.context {
+    font-style: italic;
+    color: #4b5563;
+    line-height: 1.5;
+    margin-top: 20px;
+}
+
+.meaning {
+    font-size: 1.4em;
+    color: var(--primary-dark);
+    margin: 20px 0;
+    font-weight: 600;
+}
+
+/* --- Review Actions --- */
+.actions-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+    margin-top: auto;
+    /* Push to bottom of flex container */
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.actions-bar button {
+    padding: 10px 0;
+    margin-bottom: 5px;
+    /* Space for Master row */
+    font-size: 0.85em;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-back {
+    /* Ensure content scrolls if too long, but buttons stay visible? 
+       Actually, let's make the card scrollable internally if needed */
+    overflow-y: auto;
+}
+
+/* --- Dashboard Stats --- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.stat-val {
+    font-size: 2em;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.stat-label {
+    font-size: 0.9em;
+    color: var(--text-sub);
+}
+
+/* --- Toast --- */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 0.9em;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 100;
+    white-space: nowrap;
+}
+
+.toast.show {
+    opacity: 1;
+}
+
+/* Big Speaker Button */
+.btn-big-speaker {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #ddd;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    font-size: 2.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.1s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 10;
+}
+
+.btn-big-speaker:active {
+    transform: scale(0.9);
+    background: #f0f0f0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}

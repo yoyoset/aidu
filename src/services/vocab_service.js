@@ -6,7 +6,7 @@ export class VocabService {
         this.baseKey = 'vocab_';
 
         // Auto-run migration check on instantiation (async but non-blocking)
-        this.checkMigration();
+        this._migrationComplete = this.checkMigration();
     }
 
     setProfile(profileId) {
@@ -43,7 +43,10 @@ export class VocabService {
 
     /**
      * Add a word to vocab list
-     * @param {Object} entry { word, lemma, meaning, phonetic, context, level }
+     * @param {Object} entry { 
+     *   word, lemma, meaning, phonetic, context, level,
+     *   collocations  // Tier 1 扩展
+     * }
      */
     async add(entry) {
         const vocab = await this.getAll();
@@ -53,7 +56,21 @@ export class VocabService {
         if (vocab[key]) return false; // Already exists
 
         vocab[key] = {
-            ...entry,
+            // Basic
+            word: entry.word,
+            lemma: entry.lemma,
+            meaning: entry.meaning || '',
+            phonetic: entry.phonetic || '',
+            context: entry.context || '',
+            level: entry.level || '',
+
+            // Tier 1 Extension
+            collocations: entry.collocations || [],
+
+            // Tier 2 (populated on demand)
+            deepData: null,
+
+            // SRS
             addedAt: Date.now(),
             reviews: 0,
             nextReview: Date.now(), // Due immediately
@@ -93,6 +110,7 @@ export class VocabService {
     }
 
     async getAll() {
+        await this._migrationComplete;
         const key = this.STORAGE_KEY;
         // console.log(`VocabService: Fetching from ${key}`);
         const data = await StorageHelper.get(key) || {};
@@ -118,6 +136,11 @@ export class VocabService {
     async isSaved(lemma) {
         const vocab = await this.getAll();
         return !!vocab[lemma?.toLowerCase()];
+    }
+
+    async getEntry(lemma) {
+        const vocab = await this.getAll();
+        return vocab[lemma?.toLowerCase()] || null;
     }
 
     async getSavedSet() {

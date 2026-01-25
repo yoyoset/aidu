@@ -1,13 +1,15 @@
+import { t } from '../../../locales/index.js';
+
 export class HandwritingSheet {
-    static generate(vocabList, title = "Handwriting Practice") {
+    static generate(vocabList, title = t('print.title')) {
         if (!vocabList || vocabList.length === 0) {
-            alert("No words to print.");
+            alert(t('print.empty'));
             return;
         }
 
         const win = window.open('', '_blank');
         if (!win) {
-            alert("Please allow popups to generate the worksheet.");
+            alert(t('print.popupBlock'));
             return;
         }
 
@@ -80,10 +82,10 @@ export class HandwritingSheet {
         </head>
         <body>
             <div class="no-print" style="position:fixed; top:20px; right:20px; z-index:1000;">
-                <button id="print-btn" style="background:#2e7d32; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-size:16px; box-shadow:0 4px 12px rgba(0,0,0,0.15); font-weight:bold;">🖨️ Print / Save PDF</button>
+                <button id="print-btn" style="background:#2e7d32; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-size:16px; box-shadow:0 4px 12px rgba(0,0,0,0.15); font-weight:bold;">${t('print.btn')}</button>
             </div>
-            <h1>Handwriting Practice</h1>
-            <div class="meta">Date: ${new Date().toLocaleDateString()} | Total Words: ${vocabList.length}</div>
+            <h1>${title}</h1>
+            <div class="meta">${t('print.meta', { date: new Date().toLocaleDateString(), count: vocabList.length })}</div>
             
             <div class="sheet-content">
                 ${vocabRows}

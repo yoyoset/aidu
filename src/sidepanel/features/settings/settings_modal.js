@@ -3,7 +3,9 @@ import { StorageHelper, StorageKeys } from '../../../utils/storage.js';
 import { DataService } from '../../../services/data_service.js';
 import { SyncService } from '../../../services/sync_service.js';
 import { vocabService } from '../../../services/vocab_service.js';
+import { PERSONA_OPTIONS } from '../../../background/llm/persona.js';
 import styles from './settings.module.css';
+import { t, getCurrentLocale, getSupportedLocales, setLocale } from '../../../locales/index.js';
 
 export class SettingsModal extends Component {
     constructor(element) {
@@ -23,9 +25,9 @@ export class SettingsModal extends Component {
                 profiles: {
                     'default': {
                         name: 'General Profile',
-                        provider: 'deepseek',
-                        baseUrl: 'https://api.deepseek.com/v1',
-                        model: 'deepseek-chat',
+                        provider: 'glm-free',
+                        baseUrl: '',
+                        model: 'glm-4-flash',
                         apiKey: '',
                         realtimeMode: '2',
                         builderMode: '3'
@@ -70,11 +72,11 @@ export class SettingsModal extends Component {
         content.innerHTML = `
             <div class="${styles.modalHeader}">
                 <div class="${styles.headerLeft}">
-                    <h3 class="${styles.modalTitle}">Configuration</h3>
+                    <h3 class="${styles.modalTitle}">${t('settings.title')}</h3>
                     <div class="${styles.profileSelectWrapper}">
                         <select id="profile-select" class="${styles.profileSelect}">
                             ${this.renderProfileOptions()}
-                            <option value="__create_new__">+ Create New Profile...</option>
+                            <option value="__create_new__">${t('settings.createProfile')}</option>
                         </select>
                     </div>
                 </div>
@@ -84,149 +86,155 @@ export class SettingsModal extends Component {
             <div class="${styles.scrollArea}">
                 <!-- Profile Meta -->
                 <div class="${styles.formSection}">
-                    <label class="${styles.sectionTitle}">General Settings</label>
+                    <label class="${styles.sectionTitle}">${t('settings.general')}</label>
                     <div class="${styles.formGroup}">
-                        <label class="${styles.label}" for="profile-name">Display Name ✏️</label>
+                        <label class="${styles.label}" for="profile-name">${t('settings.displayName')}</label>
                         <input type="text" id="profile-name" class="${styles.input}" 
-                            value="${this.activeProfile.name || 'New Profile'}" placeholder="Enter Profile Name">
+                            value="${this.activeProfile.name || t('settings.newProfile')}" placeholder="${t('settings.displayName.placeholder')}">
                     </div>
                 </div>
 
                 <!-- Provider Section -->
                 <div class="${styles.formSection}">
-                   <label class="${styles.sectionTitle}">AI Provider</label>
+                   <label class="${styles.sectionTitle}">${t('settings.provider')}</label>
                     <div class="${styles.formGroup}">
-                        <label class="${styles.label}" for="provider-select">Provider</label>
+                        <label class="${styles.label}" for="provider-select">${t('settings.provider.label')}</label>
                         <select id="provider-select" class="${styles.select}">
+                            <option value="glm-free" ${this.activeProfile.provider === 'glm-free' ? 'selected' : ''}>🆓 智谱AI (GLM-4-Flash 免费)</option>
                             <option value="deepseek" ${this.activeProfile.provider === 'deepseek' ? 'selected' : ''}>DeepSeek</option>
                             <option value="gemini" ${this.activeProfile.provider === 'gemini' ? 'selected' : ''}>Google Gemini</option>
+                            <option value="glm" ${this.activeProfile.provider === 'glm' ? 'selected' : ''}>Zhipu AI (GLM)</option>
                             <option value="openai" ${this.activeProfile.provider === 'openai' ? 'selected' : ''}>OpenAI Compatible</option>
                             <option value="custom" ${this.activeProfile.provider === 'custom' ? 'selected' : ''}>Custom Endpoint</option>
                         </select>
                     </div>
 
-                    <div class="${styles.formGroup}">
-                        <label class="${styles.label}" for="base-url-input">Base URL</label>
+                    <div class="${styles.formGroup}" id="base-url-group">
+                        <label class="${styles.label}" for="base-url-input">${t('settings.baseUrl')}</label>
                         <input type="text" id="base-url-input" class="${styles.input}" 
-                            value="${this.activeProfile.baseUrl || ''}" placeholder="API Endpoint URL">
+                            value="${this.activeProfile.baseUrl || ''}" placeholder="${t('settings.baseUrl.placeholder')}">
                     </div>
 
-                    <div class="${styles.formGroup}">
-                        <label class="${styles.label}" for="model-input">Model Name</label>
+                    <div class="${styles.formGroup}" id="model-group">
+                        <label class="${styles.label}" for="model-input">${t('settings.model')}</label>
                         <input type="text" id="model-input" class="${styles.input}" 
-                            value="${this.activeProfile.model}" placeholder="e.g., deepseek-chat">
+                            value="${this.activeProfile.model}" placeholder="${t('settings.model.placeholder')}">
                     </div>
 
-                    <div class="${styles.formGroup}">
-                        <label class="${styles.label}" for="api-key-input">API Key</label>
+                    <div class="${styles.formGroup}" id="api-key-group">
+                        <label class="${styles.label}" for="api-key-input">${t('settings.apiKey')}</label>
                         <input type="password" id="api-key-input" class="${styles.input}" 
-                            value="${this.activeProfile.apiKey}" placeholder="sk-...">
+                            value="${this.activeProfile.apiKey}" placeholder="${t('settings.apiKey.placeholder')}">
                     </div>
                 </div>
 
                 <!-- Analysis Mode Section -->
                 <div class="${styles.formSection}">
-                    <label class="${styles.sectionTitle}">Analysis Strategy</label>
+                    <label class="${styles.sectionTitle}">${t('settings.analysis')}</label>
                     
                     <div class="${styles.modeContainer}">
                         <div class="${styles.modeColumn}">
-                            <label class="${styles.label}">Real-time (Selection)</label>
+                            <label class="${styles.label}">${t('settings.realtime')}</label>
                             <div class="${styles.radioGroup}">
-                                ${this.renderRadioOption('realtimeMode', '1', 'Translation', 'Fast', this.activeProfile.realtimeMode)}
-                                ${this.renderRadioOption('realtimeMode', '2', 'Standard', 'Lemma+POS', this.activeProfile.realtimeMode)}
-                                ${this.renderRadioOption('realtimeMode', '3', 'Deep', 'Full Context', this.activeProfile.realtimeMode)}
+                                ${this.renderRadioOption('realtimeMode', '1', t('settings.mode.translation'), t('settings.mode.translation.sub'), this.activeProfile.realtimeMode)}
+                                ${this.renderRadioOption('realtimeMode', '2', t('settings.mode.standard'), t('settings.mode.standard.sub'), this.activeProfile.realtimeMode)}
+                                ${this.renderRadioOption('realtimeMode', '3', t('settings.mode.deep'), t('settings.mode.deep.sub'), this.activeProfile.realtimeMode)}
                             </div>
                         </div>
                         
                         <div class="${styles.modeColumn}">
-                            <label class="${styles.label}">Background / Manual AI</label>
+                            <label class="${styles.label}">${t('settings.builder')}</label>
                             <div class="${styles.radioGroup}">
-                                ${this.renderRadioOption('builderMode', '1', 'Translation', 'Fast', this.activeProfile.builderMode)}
-                                ${this.renderRadioOption('builderMode', '2', 'Standard', 'Lemma+POS', this.activeProfile.builderMode)}
-                                ${this.renderRadioOption('builderMode', '3', 'Deep', 'Full Context', this.activeProfile.builderMode)}
+                                ${this.renderRadioOption('builderMode', '2', t('settings.mode.standard'), t('settings.mode.core'), this.activeProfile.builderMode)}
+                                ${this.renderRadioOption('builderMode', '3', t('settings.mode.deep'), t('settings.mode.detailed'), this.activeProfile.builderMode)}
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Teaching Persona Section -->
+                <div class="${styles.formSection}">
+                    <label class="${styles.sectionTitle}">${t('settings.persona')}</label>
+                    <div class="${styles.formGroup}">
+                        <label class="${styles.label}" for="teaching-style">${t('settings.persona.label')}</label>
+                        <select id="teaching-style" class="${styles.select}">
+                            ${PERSONA_OPTIONS.map(p => `<option value="${p.id}">${p.label}</option>`).join('')}
+                        </select>
+                        <p id="style-desc" style="font-size:0.85em; color:#666; margin-top:4px; font-style:italic;"></p>
+                    </div>
                 </div>
 
-                <!-- Cloud Sync Section -->
+                <!-- Interface Language Section -->
                 <div class="${styles.formSection}">
-                    <label class="${styles.sectionTitle}">Cloud Sync ☁️</label>
-                    
+                    <label class="${styles.sectionTitle}">${t('settings.language')}</label>
                     <div class="${styles.formGroup}">
-                        <label class="${styles.label}">Sync Provider</label>
-                        <select id="sync-provider-select" class="${styles.select}">
-                            <option value="gist">GitHub Gist (Free & Private)</option>
-                            <option value="custom">Custom / Cloudflare Worker (Self-Hosted)</option>
+                        <label class="${styles.label}">${t('settings.language.label')}</label>
+                        <select id="language-select" class="${styles.select}">
+                            ${getSupportedLocales().map(l =>
+            `<option value="${l.code}" ${getCurrentLocale() === l.code ? 'selected' : ''}>${l.name}</option>`
+        ).join('')}
                         </select>
                     </div>
+                </div>
 
-                    <!-- Gist Settings -->
-                    <div id="sync-gist-settings">
+                <div class="${styles.formSection}">
+                    <label class="${styles.sectionTitle}">${t('settings.sync')}</label>
+                    
+                    <!-- Only Custom Worker Supported -->
+                    <div id="sync-custom-settings">
                         <div class="${styles.formGroup}">
-                            <label class="${styles.label}">GitHub Token</label>
-                            <input type="password" id="github-token" class="${styles.input}" 
-                                placeholder="ghp_..." value="${this.settings.sync?.githubToken || ''}">
-                        </div>
-                        <div class="${styles.formGroup}">
-                            <label class="${styles.label}">Gist ID</label>
-                            <input type="text" id="gist-id" class="${styles.input}" 
-                                placeholder="Auto-created if empty" value="${this.settings.sync?.gistId || ''}">
-                        </div>
-                    </div>
-
-                    <!-- Custom Settings -->
-                    <div id="sync-custom-settings" style="display:none;">
-                        <div class="${styles.formGroup}">
-                            <label class="${styles.label}">Worker Endpoint URL</label>
+                            <label class="${styles.label}">${t('settings.sync.workerUrl')}</label>
                             <input type="text" id="custom-url" class="${styles.input}" 
-                                placeholder="https://..." value="${this.settings.sync?.customUrl || ''}">
+                                placeholder="${t('settings.sync.workerUrl.placeholder')}" value="${this.settings.sync?.customUrl || ''}">
                         </div>
                         <div class="${styles.formGroup}">
-                            <label class="${styles.label}">Access Token (Secret)</label>
+                            <label class="${styles.label}">${t('settings.sync.token')}</label>
                             <input type="password" id="custom-token" class="${styles.input}" 
-                                placeholder="Your AUTH_TOKEN" value="${this.settings.sync?.customToken || ''}">
+                                placeholder="${t('settings.sync.token.placeholder')}" value="${this.settings.sync?.customToken || ''}">
                         </div>
+                        <button id="export-mobile-link" class="${styles.btnSecondary}" style="width:100%; margin: 8px 0; font-size:0.9em;">
+                            ${t('settings.sync.magicLink')}
+                        </button>
                     </div>
 
                     <div style="display:flex; gap:10px; margin-top:8px;">
                         <button id="sync-setup-btn" class="${styles.btnSecondary}" style="flex:1;">
-                            🔌 Connect / Test
+                            ${t('settings.sync.connect')}
                         </button>
                         <button id="sync-now-btn" class="${styles.btnPrimary}" style="flex:1;">
-                            🔄 Sync Now
+                            ${t('settings.sync.now')}
                         </button>
                     </div>
                 </div>
 
                 <!-- Backup & Restore Section -->
                 <div class="${styles.formSection}">
-                    <label class="${styles.sectionTitle}">Data & Preservation (Backup)</label>
+                    <label class="${styles.sectionTitle}">${t('settings.backup')}</label>
                     <div style="display:flex; gap:10px; margin-top:8px;">
                         <button id="backup-btn" class="${styles.btnSecondary}" style="flex:1;">
-                            📤 Backup All Data (JSON)
+                            ${t('settings.backup.export')}
                         </button>
                         <button id="restore-btn" class="${styles.btnSecondary}" style="flex:1;">
-                            📥 Restore Data
+                            ${t('settings.backup.import')}
                         </button>
                         <input type="file" id="restore-file-input" style="display:none;" accept=".json">
                     </div>
                     <p style="font-size:0.8em; color:#666; margin-top:6px;">
-                        Export all vocabulary, articles, and settings to transfer to another computer.
+                        ${t('settings.backup.hint')}
                     </p>
                 </div>
                 
                  <!-- Delete Action -->
                  ${this.settings.activeProfileId !== 'default' ? `
                     <div class="${styles.deleteSection}">
-                        <button id="delete-btn" class="${styles.btnDestructive}">Delete Profile</button>
+                        <button id="delete-btn" class="${styles.btnDestructive}">${t('settings.deleteProfile')}</button>
                     </div>
                  ` : ''}
             </div>
 
             <div class="${styles.modalFooter}">
-                <button id="cancel-btn" class="${styles.btnSecondary}">Cancel</button>
-                <button id="save-btn" class="${styles.btnPrimary}">Save & Apply</button>
+                <button id="cancel-btn" class="${styles.btnSecondary}">${t('settings.cancel')}</button>
+                <button id="save-btn" class="${styles.btnPrimary}">${t('settings.save')}</button>
             </div>
         `;
 
@@ -236,6 +244,19 @@ export class SettingsModal extends Component {
 
         // Bind Events
         this.bindEvents(content);
+    }
+
+    toggleProviderFields(provider) {
+        const apiKeyGroup = document.getElementById('api-key-group');
+        const baseUrlGroup = document.getElementById('base-url-group');
+
+        if (provider === 'glm-free') {
+            if (apiKeyGroup) apiKeyGroup.style.display = 'none';
+            if (baseUrlGroup) baseUrlGroup.style.display = 'none';
+        } else {
+            if (apiKeyGroup) apiKeyGroup.style.display = 'block';
+            if (baseUrlGroup) baseUrlGroup.style.display = 'block';
+        }
     }
 
     renderProfileOptions() {
@@ -253,8 +274,8 @@ export class SettingsModal extends Component {
                 <input type="radio" name="${name}" value="${value}" 
                     ${actualVal === value ? 'checked' : ''}>
                 <span class="${styles.radioText}">
-                    <strong>${label}</strong>
-                    <small>${sub}</small>
+                    <span class="${styles.radioMain}">${label}</span>
+                    <span class="${styles.radioSub}">${sub}</span>
                 </span>
             </label>
         `;
@@ -268,10 +289,11 @@ export class SettingsModal extends Component {
         // Profile Switcher
         const profileSelect = content.querySelector('#profile-select');
         profileSelect.onchange = (e) => {
-            if (e.target.value === '__create_new__') {
+            const val = e.target.value;
+            if (val === '__create_new__') {
                 this.createNewProfile();
             } else {
-                this.switchProfile(e.target.value);
+                this.switchProfile(val);
             }
         };
 
@@ -296,6 +318,15 @@ export class SettingsModal extends Component {
             this.activeProfile.provider = newProvider;
 
             // 3. Load state of NEW provider (or defaults)
+            const defaults = {
+                'glm-free': { model: 'glm-4-flash', url: '' },
+                deepseek: { model: 'deepseek-chat', url: 'https://api.deepseek.com/v1' },
+                gemini: { model: 'gemini-1.5-flash', url: 'https://generativelanguage.googleapis.com/v1beta' },
+                glm: { model: 'glm-4-flash', url: 'https://open.bigmodel.cn/api/paas/v4/' },
+                openai: { model: 'gpt-4o-mini', url: 'https://api.openai.com/v1' },
+                custom: { model: '', url: '' }
+            };
+
             const savedConfig = this.activeProfile.providerConfig[newProvider];
 
             if (savedConfig) {
@@ -303,13 +334,7 @@ export class SettingsModal extends Component {
                 baseUrlInput.value = savedConfig.baseUrl || '';
                 document.getElementById('api-key-input').value = savedConfig.apiKey || '';
             } else {
-                // Load Defaults
-                const defaults = {
-                    deepseek: { model: 'deepseek-chat', url: 'https://api.deepseek.com/v1' },
-                    gemini: { model: 'gemini-1.5-flash', url: 'https://generativelanguage.googleapis.com/v1beta' },
-                    openai: { model: 'gpt-4o-mini', url: 'https://api.openai.com/v1' },
-                    custom: { model: '', url: '' }
-                };
+                // Load Defaults from the centralized defaults object defined above
                 const preset = defaults[newProvider];
                 if (preset) {
                     modelInput.value = preset.model;
@@ -317,7 +342,13 @@ export class SettingsModal extends Component {
                     document.getElementById('api-key-input').value = '';
                 }
             }
+
+            // Consistency Check: Toggle visibility
+            this.toggleProviderFields(newProvider);
         };
+
+        // Initialize visibility state
+        this.toggleProviderFields(this.activeProfile.provider);
 
         // Real-time Profile Name Sync (UX: Make it obvious they are linked)
         const nameInput = content.querySelector('#profile-name');
@@ -342,7 +373,7 @@ export class SettingsModal extends Component {
 
         if (backupBtn) {
             backupBtn.onclick = async () => {
-                backupBtn.innerHTML = '⏳ Exporting...';
+                backupBtn.innerHTML = t('settings.backup.exporting');
                 try {
                     const data = await DataService.exportAll();
                     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -352,12 +383,12 @@ export class SettingsModal extends Component {
                     a.download = `aidu_backup_${new Date().toISOString().slice(0, 10)}.json`;
                     a.click();
                     URL.revokeObjectURL(url);
-                    backupBtn.innerHTML = '✅ Done';
-                    setTimeout(() => backupBtn.innerHTML = '📤 Backup All Data (JSON)', 2000);
+                    backupBtn.innerHTML = t('settings.backup.done');
+                    setTimeout(() => backupBtn.innerHTML = t('settings.backup.export'), 2000);
                 } catch (e) {
                     console.error(e);
-                    backupBtn.innerHTML = '❌ Error';
-                    alert('Export failed. Check console.');
+                    backupBtn.innerHTML = t('settings.sync.error');
+                    alert(t('settings.backup.exportFailed'));
                 }
             };
         }
@@ -373,60 +404,32 @@ export class SettingsModal extends Component {
                 reader.onload = async (ev) => {
                     try {
                         const json = JSON.parse(ev.target.result);
-                        if (confirm(`Restore data from "${file.name}"?\n⚠️ This will OVERWRITE current vocabulary, drafts, and settings!`)) {
-                            restoreBtn.innerHTML = '⏳ Restoring...';
+                        if (confirm(t('settings.backup.restoreConfirm', { filename: file.name }))) {
+                            restoreBtn.innerHTML = t('settings.backup.restoring');
                             await DataService.importAll(json);
-                            alert('✅ Data restored successfully! The page will reload.');
+                            alert(t('settings.backup.restoreSuccess'));
                             window.location.reload();
                         }
                     } catch (err) {
                         console.error(err);
-                        alert('❌ Restore failed: Invalid JSON file.');
+                        alert(t('settings.backup.restoreFailed'));
                     } finally {
                         restoreInput.value = ''; // Reset
-                        restoreBtn.innerHTML = '📥 Restore Data';
+                        restoreBtn.innerHTML = t('settings.backup.import');
                     }
                 };
                 reader.readAsText(file);
             };
         }
 
-        // Cloud Sync Events
-        const syncProviderSelect = content.querySelector('#sync-provider-select');
-        const gistSection = content.querySelector('#sync-gist-settings');
+        // Cloud Sync Events (Custom Worker Only)
         const customSection = content.querySelector('#sync-custom-settings');
         const syncSetupBtn = content.querySelector('#sync-setup-btn');
         const syncNowBtn = content.querySelector('#sync-now-btn');
 
-        // Init visibility logic
-        const updateSyncVisibility = () => {
-            const val = syncProviderSelect.value;
-            console.log('Sync Provider Changed:', val);
-            if (val === 'gist') {
-                gistSection.style.display = 'block';
-                customSection.style.display = 'none';
-            } else {
-                gistSection.style.display = 'none';
-                customSection.style.display = 'block';
-            }
-        };
-
-        // Set initial value
-        const currentProvider = this.settings.sync?.provider || 'gist';
-        syncProviderSelect.value = currentProvider;
-
-        // Force initial state
-        updateSyncVisibility();
-
-        // Bind Change
-        syncProviderSelect.onchange = updateSyncVisibility;
-
         const getSyncConfig = () => {
-            const provider = syncProviderSelect.value;
             return {
-                provider,
-                githubToken: content.querySelector('#github-token').value.trim(),
-                gistId: content.querySelector('#gist-id').value.trim(),
+                provider: 'custom', // Only custom supported now
                 customUrl: content.querySelector('#custom-url').value.trim(),
                 customToken: content.querySelector('#custom-token').value.trim()
             };
@@ -467,30 +470,22 @@ export class SettingsModal extends Component {
             syncSetupBtn.onclick = async () => {
                 const config = getSyncConfig();
 
-                if (config.provider === 'gist' && !config.githubToken) return showToast('GitHub Token required', 'error');
-                if (config.provider === 'custom' && (!config.customUrl || !config.customToken)) return showToast('URL and Token required', 'error');
+                if (!config.customUrl || !config.customToken) {
+                    return showToast(t('settings.sync.urlTokenRequired'), 'error');
+                }
 
-                syncSetupBtn.innerHTML = '⏳ Connecting...';
+                syncSetupBtn.innerHTML = t('settings.sync.connecting');
                 try {
                     // Save Config
                     await SyncService.saveConfig(config);
-
-                    if (config.provider === 'gist' && !config.gistId) {
-                        syncSetupBtn.innerHTML = '⏳ Creating Gist...';
-                        const id = await SyncService.createGist(config.githubToken);
-                        content.querySelector('#gist-id').value = id;
-                        await SyncService.saveConfig({ ...config, gistId: id });
-                        showToast('✅ Gist Created!', 'success');
-                    } else {
-                        // Verify by trying to pull
-                        await SyncService.pull();
-                        showToast('✅ Connection Verified!', 'success');
-                    }
-                    syncSetupBtn.innerHTML = '✅ Connected';
+                    // Verify by trying to pull
+                    await SyncService.pull();
+                    showToast(t('settings.sync.verified'), 'success');
+                    syncSetupBtn.innerHTML = t('settings.sync.connected');
                 } catch (e) {
                     console.error(e);
-                    showToast(`❌ Failed: ${e.message}`, 'error');
-                    syncSetupBtn.innerHTML = '🔌 Connect / Test';
+                    showToast(t('settings.sync.failed', { error: e.message }), 'error');
+                    syncSetupBtn.innerHTML = t('settings.sync.connect');
                 }
             };
         }
@@ -499,9 +494,11 @@ export class SettingsModal extends Component {
             syncNowBtn.onclick = async () => {
                 const config = getSyncConfig();
                 // Basic validation
-                if (!config.provider) return showToast('Configure provider first', 'error');
+                if (!config.customUrl || !config.customToken) {
+                    return showToast(t('settings.sync.configFirst'), 'error');
+                }
 
-                syncNowBtn.innerHTML = '⏳ Syncing...';
+                syncNowBtn.innerHTML = t('settings.sync.syncing');
                 try {
                     // Temporarily save config in case they didn't hit Test
                     await SyncService.saveConfig(config);
@@ -509,22 +506,73 @@ export class SettingsModal extends Component {
                     await SyncService.pull();
                     await SyncService.push();
 
-                    showToast('✅ Sync Completed Successfully', 'success');
-                    syncNowBtn.innerHTML = '✅ Synced';
-                    setTimeout(() => syncNowBtn.innerHTML = '🔄 Sync Now', 2000);
+                    showToast(t('settings.sync.completed'), 'success');
+                    syncNowBtn.innerHTML = t('settings.sync.synced');
+                    setTimeout(() => syncNowBtn.innerHTML = t('settings.sync.now'), 2000);
                 } catch (e) {
                     console.error(e);
-                    showToast(`❌ Sync Failed: ${e.message}`, 'error');
-                    syncNowBtn.innerHTML = '❌ Error';
+                    showToast(t('settings.sync.failed', { error: e.message }), 'error');
+                    syncNowBtn.innerHTML = t('settings.sync.error');
                 }
             };
         }
+
+        const exportMobileBtn = content.querySelector('#export-mobile-link');
+        if (exportMobileBtn) {
+            exportMobileBtn.onclick = () => {
+                const url = content.querySelector('#custom-url').value.trim();
+                const token = content.querySelector('#custom-token').value.trim();
+                const profile = this.settings.activeProfileId || 'default';
+
+                if (!url || !token) {
+                    showToast(t('settings.sync.urlTokenRequired'), 'error');
+                    return;
+                }
+
+                try {
+                    const payload = JSON.stringify({ u: url, t: token, p: profile });
+                    const b64 = btoa(payload);
+                    const link = `https://aidu-mobile.pages.dev/?conf=${b64}`;
+
+                    navigator.clipboard.writeText(link).then(() => {
+                        showToast(t('settings.sync.linkCopied'), 'success');
+                    }).catch(err => {
+                        console.error(err);
+                        showToast(t('settings.sync.copyFailed'), 'error');
+                    });
+                } catch (e) {
+                    showToast('Encoding Error', 'error');
+                }
+            };
+        }
+
+        // Teaching Persona Logic
+        const styleSelect = content.querySelector('#teaching-style');
+        const styleDesc = content.querySelector('#style-desc');
+
+        // Init Value
+        if (this.settings.teachingStyle) {
+            styleSelect.value = this.settings.teachingStyle;
+        } else {
+            styleSelect.value = 'casual'; // Default
+        }
+
+        const updateDesc = () => {
+            const opt = PERSONA_OPTIONS.find(p => p.id === styleSelect.value);
+            styleDesc.textContent = opt?.desc || '';
+        };
+        updateDesc();
+
+        styleSelect.onchange = () => {
+            this.settings.teachingStyle = styleSelect.value;
+            updateDesc();
+        };
     }
 
     async createNewProfile() {
         const newId = 'profile_' + Date.now();
         this.settings.profiles[newId] = {
-            name: 'New Profile',
+            name: t('settings.newProfile'),
             provider: 'deepseek',
             baseUrl: 'https://api.deepseek.com/v1',
             model: 'deepseek-chat',
@@ -556,8 +604,14 @@ export class SettingsModal extends Component {
     }
 
     async deleteProfile() {
-        if (confirm('Are you sure you want to delete this profile?')) {
+        if (confirm(t('settings.deleteProfile.confirm'))) {
             const idToDelete = this.settings.activeProfileId;
+
+            // Clean up associated vocab data to prevent storage leaks
+            const vocabKey = `vocab_${idToDelete}`;
+            await StorageHelper.remove(vocabKey);
+            console.log(`Deleted vocab data for profile: ${idToDelete}`);
+
             delete this.settings.profiles[idToDelete];
             this.settings.activeProfileId = 'default';
 
@@ -578,6 +632,8 @@ export class SettingsModal extends Component {
         const baseUrl = this.overlay.querySelector('#base-url-input').value.trim();
         const model = this.overlay.querySelector('#model-input').value.trim();
         const apiKey = this.overlay.querySelector('#api-key-input').value.trim();
+        const teachingStyle = this.overlay.querySelector('#teaching-style').value;
+        const language = this.overlay.querySelector('#language-select').value;
 
         let realtimeMode = '2';
         const rtRadio = this.overlay.querySelector('input[name="realtimeMode"]:checked');
@@ -608,6 +664,14 @@ export class SettingsModal extends Component {
             builderMode,
             updatedAt: Date.now()
         };
+
+        // Update Global Settings
+        this.settings.teachingStyle = teachingStyle;
+
+        // Handle Language Change
+        if (language && language !== getCurrentLocale()) {
+            await setLocale(language);
+        }
 
         // Persist everything
         await StorageHelper.set(StorageKeys.USER_SETTINGS, this.settings);

@@ -8,6 +8,10 @@ import { ReaderView } from '../reader/reader_view.js';
 import { ConfirmationModal } from '../../components/confirmation_modal.js';
 import { VocabView } from '../vocab/vocab_view.js';
 import { vocabService } from '../../../services/vocab_service.js';
+import { SyncService } from '../../../services/sync_service.js';
+import { Toast } from '../../components/toast.js';
+import { showDonateModal } from '../../components/donate_modal.js';
+import { t } from '../../../locales/index.js';
 
 export class PreparationDashboard extends Component {
     constructor(element) {
@@ -33,6 +37,14 @@ export class PreparationDashboard extends Component {
             const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
             // If no profile, it defaults to 'default' inside service
             if (settings.activeProfileId) {
+                // Verify profile exists
+                const profileExists = settings.profiles?.[settings.activeProfileId];
+                if (!profileExists && settings.activeProfileId !== 'default') {
+                    console.warn(`Dashboard: Profile '${settings.activeProfileId}' not found, fallback to default`);
+                    settings.activeProfileId = 'default';
+                    await StorageHelper.set(StorageKeys.USER_SETTINGS, settings);
+                }
+
                 console.log(`Dashboard: Initializing Vocab for profile '${settings.activeProfileId}'`);
                 vocabService.setProfile(settings.activeProfileId);
             }
@@ -48,24 +60,89 @@ export class PreparationDashboard extends Component {
 
         const readerRoot = document.getElementById('reader-root');
         this.readerView = new ReaderView(readerRoot, {
-            onExit: () => {
+            onExit: async () => {
                 this.readerView.hide();
                 this.element.style.display = 'block';
                 readerRoot.style.display = 'none';
                 this.render();
+
+                // Smart Sync Prompt: Check if we haven't synced in a while
+                const status = await SyncService.getSyncStatus();
+                // If never synced, or last sync > 1 hour ago
+                const lastSync = status.lastSyncAt || 0;
+                const hoursSince = (Date.now() - lastSync) / 3600000;
+
+                if (hoursSince > 1) {
+                    Toast.info(t('dashboard.sync.recommend'), {
+                        action: {
+                            label: t('dashboard.sync.now'),
+                            onClick: async () => {
+                                Toast.info(t('settings.sync.syncing'));
+                                try {
+                                    await SyncService.pull();
+                                    await SyncService.push();
+                                    Toast.success(t('dashboard.sync.success'));
+                                    this.updateSyncBadge(); // Update global badge if visible
+                                } catch (e) {
+                                    Toast.error(t('dashboard.sync.failed', { error: e.message }));
+                                }
+                            }
+                        },
+                        duration: 5000
+                    });
+                }
             }
         });
 
         await this.loadDrafts();
         this.setupStorageListener();
+        this.updateSyncBadge(); // Initial Check
     }
 
     setupStorageListener() {
         chrome.storage.onChanged.addListener((changes, area) => {
-            if (area === 'local' && changes[StorageKeys.BUILDER_DRAFTS]) {
-                this.loadDrafts();
+            if (area === 'local') {
+                if (changes[StorageKeys.BUILDER_DRAFTS]) {
+                    this.loadDrafts();
+                }
+                if (changes[StorageKeys.USER_SETTINGS]) {
+                    this.updateSyncBadge(); // Update badge on settings change (syncStatus)
+                }
             }
         });
+    }
+
+    async updateSyncBadge() {
+        const btn = document.getElementById('sync-status-btn');
+        const badge = document.getElementById('sync-badge');
+        if (!btn || !badge) return;
+
+        const status = await SyncService.getSyncStatus();
+
+        // Reset classes
+        badge.style.display = 'none';
+        badge.classList.remove('pending', 'error');
+
+        // Logic: 
+        // If error -> Red
+        // If pending changes (TODO: detect pending) -> Yellow
+        // For now, let's show Error if last result was error
+
+        if (status.lastSyncResult === 'error') {
+            badge.style.display = 'block';
+            badge.classList.add('error');
+            btn.title = `Sync Error: ${status.lastError}`;
+        } else {
+            // Optional: Show yellow if not synced for > 24h
+            const hours = status.lastSyncAt ? (Date.now() - status.lastSyncAt) / 3600000 : 999;
+            if (hours > 24) {
+                badge.style.display = 'block';
+                badge.classList.add('pending');
+                btn.title = t('dashboard.sync.notRecent');
+            } else {
+                btn.title = t('dashboard.sync.lastSync', { time: new Date(status.lastSyncAt).toLocaleString() });
+            }
+        }
     }
 
     async loadDrafts() {
@@ -132,8 +209,8 @@ export class PreparationDashboard extends Component {
             return btn;
         };
 
-        navDiv.appendChild(makeTab('library', 'My Library'));
-        navDiv.appendChild(makeTab('vocab', 'Vocabulary'));
+        navDiv.appendChild(makeTab('library', t('nav.library')));
+        navDiv.appendChild(makeTab('vocab', t('nav.vocabulary')));
         header.appendChild(navDiv);
 
         const actionsDiv = document.createElement('div');
@@ -144,8 +221,8 @@ export class PreparationDashboard extends Component {
         const mergeBtn = document.createElement('button');
         mergeBtn.className = styles.iconBtn;
         mergeBtn.id = 'merge-btn';
-        mergeBtn.title = "Merge Selected";
-        mergeBtn.innerHTML = '🔗 Merge';
+        mergeBtn.title = t('dashboard.mergeSelected');
+        mergeBtn.innerHTML = t('dashboard.merge');
         mergeBtn.style.display = 'none';
         mergeBtn.style.fontSize = '0.9em';
         mergeBtn.style.fontWeight = 'bold';
@@ -159,13 +236,14 @@ export class PreparationDashboard extends Component {
 
         if (this.activeTab === 'library' && this.currentFilter === 'draft' && this.selectedDrafts.size > 1) {
             mergeBtn.style.display = 'inline-block';
+            mergeBtn.textContent = `${t('dashboard.merge')} (${this.selectedDrafts.size})`;
         }
 
         if (this.activeTab === 'library') {
             const addBtn = document.createElement('button');
             addBtn.className = styles.iconBtn;
-            addBtn.innerHTML = '+ New';
-            addBtn.title = "Add Article";
+            addBtn.innerHTML = t('dashboard.new');
+            addBtn.title = t('dashboard.addArticle');
             addBtn.style.background = '#2e7d32';
             addBtn.style.color = 'white';
             addBtn.style.fontWeight = 'bold';
@@ -177,11 +255,48 @@ export class PreparationDashboard extends Component {
             actionsDiv.appendChild(addBtn);
         }
 
+        // Sync Button
+        const syncBtn = document.createElement('button');
+        syncBtn.className = 'sync-status'; // Global CSS class
+        syncBtn.id = 'sync-status-btn';
+        syncBtn.innerHTML = `
+            <span class="sync-icon">☁️</span>
+            <span class="sync-badge" id="sync-badge"></span>
+        `;
+        syncBtn.title = t('dashboard.cloudSync');
+        syncBtn.onclick = async () => {
+            const btn = document.getElementById('sync-status-btn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '⏳'; // Loading state
+            try {
+                await SyncService.pull();
+                await SyncService.push();
+                Toast.success(t('dashboard.sync.success'));
+                this.updateSyncBadge();
+            } catch (e) {
+                console.error(e);
+                Toast.error(t('dashboard.sync.failed', { error: e.message }));
+                this.updateSyncBadge();
+            } finally {
+                btn.innerHTML = originalHtml;
+            }
+        };
+        actionsDiv.appendChild(syncBtn);
+
+        // Donate Button
+        const donateBtn = document.createElement('button');
+        donateBtn.className = styles.iconBtn;
+        donateBtn.id = 'donate-btn';
+        donateBtn.innerHTML = '❤️';
+        donateBtn.title = t('donate.title');
+        donateBtn.onclick = () => showDonateModal();
+        actionsDiv.appendChild(donateBtn);
+
         const settingsBtn = document.createElement('button');
         settingsBtn.className = styles.iconBtn;
         settingsBtn.id = 'settings-btn';
         settingsBtn.innerHTML = '⚙️';
-        settingsBtn.title = "Settings";
+        settingsBtn.title = t('dashboard.settings');
         settingsBtn.onclick = () => this.settingsModal.show();
         actionsDiv.appendChild(settingsBtn);
 
@@ -193,9 +308,9 @@ export class PreparationDashboard extends Component {
         const filterDiv = document.createElement('div');
         filterDiv.className = styles.filterTabs;
         filterDiv.innerHTML = `
-            <button class="${styles.filterTab} ${this.currentFilter === 'draft' ? styles.active : ''}" data-filter="draft">Library</button>
-            <button class="${styles.filterTab} ${this.currentFilter === 'processing' ? styles.active : ''}" data-filter="processing">Processing</button>
-            <button class="${styles.filterTab} ${this.currentFilter === 'ready' ? styles.active : ''}" data-filter="ready">Completed</button>
+            <button class="${styles.filterTab} ${this.currentFilter === 'draft' ? styles.active : ''}" data-filter="draft">${t('dashboard.filter.library')}</button>
+            <button class="${styles.filterTab} ${this.currentFilter === 'processing' ? styles.active : ''}" data-filter="processing">${t('dashboard.filter.processing')}</button>
+            <button class="${styles.filterTab} ${this.currentFilter === 'ready' ? styles.active : ''}" data-filter="ready">${t('dashboard.filter.completed')}</button>
         `;
         container.appendChild(filterDiv);
 
@@ -218,7 +333,7 @@ export class PreparationDashboard extends Component {
         const sortedDrafts = filteredDrafts.sort((a, b) => b.updatedAt - a.updatedAt);
 
         if (sortedDrafts.length === 0) {
-            list.innerHTML = `<div class="${styles.emptyState}"><h3>No items found.</h3></div>`;
+            list.innerHTML = `<div class="${styles.emptyState}"><h3>${t('dashboard.empty')}</h3></div>`;
         } else {
             sortedDrafts.forEach(draft => {
                 const item = this.createDraftItem(draft);
@@ -256,7 +371,7 @@ export class PreparationDashboard extends Component {
 
         const titleDiv = document.createElement('div');
         titleDiv.className = styles.draftTitle;
-        titleDiv.textContent = draft.title || '(Untitled Draft)';
+        titleDiv.textContent = draft.title || t('dashboard.draft.untitled');
         header.appendChild(titleDiv);
 
         const controls = document.createElement('div');
@@ -264,12 +379,12 @@ export class PreparationDashboard extends Component {
 
         // Edit Button: Available for all states (including Ready for renaming)
         if (draft.status === 'draft' || draft.status === 'error' || draft.status === 'processing' || draft.status === 'ready') {
-            controls.appendChild(this.createIconBtn('✏️', 'Edit', (e) => { e.stopPropagation(); this.handleEdit(draft); }));
+            controls.appendChild(this.createIconBtn('✏️', t('dashboard.draft.edit'), (e) => { e.stopPropagation(); this.handleEdit(draft); }));
         }
 
         // Processing Actions: Only for non-ready states
         if (draft.status === 'draft' || draft.status === 'error' || draft.status === 'processing') {
-            controls.appendChild(this.createIconBtn('🤖', 'Manual AI', (e) => {
+            controls.appendChild(this.createIconBtn('🤖', t('dashboard.draft.manualAi'), (e) => {
                 e.stopPropagation();
                 this.creatorModal.show({
                     title: draft.title || '',
@@ -279,12 +394,12 @@ export class PreparationDashboard extends Component {
                     createdAt: draft.createdAt
                 });
             }));
-            controls.appendChild(this.createIconBtn('⏳', 'BG Process', (e) => {
+            controls.appendChild(this.createIconBtn('⏳', t('dashboard.draft.bgProcess'), (e) => {
                 e.stopPropagation();
                 this.handleAction(draft, 'background');
             }));
         }
-        controls.appendChild(this.createIconBtn('🗑️', 'Delete', (e) => { e.stopPropagation(); this.handleDelete(draft); }));
+        controls.appendChild(this.createIconBtn('🗑️', t('dashboard.draft.delete'), (e) => { e.stopPropagation(); this.handleDelete(draft); }));
         header.appendChild(controls);
         contentCol.appendChild(header);
 
@@ -303,7 +418,7 @@ export class PreparationDashboard extends Component {
                 const block = document.createElement('div');
                 const statusKey = `chunk${chunk.status.charAt(0).toUpperCase() + chunk.status.slice(1)}`;
                 block.className = `${styles.chunkBlock} ${styles[statusKey] || styles.chunkPending}`;
-                block.title = `Chunk ${chunk.index + 1}: ${chunk.status.toUpperCase()}`;
+                block.title = t('dashboard.draft.chunk', { index: chunk.index + 1, status: chunk.status.toUpperCase() });
                 chunkGrid.appendChild(block);
             });
             contentCol.appendChild(chunkGrid);
@@ -337,26 +452,26 @@ export class PreparationDashboard extends Component {
         if (draft.status === 'ready' && !isCorrupt) {
             const btn = document.createElement('button');
             btn.className = styles.btnPrimary;
-            btn.innerHTML = 'Read Now &rarr;';
+            btn.textContent = t('dashboard.draft.readNow');
             btn.onclick = () => this.handleAction(draft);
             actionArea.appendChild(btn);
         } else if (draft.status === 'draft') {
             const btn = document.createElement('button');
             btn.className = styles.btnPrimary;
-            btn.innerHTML = 'Start Analysis';
+            btn.innerHTML = t('dashboard.draft.startAnalysis');
             btn.onclick = () => this.handleAction(draft);
             actionArea.appendChild(btn);
         } else if (draft.status === 'error') {
             const retryBtn = document.createElement('button');
             retryBtn.className = styles.btnDestructive;
-            retryBtn.innerHTML = '↻ Resume';
+            retryBtn.innerHTML = t('dashboard.draft.resume');
             retryBtn.onclick = () => this.handleAction(draft, 'retry');
             actionArea.appendChild(retryBtn);
 
             if (hasData) {
                 const readBtn = document.createElement('button');
                 readBtn.className = styles.btnSecondary;
-                readBtn.innerHTML = 'Read (Partial)';
+                readBtn.innerHTML = t('dashboard.draft.readPartial');
                 readBtn.onclick = () => this.handleAction(draft, 'read_partial');
                 actionArea.appendChild(readBtn);
             }
@@ -364,7 +479,7 @@ export class PreparationDashboard extends Component {
             const readBtn = document.createElement('button');
             readBtn.className = styles.btnSecondary;
             readBtn.style.fontSize = '0.8em';
-            readBtn.innerHTML = 'Read (Live)';
+            readBtn.innerHTML = t('dashboard.draft.readLive');
             readBtn.onclick = () => this.handleAction(draft, 'read_partial');
             actionArea.appendChild(readBtn);
 
@@ -373,7 +488,7 @@ export class PreparationDashboard extends Component {
             resetBtn.className = styles.btnDestructive;
             resetBtn.style.fontSize = '0.8em';
             resetBtn.style.marginLeft = '8px';
-            resetBtn.innerHTML = '⚠️ Reset Stuck';
+            resetBtn.innerHTML = t('dashboard.draft.resetStuck');
             resetBtn.title = "Force reset status if stuck at 0%";
             resetBtn.onclick = async () => {
                 draft.status = 'error'; // Force to error state
@@ -385,7 +500,7 @@ export class PreparationDashboard extends Component {
             // Stuck at 0% case
             const resetBtn = document.createElement('button');
             resetBtn.className = styles.btnDestructive;
-            resetBtn.innerHTML = '⚠️ Reset Stuck';
+            resetBtn.innerHTML = t('dashboard.draft.resetStuck');
             resetBtn.onclick = async () => {
                 // Reset logic
                 draft.status = 'error';
@@ -404,9 +519,9 @@ export class PreparationDashboard extends Component {
 
     async handleDelete(draft) {
         this.confirmationModal.show({
-            title: 'Delete Article?',
-            message: `Are you sure you want to delete "${draft.title || 'Untitled Draft'}"? This cannot be undone.`,
-            confirmText: 'Delete',
+            title: t('dashboard.delete.title'),
+            message: t('dashboard.delete.message', { title: draft.title || t('dashboard.draft.untitled') }),
+            confirmText: t('dashboard.delete.confirm'),
             isDestructive: true,
             onConfirm: async () => {
                 this.drafts = this.drafts.filter(d => d.id !== draft.id);
@@ -468,7 +583,7 @@ export class PreparationDashboard extends Component {
         const targets = this.drafts.filter(d => selectedIds.includes(d.id));
         targets.sort((a, b) => a.createdAt - b.createdAt);
 
-        const newTitle = "Merged: " + targets[0].title;
+        const newTitle = t('vocab.merge.title', { title: targets[0].title });
         const combinedText = targets.map(d => d.rawText).join('\n\n');
 
         const newDraft = {
@@ -523,7 +638,7 @@ export class PreparationDashboard extends Component {
         const hasKey = providerConfig?.apiKey || profile?.apiKey;
 
         if (!hasKey) {
-            alert(`❌ Missing API Key for ${providerName}.\nPlease configure in Settings.`);
+            alert(t('dashboard.apiKey.missing', { provider: providerName }));
             this.settingsModal.show();
             return false;
         }

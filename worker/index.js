@@ -1,54 +1,93 @@
 /**
- * Aidu Sync Worker
+ * Aidu Sync Worker (Multi-Profile)
  * Handles GET (Pull) and POST (Push) requests for Aidu extension data.
- * Secured by a simple Bearer Token (AUTH_TOKEN).
+ * Supports ?profile=xxx query parameter for data segregation.
  * 
- * Setup:
- * 1. Create KV Namespace named 'AIDU_DB' and bind it to variable 'DB'.
- * 2. Set Secret Variable 'AUTH_TOKEN' to your desired password.
+ * Binding: DB (KV Namespace)
+ * Secret: AUTH_TOKEN
  */
 
 export default {
     async fetch(request, env, ctx) {
-        const url = new URL(request.url);
-        const method = request.method;
+        // CORS Headers
+        const corsHeaders = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        };
 
-        // 1. Security Check
+        if (request.method === 'OPTIONS') {
+            return new Response(null, { headers: corsHeaders });
+        }
+
+        // 1. Auth Check
         const authHeader = request.headers.get('Authorization');
         if (!authHeader || authHeader !== `Bearer ${env.AUTH_TOKEN}`) {
-            return new Response('Unauthorized', { status: 401 });
+            return new Response('Unauthorized', { status: 401, headers: corsHeaders });
         }
 
-        // 2. Handle Requests
-        const KEY = 'user_data'; // Single key for now, can be per-user if needed
+        // 2. Resolve Profile & Key
+        const url = new URL(request.url);
+        const keyParam = url.searchParams.get("key");
 
-        if (method === 'GET') {
-            // PULL: Get data from KV
-            const data = await env.DB.get(KEY);
-            if (!data) {
-                return new Response(JSON.stringify({ files: {} }), {
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            }
-            return new Response(data, {
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
-
-        if (method === 'POST' || method === 'PUT') {
-            // PUSH: Save data to KV
+        // Special: Meta Request
+        if (keyParam === 'meta') {
             try {
-                const body = await request.text();
-                // Basic validation: ensure it's JSON
-                JSON.parse(body);
-
-                await env.DB.put(KEY, body);
-                return new Response('Saved', { status: 200 });
+                if (request.method === 'GET') {
+                    const meta = await env.DB.get('profile_meta') || '{"profiles":[]}';
+                    return new Response(meta, {
+                        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    });
+                } else if (request.method === 'POST' || request.method === 'PUT') {
+                    const body = await request.text();
+                    await env.DB.put('profile_meta', body);
+                    return new Response('Meta Saved', { status: 200, headers: corsHeaders });
+                }
             } catch (e) {
-                return new Response('Invalid JSON', { status: 400 });
+                return new Response(`Meta Error: ${e.message}`, { status: 500, headers: corsHeaders });
             }
         }
 
-        return new Response('Method Not Allowed', { status: 405 });
+        const profile = url.searchParams.get("profile") || "default";
+        const key = `vocab_${profile}`;
+
+        try {
+            if (request.method === 'GET') {
+                let data = await env.DB.get(key);
+
+                // Legacy Fallback for 'default' profile
+                if (!data && profile === 'default') {
+                    // Try old key 'user_data' to prevent data loss on migration
+                    data = await env.DB.get('user_data');
+                }
+
+                if (!data) {
+                    // 404 is useful for client to know it's a fresh start
+                    return new Response(JSON.stringify({}), {
+                        status: 404,
+                        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    });
+                }
+
+                return new Response(data, {
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+
+            } else if (request.method === 'POST' || request.method === 'PUT') {
+                const body = await request.text();
+                // Validate JSON
+                try { JSON.parse(body); } catch (e) {
+                    return new Response('Invalid JSON', { status: 400, headers: corsHeaders });
+                }
+
+                await env.DB.put(key, body);
+                return new Response('Saved', { status: 200, headers: corsHeaders });
+            }
+
+            return new Response('Method Not Allowed', { status: 405, headers: corsHeaders });
+
+        } catch (e) {
+            return new Response(`Worker Error: ${e.message}`, { status: 500, headers: corsHeaders });
+        }
     }
 };

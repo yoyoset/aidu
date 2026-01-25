@@ -16,7 +16,7 @@ class PipelineManager {
         this.apiClient = new ApiClient();
         this.smartRouter = new SmartRouter();
         this.keepAliveInterval = null;
-        this._savingLocked = false;
+        this._saveQueue = Promise.resolve();
     }
 
     async createDraft(text) {
@@ -72,6 +72,12 @@ class PipelineManager {
             await this.executeAnalysis(draftId);
         } catch (error) {
             console.error('Pipeline Error:', error);
+            // Notify UI
+            chrome.runtime.sendMessage({
+                type: 'SHOW_ERROR_TOAST',
+                payload: { message: `分析失败: ${error.message || '未知错误'}` }
+            }).catch(() => { }); // Ignore if sidepanel is closed
+
             await this.updateDraftStatus(draftId, 'error');
         } finally {
             this.isProcessing = false;
@@ -128,11 +134,21 @@ class PipelineManager {
         await this.saveSafe(draft);
 
         // Prepare Router
+        const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
+        this.smartRouter.setTeachingStyle(settings.teachingStyle || 'casual');
+
         const route = this.smartRouter.route(draft);
         const systemPrompt = route.system;
 
         // Concurrency Control
-        const CONCURRENCY_LIMIT = 5;
+        const apiConfig = await this.apiClient.getConfig();
+        const providerLimits = {
+            'gemini': 5,
+            'deepseek': 10,
+            'openai': 5,
+            'custom': 3
+        };
+        const CONCURRENCY_LIMIT = providerLimits[apiConfig.provider] || 5;
         const pendingChunks = chunks.filter(c => c.status !== 'done');
 
         // Progress Helper
@@ -140,12 +156,15 @@ class PipelineManager {
             // Re-read draft from storage to avoid race conditions? 
             // Actually saveSafe handles whole draft overwrite. 
             // We rely on 'chunks' ref being mutated in memory then saved.
-            const completed = chunks.filter(c => c.status === 'done').length;
+
+            // Create snapshot to avoid race conditions during iteration
+            const snapshot = chunks.map(c => ({ ...c }));
+            const completed = snapshot.filter(c => c.status === 'done').length;
             const pct = Math.round((completed / chunks.length) * 100);
 
             // Re-assemble all sentences in order
             const allSentences = [];
-            chunks.sort((a, b) => a.index - b.index).forEach(c => {
+            snapshot.sort((a, b) => a.index - b.index).forEach(c => {
                 if (c.result && c.result.length) allSentences.push(...c.result);
             });
 
@@ -158,28 +177,42 @@ class PipelineManager {
 
         // Worker Function
         const processChunk = async (chunk) => {
-            // console.log(`Processing Chunk ${chunk.index}`);
-            const timeoutPromise = new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 120000));
+            const MAX_RETRIES = 2;
+            let lastError = null;
 
-            try {
-                const responseJson = await Promise.race([
-                    this.apiClient.streamCompletion(chunk.text, systemPrompt),
-                    timeoutPromise
-                ]);
+            for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                const timeoutPromise = new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 120000));
+                try {
+                    const responseJson = await Promise.race([
+                        this.apiClient.streamCompletion(chunk.text, systemPrompt),
+                        timeoutPromise
+                    ]);
 
-                const parsed = JSON.parse(responseJson);
-                chunk.result = parsed.sentences || [];
-                chunk.status = 'done';
-                await updateProgress();
-
-            } catch (err) {
-                console.error(`Chunk ${chunk.index} failed`, err);
-                chunk.status = 'error';
-                // Don't fail the whole draft yet, allow partials?
-                // But we throw to ensure we don't mark as done silently
-                // For now, retry logic is manual, so we just mark error.
-                await updateProgress();
+                    let parsed;
+                    try {
+                        parsed = JSON.parse(responseJson);
+                    } catch (e) {
+                        console.error(`Chunk ${chunk.index}: Invalid JSON`, responseJson.substring(0, 100));
+                        throw new Error(`JSON parse error: ${e.message}`);
+                    }
+                    chunk.result = Array.isArray(parsed.sentences) ? parsed.sentences : [];
+                    chunk.status = 'done';
+                    await updateProgress();
+                    return; // Success, exit retry loop
+                } catch (err) {
+                    lastError = err;
+                    console.warn(`Chunk ${chunk.index} attempt ${attempt + 1}/${MAX_RETRIES + 1} failed:`, err.message);
+                    if (attempt < MAX_RETRIES) {
+                        await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // Backoff
+                    }
+                }
             }
+
+            // All retries exhausted
+            console.error(`Chunk ${chunk.index} failed after ${MAX_RETRIES + 1} attempts`, lastError);
+            chunk.status = 'error';
+            chunk.errorMessage = lastError?.message;
+            await updateProgress();
         };
 
         // Execution Pool
@@ -211,22 +244,20 @@ class PipelineManager {
         }
     }
 
-    // Mutex Safe Save
+    // Mutex Safe Save (Queue)
     async saveSafe(draft) {
-        while (this._savingLocked) {
-            await new Promise(r => setTimeout(r, 50));
-        }
-        this._savingLocked = true;
-        try {
+        this._saveQueue = this._saveQueue.then(async () => {
             const all = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS) || [];
             const idx = all.findIndex(d => d.id === draft.id);
             if (idx !== -1) {
                 all[idx] = draft;
                 await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, all);
             }
-        } finally {
-            this._savingLocked = false;
-        }
+        }).catch(err => {
+            console.error('Save queue error:', err);
+        });
+
+        return this._saveQueue;
     }
 
     async updateDraftStatus(draftId, status, extraData = {}) {

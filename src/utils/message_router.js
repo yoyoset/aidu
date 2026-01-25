@@ -24,19 +24,22 @@ export class MessageRouter {
         this.listeners.get(type).push(callback);
     }
 
-    async handleMessage(message, sender, sendResponse) {
-        const { type, payload } = message;
-        if (this.listeners.has(type)) {
-            const callbacks = this.listeners.get(type);
-            for (const callback of callbacks) {
-                try {
-                    const result = await callback(payload, sender);
-                    if (result) sendResponse(result);
-                } catch (err) {
-                    console.error('Message handler error:', err);
+    handleMessage(message, sender, sendResponse) {
+        (async () => {
+            const { type, payload } = message;
+            if (this.listeners.has(type)) {
+                const callbacks = this.listeners.get(type);
+                for (const callback of callbacks) {
+                    try {
+                        const result = await callback(payload, sender);
+                        if (result) sendResponse(result);
+                    } catch (err) {
+                        console.error('Message handler error:', err);
+                        sendResponse({ error: err.message });
+                    }
                 }
             }
-        }
+        })();
         // Return true to indicate async response might be sent
         return true;
     }

@@ -4,6 +4,10 @@ import { vocabService } from '../../../services/vocab_service.js';
 import { HandwritingSheet } from './handwriting_sheet.js';
 import { VocabReview } from './vocab_review.js';
 import { dictionaryService } from '../../../services/dictionary_service.js';
+import { Toast } from '../../components/toast.js';
+import { showDeepDiveModal } from '../../components/deep_dive_modal.js';
+import { SyncService } from '../../../services/sync_service.js';
+import { t } from '../../../locales/index.js';
 
 export class VocabView extends Component {
     constructor(element) {
@@ -61,7 +65,7 @@ export class VocabView extends Component {
         const visibleList = list.slice(0, this.displayLimit);
 
         if (list.length === 0) {
-            listContent.innerHTML = '<div style="color:#999; text-align:center; padding:40px;">No words found.<br>read more!</div>';
+            listContent.innerHTML = `<div style="color:#999; text-align:center; padding:40px;">${t('vocab.empty')}</div>`;
         } else {
             visibleList.forEach(v => {
                 const item = this.createVocabItem(v);
@@ -76,7 +80,7 @@ export class VocabView extends Component {
 
                 const loadMoreBtn = document.createElement('button');
                 loadMoreBtn.className = styles.btnSecondary;
-                loadMoreBtn.innerHTML = `⬇️ Load More (${this.displayLimit} / ${list.length})`;
+                loadMoreBtn.innerHTML = `${t('vocab.loadMore')} (${this.displayLimit} / ${list.length})`;
                 loadMoreBtn.onclick = () => {
                     this.saveScroll();
                     const currentLimit = this.displayLimit;
@@ -106,7 +110,7 @@ export class VocabView extends Component {
                         // Let's copy the button creation logic here for the new button.
                         const newBtn = document.createElement('button');
                         newBtn.className = styles.btnSecondary;
-                        newBtn.innerHTML = `⬇️ Load More (${this.displayLimit} / ${list.length})`;
+                        newBtn.innerHTML = `${t('vocab.loadMore')} (${this.displayLimit} / ${list.length})`;
                         newBtn.onclick = loadMoreBtn.onclick; // Re-bind SAME logic
 
                         newLoadMoreDiv.appendChild(newBtn);
@@ -161,10 +165,10 @@ export class VocabView extends Component {
         filterSelect.style.borderRadius = '4px';
         filterSelect.style.border = '1px solid #ddd';
         filterSelect.innerHTML = `
-            <option value="all" ${this.filter === 'all' ? 'selected' : ''}>All Active</option>
-            <option value="today" ${this.filter === 'today' ? 'selected' : ''}>Today</option>
-            <option value="week" ${this.filter === 'week' ? 'selected' : ''}>Last 7 Days</option>
-            <option value="mastered" ${this.filter === 'mastered' ? 'selected' : ''}>🎓 Mastered</option>
+            <option value="all" ${this.filter === 'all' ? 'selected' : ''}>${t('vocab.filter.all')}</option>
+            <option value="today" ${this.filter === 'today' ? 'selected' : ''}>${t('vocab.filter.today')}</option>
+            <option value="week" ${this.filter === 'week' ? 'selected' : ''}>${t('vocab.filter.week')}</option>
+            <option value="mastered" ${this.filter === 'mastered' ? 'selected' : ''}>${t('vocab.filter.mastered')}</option>
         `;
         filterSelect.onchange = (e) => {
             this.filter = e.target.value;
@@ -176,7 +180,7 @@ export class VocabView extends Component {
         // Help Button
         const helpBtn = document.createElement('button');
         helpBtn.innerHTML = '❓';
-        helpBtn.title = "How to use";
+        helpBtn.title = t('vocab.actions.help');
         helpBtn.style.background = 'none';
         helpBtn.style.border = 'none';
         helpBtn.style.cursor = 'pointer';
@@ -213,7 +217,7 @@ export class VocabView extends Component {
         };
 
         selectAllLabel.appendChild(selectAll);
-        selectAllLabel.appendChild(document.createTextNode('All'));
+        selectAllLabel.appendChild(document.createTextNode(t('vocab.all')));
 
         const countSpan = document.createElement('span');
         countSpan.textContent = `(${list.length})`;
@@ -241,10 +245,10 @@ export class VocabView extends Component {
             // Delete Selected
             const delBtn = document.createElement('button');
             delBtn.innerHTML = '🗑️';
-            delBtn.title = "Delete Selected";
+            delBtn.title = t('vocab.actions.deleteSelected');
             this.styleActionBtn(delBtn, '#ef4444');
             delBtn.onclick = () => {
-                this.showConfirm(`Delete ${this.selectedSet.size} words?`, async () => {
+                this.showConfirm(t('vocab.confirm.deleteBatch', { count: this.selectedSet.size }), async () => {
                     this.saveScroll();
                     const keys = Array.from(this.selectedSet);
                     await Promise.all(keys.map(k => vocabService.remove(k)));
@@ -256,10 +260,10 @@ export class VocabView extends Component {
             // Master Selected
             const masterBtn = document.createElement('button');
             masterBtn.innerHTML = '🏆';
-            masterBtn.title = "Mark Selected as Mastered";
+            masterBtn.title = t('vocab.actions.masterSelected');
             this.styleActionBtn(masterBtn, '#16a34a');
             masterBtn.onclick = () => {
-                this.showConfirm(`Mark ${this.selectedSet.size} words as Mastered?`, async () => {
+                this.showConfirm(t('vocab.confirm.masterBatch', { count: this.selectedSet.size }), async () => {
                     this.saveScroll();
                     const keys = Array.from(this.selectedSet);
                     await Promise.all(keys.map(k => vocabService.updateEntry(k, { stage: 'mastered', nextReview: null })));
@@ -271,7 +275,7 @@ export class VocabView extends Component {
             // Export Selected
             const exportBtn = document.createElement('button');
             exportBtn.innerHTML = '📥';
-            exportBtn.title = "Export Selected";
+            exportBtn.title = t('vocab.actions.exportSelected');
             this.styleActionBtn(exportBtn, '#166534');
             exportBtn.onclick = () => {
                 const selectedItems = list.filter(v => this.selectedSet.has(v.lemma || v.word));
@@ -281,20 +285,20 @@ export class VocabView extends Component {
             // Print Selected
             const printBtn = document.createElement('button');
             printBtn.innerHTML = '🖨️';
-            printBtn.title = "Print Selected";
+            printBtn.title = t('vocab.actions.printSelected');
             this.styleActionBtn(printBtn, '#166534');
             printBtn.onclick = () => {
                 const selectedItems = list.filter(v => this.selectedSet.has(v.lemma || v.word));
-                HandwritingSheet.generate(selectedItems, `Practice Set (${selectedItems.length})`);
+                HandwritingSheet.generate(selectedItems, t('vocab.print.titleBatch', { count: selectedItems.length }));
             };
 
             // Batch Magic Wand (Clean)
             const wandBtn = document.createElement('button');
             wandBtn.innerHTML = '🪄';
-            wandBtn.title = "Auto-Generate Context for Selected";
+            wandBtn.title = t('vocab.actions.autoContextSelected');
             this.styleActionBtn(wandBtn, '#9333ea');
             wandBtn.onclick = () => {
-                this.showConfirm(`Auto-generate sentences for ${this.selectedSet.size} words?`, async () => {
+                this.showConfirm(t('vocab.confirm.generateBatch', { count: this.selectedSet.size }), async () => {
                     this.saveScroll();
                     const keys = Array.from(this.selectedSet);
                     let processed = 0;
@@ -338,17 +342,40 @@ export class VocabView extends Component {
 
             if (dueCount > 0) {
                 const reviewBtn = document.createElement('button');
-                reviewBtn.innerHTML = `🧠 Review (${dueCount})`; // Simplified text
-                reviewBtn.title = `Review all ${dueCount} non-mastered words`;
+                reviewBtn.innerHTML = `${t('vocab.review')} (${dueCount})`; // Simplified text
+                reviewBtn.title = t('vocab.review.title', { count: dueCount });
                 reviewBtn.className = styles.btnPrimary;
                 reviewBtn.style.padding = '4px 12px';
                 reviewBtn.style.fontSize = '0.85em';
                 reviewBtn.style.background = '#ea580c';
                 reviewBtn.onclick = () => {
                     if (!this.reviewComponent) this.reviewComponent = new VocabReview(document.body);
-                    this.reviewComponent.onFinish = () => {
+                    this.reviewComponent.onFinish = async () => {
                         this.render();
                         this.reviewComponent = null;
+
+                        // Sync Suggestion
+                        const status = await SyncService.getSyncStatus();
+                        // Always suggest after a review session as data definitely changed (SRS updates)
+                        // But maybe avoid annoyance? Let's check if there are pending changes implied.
+                        // Actually, 'Review' updates 'nextReview', so changes exist.
+
+                        this.showConfirm(
+                            t('vocab.review.syncPrompt'),
+                            async () => {
+                                Toast.info(t('settings.sync.syncing'));
+                                try {
+                                    await SyncService.pull();
+                                    await SyncService.push();
+                                    Toast.success(t('dashboard.sync.success'));
+                                } catch (e) {
+                                    Toast.error(t('dashboard.sync.failed', { error: e.message }));
+                                }
+                            }
+                        );
+                        // Customize confirm modal text for "Yes/No" or reuse generic confirm?
+                        // showConfirm uses 'Confirm'/'Cancel'. A bit generic but works.
+                        // Ideally we have a better modal, but recycling showConfirm is efficient.
                     };
                     this.reviewComponent.start(reviewCandidates);
                 };
@@ -358,7 +385,7 @@ export class VocabView extends Component {
             const printBtn = document.createElement('button');
             printBtn.innerHTML = '🖨️';
             this.styleActionBtn(printBtn, '#666');
-            printBtn.onclick = () => HandwritingSheet.generate(list, `Practicing ${list.length} Words`);
+            printBtn.onclick = () => HandwritingSheet.generate(list, t('vocab.print.titleAll', { count: list.length }));
 
             const exportBtn = document.createElement('button');
             exportBtn.innerHTML = '📥';
@@ -434,11 +461,11 @@ export class VocabView extends Component {
         contentDiv.innerHTML = `
             <div style="font-weight:bold; font-size:1.1em; color:${v.stage === 'mastered' ? '#2e7d32' : '#2e7d32'}; margin-bottom:2px;">${v.word} 
                <span style="font-weight:normal; font-size:0.85em; color:#999; margin-left:6px;">(${v.pos})</span>
-               ${v.stage === 'mastered' ? '<span style="font-size:0.75em; background:#e8f5e9; color:#2e7d32; padding:1px 4px; border-radius:4px;">Mastered</span>' : ''}
+               ${v.stage === 'mastered' ? `<span style="font-size:0.75em; background:#e8f5e9; color:#2e7d32; padding:1px 4px; border-radius:4px;">${t('vocab.mastered')}</span>` : ''}
             </div>
             <div style="font-size:0.95em; color:#333; margin-bottom:4px;">${v.meaning}</div>
             <div style="font-size:0.85em; color:#757575; font-style:italic; border-left:2px solid #ddd; padding-left:8px;">"${v.context || ''}"</div>
-            <div style="font-size:0.75em; color:#aaa; margin-top:4px;">Added: ${new Date(v.addedAt).toLocaleDateString()}</div>
+            <div style="font-size:0.75em; color:#aaa; margin-top:4px;">${t('vocab.added', { date: new Date(v.addedAt).toLocaleDateString() })}</div>
         `;
 
         // Actions Column
@@ -452,7 +479,7 @@ export class VocabView extends Component {
         if (isIncomplete) {
             const retryBtn = document.createElement('button');
             retryBtn.innerHTML = '🔄';
-            retryBtn.title = 'Retry fetching definition';
+            retryBtn.title = t('vocab.actions.retry');
             this.styleActionBtn(retryBtn, '#2563EB');
             retryBtn.onclick = async () => {
                 retryBtn.innerHTML = '⏳';
@@ -480,7 +507,7 @@ export class VocabView extends Component {
         // Fetch Context (Magic Wand) - Always show
         const ctxBtn = document.createElement('button');
         ctxBtn.innerHTML = '🪄';
-        ctxBtn.title = 'Regenerate Context';
+        ctxBtn.title = t('vocab.actions.regenerate');
         this.styleActionBtn(ctxBtn, '#9333ea');
         ctxBtn.onclick = async () => {
             this.saveScroll();
@@ -502,9 +529,35 @@ export class VocabView extends Component {
         };
         actionsCol.appendChild(ctxBtn);
 
+        const deepDiveBtn = document.createElement('button');
+        deepDiveBtn.innerHTML = '🔍';
+        deepDiveBtn.title = t('vocab.actions.deepDive');
+        this.styleActionBtn(deepDiveBtn, '#2563EB');
+        deepDiveBtn.onclick = async () => {
+            Toast.info(t('vocab.deepDive.generating'));
+            deepDiveBtn.disabled = true;
+            try {
+                // Check if already has data
+                let deepData = v.deepData;
+                if (!deepData) {
+                    deepData = await dictionaryService.fetchTier2(v.lemma || v.word, v.context);
+                    await vocabService.updateEntry(v.lemma || v.word, { deepData });
+                    // Update local object
+                    v.deepData = deepData;
+                }
+                showDeepDiveModal(v, deepData);
+            } catch (e) {
+                console.error(e);
+                Toast.error(t('vocab.deepDive.failed'));
+            } finally {
+                deepDiveBtn.disabled = false;
+            }
+        };
+        actionsCol.appendChild(deepDiveBtn);
+
         const deleteBtn = document.createElement('button');
         deleteBtn.innerHTML = '🗑️';
-        deleteBtn.title = 'Delete word';
+        deleteBtn.title = t('vocab.actions.delete');
         this.styleActionBtn(deleteBtn, '#ef4444');
         deleteBtn.style.opacity = '0.5';
         deleteBtn.onclick = () => {
@@ -517,7 +570,7 @@ export class VocabView extends Component {
 
         const masterBtn = document.createElement('button');
         masterBtn.innerHTML = v.stage === 'mastered' ? '🏆' : '🎓';
-        masterBtn.title = v.stage === 'mastered' ? 'Already Mastered' : 'Mark as Mastered';
+        masterBtn.title = v.stage === 'mastered' ? t('vocab.actions.alreadyMastered') : t('vocab.actions.master');
         this.styleActionBtn(masterBtn, '#16a34a');
         masterBtn.style.opacity = v.stage === 'mastered' ? '1' : '0.5';
         if (v.stage !== 'mastered') {
@@ -550,7 +603,7 @@ export class VocabView extends Component {
 
     exportVocab(list) {
         if (!list || list.length === 0) {
-            alert("No words to export.");
+            alert(t('vocab.export.empty'));
             return;
         }
 
@@ -612,7 +665,7 @@ export class VocabView extends Component {
         btnGroup.style.gap = '10px';
 
         const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = 'Cancel';
+        cancelBtn.textContent = t('common.cancel');
         cancelBtn.style.padding = '6px 16px';
         cancelBtn.style.border = '1px solid #ddd';
         cancelBtn.style.background = 'white';
@@ -621,7 +674,7 @@ export class VocabView extends Component {
         cancelBtn.onclick = () => document.body.removeChild(modal);
 
         const okBtn = document.createElement('button');
-        okBtn.textContent = 'Confirm';
+        okBtn.textContent = t('common.confirm');
         okBtn.style.padding = '6px 16px';
         okBtn.style.border = 'none';
         okBtn.style.background = '#ef4444'; // Destructive red by default? Or primary?
@@ -640,6 +693,7 @@ export class VocabView extends Component {
         modal.appendChild(box);
         document.body.appendChild(modal);
     }
+
 
     showHelpModal() {
         const modal = document.createElement('div');
@@ -666,7 +720,7 @@ export class VocabView extends Component {
 
         content.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <h2 style="margin:0; font-size:1.4em; color:#2e7d32;">🌱 The Vocabulary/Study Cycle</h2>
+                <h2 style="margin:0; font-size:1.4em; color:#2e7d32;">${t('vocab.help.title')}</h2>
                 <button id="close-help" style="background:none; border:none; font-size:1.5em; cursor:pointer; color:#999;">&times;</button>
             </div>
             
@@ -674,38 +728,38 @@ export class VocabView extends Component {
                 <div style="display:flex; gap:12px; margin-bottom:12px;">
                     <div style="font-size:1.5em;">📥</div>
                     <div>
-                        <strong style="color:#333;">1. Capture (Read)</strong>
-                        <div style="color:#666; font-size:0.9em;">Click words in articles to save them along with their context sentence.</div>
+                        <strong style="color:#333;">${t('vocab.help.step1')}</strong>
+                        <div style="color:#666; font-size:0.9em;">${t('vocab.help.step1.desc')}</div>
                     </div>
                 </div>
 
                 <div style="display:flex; gap:12px; margin-bottom:12px;">
                     <div style="font-size:1.5em;">🧹</div>
                     <div>
-                        <strong style="color:#333;">2. Curate (Clean)</strong>
-                        <div style="color:#666; font-size:0.9em;">Go to "Vocab" tab. Delete accidental saves. Use <span style="color:#9333ea">🪄</span> to fix missing contexts.</div>
+                        <strong style="color:#333;">${t('vocab.help.step2')}</strong>
+                        <div style="color:#666; font-size:0.9em;">${t('vocab.help.step2.desc')}</div>
                     </div>
                 </div>
 
                 <div style="display:flex; gap:12px; margin-bottom:12px;">
                     <div style="font-size:1.5em;">🧠</div>
                     <div>
-                        <strong style="color:#333;">3. Review (Cram)</strong>
-                        <div style="color:#666; font-size:0.9em;">Use the <span style="background:#ea580c; color:white; padding:0 4px; border-radius:3px; font-size:0.8em;">Review All</span> button daily. Grade yourself honestly!</div>
+                        <strong style="color:#333;">${t('vocab.help.step3')}</strong>
+                        <div style="color:#666; font-size:0.9em;">${t('vocab.help.step3.desc')}</div>
                     </div>
                 </div>
 
                 <div style="display:flex; gap:12px; margin-bottom:12px;">
                     <div style="font-size:1.5em;">🏆</div>
                     <div>
-                        <strong style="color:#333;">4. Master (Graduate)</strong>
-                        <div style="color:#666; font-size:0.9em;">Mark words as "Mastered" to remove them from daily reviews.</div>
+                        <strong style="color:#333;">${t('vocab.help.step4')}</strong>
+                        <div style="color:#666; font-size:0.9em;">${t('vocab.help.step4.desc')}</div>
                     </div>
                 </div>
             </div>
             
             <div style="text-align:right;">
-                <button id="ok-help" style="background:#2e7d32; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">Got it!</button>
+                <button id="ok-help" style="background:#2e7d32; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">${t('common.gotIt')}</button>
             </div>
         `;
 

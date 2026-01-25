@@ -1,6 +1,10 @@
 import { StorageHelper, StorageKeys } from '../utils/storage.js';
 import { vocabService } from './vocab_service.js';
 
+/**
+ * Sync Service - Custom Worker Only
+ * v4.7.0: Removed Gist support for simplicity. User deploys their own Worker.
+ */
 export const SyncService = {
     async getSettings() {
         const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS);
@@ -13,87 +17,99 @@ export const SyncService = {
         await StorageHelper.set(StorageKeys.USER_SETTINGS, settings);
     },
 
-    // ... (createGist remains same) ...
+    async getSyncStatus() {
+        const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS);
+        return settings?.syncStatus || {
+            lastSyncAt: null,
+            lastSyncResult: null,
+            pendingChanges: 0,
+            lastError: null
+        };
+    },
 
-    /**
-     * Pull data and smart-merge
-     */
-    async pull() {
-        const config = await this.getSettings();
-        if (!config.provider) throw new Error("Sync provider not selected");
-
-        let remoteData = null;
-
-        // Fetch Remote Data
-        if (config.provider === 'gist') {
-            if (!config.githubToken || !config.gistId) throw new Error("Gist not configured");
-            const response = await fetch(`https://api.github.com/gists/${config.gistId}`, {
-                headers: { 'Authorization': `token ${config.githubToken}` }
-            });
-            if (!response.ok) throw new Error("Failed to fetch Gist");
-            const json = await response.json();
-            if (json.files['aidu_vocab.json']) {
-                remoteData = JSON.parse(json.files['aidu_vocab.json'].content);
-            }
-        } else if (config.provider === 'custom') {
-            if (!config.customUrl || !config.customToken) throw new Error("Custom Endpoint not configured");
-            const response = await fetch(config.customUrl, {
-                method: 'GET',
-                headers: { 'Authorization': `Bearer ${config.customToken}` }
-            });
-            if (!response.ok) {
-                if (response.status === 404) remoteData = {}; // New DB
-                else throw new Error("Failed to fetch Custom Endpoint");
-            } else {
-                const json = await response.json();
-                remoteData = json.vocab || json;
-            }
-        }
-
-        if (remoteData) {
-            // Use Profile-Aware VocabService
-            const localVocab = await vocabService.getAll();
-            const mergedVocab = this._mergeVocab(localVocab, remoteData);
-
-            // Save back using dynamic key
-            await StorageHelper.set(vocabService.STORAGE_KEY, mergedVocab);
-        }
-        return true;
+    async updateSyncStatus(updates) {
+        let settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
+        settings.syncStatus = { ...settings.syncStatus, ...updates };
+        await StorageHelper.set(StorageKeys.USER_SETTINGS, settings);
     },
 
     /**
-     * Push local data
+     * Pull data from Custom Worker and smart-merge
      */
-    async push() {
-        const config = await this.getSettings();
+    async pull() {
+        try {
+            const config = await this.getSettings();
+            if (!config.customUrl || !config.customToken) {
+                throw new Error("Sync endpoint not configured. Please set URL and Token in Settings.");
+            }
 
-        // Use Profile-Aware VocabService
-        const localVocab = await vocabService.getAll();
+            const profileId = vocabService.currentProfileId || 'default';
+            const separator = config.customUrl.includes('?') ? '&' : '?';
+            const profiledUrl = `${config.customUrl}${separator}profile=${profileId}`;
 
-        const meta = { timestamp: Date.now(), device: 'browser' };
-
-        if (config.provider === 'gist') {
-            const payload = {
-                files: {
-                    "aidu_vocab.json": { content: JSON.stringify(localVocab) },
-                    "aidu_meta.json": { content: JSON.stringify(meta) }
-                }
-            };
-            const response = await fetch(`https://api.github.com/gists/${config.gistId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `token ${config.githubToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
+            const response = await fetch(profiledUrl, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${config.customToken}` }
             });
-            if (!response.ok) throw new Error("Failed to push to Gist");
-        } else if (config.provider === 'custom') {
+
+            let remoteData = null;
+            if (!response.ok) {
+                if (response.status === 404) {
+                    remoteData = {}; // Fresh start
+                } else {
+                    throw new Error(`Sync Pull Failed (${response.status} ${response.statusText})`);
+                }
+            } else {
+                try {
+                    const json = await response.json();
+                    remoteData = json.vocab || json;
+                } catch (e) {
+                    throw new Error('Sync endpoint returned invalid JSON');
+                }
+            }
+
+            if (remoteData) {
+                const localVocab = await vocabService.getAll();
+                const mergedVocab = this._mergeVocab(localVocab, remoteData);
+                await StorageHelper.set(vocabService.STORAGE_KEY, mergedVocab);
+            }
+
+            await this.updateSyncStatus({ lastSyncAt: Date.now(), lastSyncResult: 'success', lastError: null });
+            return true;
+        } catch (e) {
+            console.error("Pull Failed:", e);
+            await this.updateSyncStatus({ lastSyncResult: 'error', lastError: e.message });
+            throw e;
+        }
+    },
+
+    /**
+     * Push data to Custom Worker
+     */
+    async push(forcePullFirst = true) {
+        try {
+            // CRITICAL: Always pull first to prevent overwriting remote SRS states
+            if (forcePullFirst) {
+                await this.pull();
+            }
+
+            const config = await this.getSettings();
+            if (!config.customUrl || !config.customToken) {
+                throw new Error("Sync endpoint not configured.");
+            }
+
+            const profileId = vocabService.currentProfileId || 'default';
+            const localVocab = await vocabService.getAll();
+            const meta = { timestamp: Date.now(), device: 'browser', profile: profileId };
+
             const payload = {
                 vocab: localVocab,
                 meta: meta
             };
-            const response = await fetch(config.customUrl, {
+            const separator = config.customUrl.includes('?') ? '&' : '?';
+            const profiledUrl = `${config.customUrl}${separator}profile=${profileId}`;
+
+            const response = await fetch(profiledUrl, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${config.customToken}`,
@@ -101,7 +117,32 @@ export const SyncService = {
                 },
                 body: JSON.stringify(payload)
             });
-            if (!response.ok) throw new Error("Failed to push to Custom Endpoint");
+            if (!response.ok) throw new Error(`Sync Push Failed (${response.status} ${response.statusText})`);
+
+            // Push Profile Metadata (List of available profiles)
+            try {
+                const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS);
+                const profileList = Object.keys(settings.profiles || {});
+                const metaPayload = { profiles: profileList, updatedAt: Date.now() };
+                const metaUrl = `${config.customUrl}?key=meta`;
+
+                await fetch(metaUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${config.customToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(metaPayload)
+                });
+            } catch (e) {
+                console.warn('Failed to push profile meta', e);
+            }
+
+            await this.updateSyncStatus({ lastSyncAt: Date.now(), lastSyncResult: 'success', lastError: null });
+        } catch (e) {
+            console.error("Push Failed:", e);
+            await this.updateSyncStatus({ lastSyncResult: 'error', lastError: e.message });
+            throw e;
         }
     },
 

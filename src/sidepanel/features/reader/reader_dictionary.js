@@ -1,6 +1,9 @@
 import { dictionaryService } from '../../../services/dictionary_service.js';
 import { vocabService } from '../../../services/vocab_service.js';
+import { Toast } from '../../components/toast.js';
+import { showDeepDiveModal } from '../../components/deep_dive_modal.js';
 import styles from './reader.module.css';
+import { t } from '../../../locales/index.js';
 
 export class ReaderDictionary {
     constructor(container) {
@@ -33,54 +36,56 @@ export class ReaderDictionary {
         // Show Loading State
         this.showPopover({
             word, lemma, pos,
-            phonetic: '...', meaning: 'Loading...', level: ''
+            phonetic: '...', meaning: t('dict.loading'), level: ''
         }, onPlayAudio, contextText, onStatusChange);
 
         try {
             // Fetch Data
             const def = await dictionaryService.lookup(lemma, contextText);
+            this.currentDef = def; // Cache for Add button
 
             // Update if still open and matching
             if (this.popover && this.activeBubble === element) {
                 this.updatePopover({
                     word, lemma, pos,
                     phonetic: def.p || '',
-                    meaning: def.m || 'No definition found.',
+                    meaning: def.m || t('dict.noDef'),
                     level: def.l
                 }, onPlayAudio, contextText, onStatusChange);
             }
         } catch (e) {
             console.error("Dictionary Error:", e);
+            Toast.error(t('dict.error'));
             if (this.popover) {
                 this.updatePopover({
                     word, lemma, pos,
-                    phonetic: '', meaning: 'Error loading definition.', level: ''
+                    phonetic: '', meaning: t('dict.error'), level: ''
                 }, onPlayAudio, contextText, onStatusChange);
             }
         }
     }
 
-    showPopover(data, onPlayAudio, contextText) {
+    showPopover(data, onPlayAudio, contextText, onStatusChange) {
         if (this.popover) this.popover.remove();
 
         const popover = document.createElement('div');
         popover.className = styles.popover || 'popover';
 
         // Render Content
-        this.renderContent(popover, data, onPlayAudio, contextText);
+        this.renderContent(popover, data, onPlayAudio, contextText, onStatusChange);
 
         this.container.appendChild(popover);
         this.popover = popover;
         popover.onclick = (e) => e.stopPropagation();
     }
 
-    updatePopover(data, onPlayAudio, contextText) {
+    updatePopover(data, onPlayAudio, contextText, onStatusChange) {
         if (!this.popover) return;
         this.popover.innerHTML = ''; // Clear
-        this.renderContent(this.popover, data, onPlayAudio, contextText);
+        this.renderContent(this.popover, data, onPlayAudio, contextText, onStatusChange);
     }
 
-    renderContent(popover, data, onPlayAudio, contextText) {
+    renderContent(popover, data, onPlayAudio, contextText, onStatusChange) {
         const pHeader = styles.popoverHeader || 'popoverHeader';
         const pWord = styles.popoverWord || 'popoverWord';
         const pPhonetic = styles.popoverPhonetic || 'popoverPhonetic';
@@ -97,20 +102,21 @@ export class ReaderDictionary {
             <div class="${pHeader}">
                 <div style="display:flex; align-items:center;">
                     <span class="${pWord}">${data.word}</span>
-                    <button class="${btnClass}" data-role="word-tts" title="Pronounce" style="font-size:1em; margin-left:8px;">🔊</button>
+                    <button class="${btnClass}" data-role="word-tts" title="${t('dict.pronounce')}" style="font-size:1em; margin-left:8px;">🔊</button>
                     <span class="${pPhonetic}">${data.phonetic ? `[${data.phonetic}]` : ''}</span>
                     ${data.level ? `<span style="font-size:0.8em; color:#999; border:1px solid #ddd; padding:0 4px; border-radius:4px; margin-left:4px;">${data.level}</span>` : ''}
                 </div>
                 <div style="display:flex; align-items:center;">
                     <div style="font-style:italic; color:#999; font-size:0.9em; margin-right:8px;">${data.pos}</div>
-                    <button class="${closeBtnClass}" data-role="close-popover" title="Close">✕</button>
+                    <button class="${closeBtnClass}" data-role="close-popover" title="${t('common.close')}">✕</button>
                 </div>
             </div>
             <div class="${pMeaning}">
                 ${data.meaning}
             </div>
             <div class="${pActions}">
-                 <button class="${actionBtn} ${addBtnClass}" data-role="add-vocab">+ Add to Vocab</button>
+                 <button class="${actionBtn} ${addBtnClass}" data-role="add-vocab">${t('dict.add')}</button>
+                 <button class="${actionBtn}" data-role="deep-dive" style="margin-left:8px; background:transparent; border:1px solid #ddd; color:#666;" title="${t('dict.deepDive')}">🔍</button>
             </div>
         `;
 
@@ -126,41 +132,94 @@ export class ReaderDictionary {
 
         const addBtn = popover.querySelector('[data-role="add-vocab"]');
         if (addBtn) {
-            const updateBtnState = (isSaved) => {
-                if (isSaved) {
-                    addBtn.textContent = '✓ Saved (Undo)';
+            // Initial State
+            const checkStatus = async () => {
+                const entry = await vocabService.getEntry(data.lemma);
+                const isSaved = !!entry;
+                const isMastered = entry && entry.stage === 'mastered';
+                updateBtnState(isSaved, isMastered);
+            };
+            checkStatus();
+
+            const updateBtnState = (isSaved, isMastered) => {
+                // Clear old classes
+                addBtn.classList.remove(savedBtnClass, addBtnClass, 'masteredBtn');
+
+                if (isMastered) {
+                    addBtn.textContent = t('dict.mastered');
                     addBtn.classList.add(savedBtnClass);
-                    addBtn.classList.remove(addBtnClass);
-                    addBtn.title = "Click to remove from vocabulary";
+                    addBtn.style.background = '#16a34a'; // Green override
+                    addBtn.title = t('dict.masteredHint');
+                } else if (isSaved) {
+                    addBtn.textContent = t('dict.saved');
+                    addBtn.classList.add(savedBtnClass);
+                    addBtn.title = t('dict.savedHint');
+                    addBtn.style.background = ''; // Reset
                 } else {
-                    addBtn.textContent = '+ Add to Vocab';
-                    addBtn.classList.remove(savedBtnClass);
+                    addBtn.textContent = t('dict.add');
                     addBtn.classList.add(addBtnClass);
-                    addBtn.title = "Add to vocabulary";
+                    addBtn.title = t('dict.addHint');
+                    addBtn.style.background = ''; // Reset
                 }
             };
 
-            // Initial State
-            vocabService.isSaved(data.lemma).then(saved => updateBtnState(saved));
-
             addBtn.onclick = async () => {
-                const isSaved = addBtn.classList.contains(savedBtnClass);
+                const entry = await vocabService.getEntry(data.lemma);
 
-                if (isSaved) {
-                    // Remove (Undo)
+                if (entry) {
                     await vocabService.remove(data.lemma);
-                    updateBtnState(false);
+                    updateBtnState(false, false);
                     if (onStatusChange) onStatusChange(false);
                 } else {
-                    // Add
-                    addBtn.textContent = 'Saving...';
-                    await vocabService.add({
-                        word: data.word, lemma: data.lemma, pos: data.pos,
-                        meaning: data.meaning, phonetic: data.phonetic,
-                        context: contextText.substring(0, 300) // Increased from 50 to capture full sentence
-                    });
-                    updateBtnState(true);
-                    if (onStatusChange) onStatusChange(true);
+                    addBtn.textContent = t('dict.saving');
+                    try {
+                        await vocabService.add({
+                            word: data.word,
+                            lemma: data.lemma,
+                            pos: data.pos,
+                            meaning: data.meaning,
+                            phonetic: data.phonetic,
+                            context: contextText.substring(0, 300),
+                            level: data.level,
+                            collocations: this.currentDef?.collocations || []
+                        });
+                        updateBtnState(true, false);
+                        if (onStatusChange) onStatusChange(true);
+                    } catch (err) {
+                        console.error('Add failed', err);
+                        Toast.error(t('dict.saveFailed'));
+                        addBtn.textContent = t('dict.add');
+                    };
+                }
+
+            };
+        }
+
+        // Deep Dive Logic
+        const deepDiveBtn = popover.querySelector('[data-role="deep-dive"]');
+        if (deepDiveBtn) {
+            deepDiveBtn.onclick = async () => {
+                Toast.info(t('vocab.deepDive.generating'));
+                deepDiveBtn.disabled = true;
+                try {
+                    const entry = await vocabService.getEntry(data.lemma);
+                    let deepData = null;
+
+                    if (entry && entry.deepData) {
+                        deepData = entry.deepData;
+                    } else {
+                        deepData = await dictionaryService.fetchTier2(data.lemma, contextText);
+                        if (entry) {
+                            await vocabService.updateEntry(data.lemma, { deepData });
+                        }
+                    }
+
+                    showDeepDiveModal({ word: data.word }, deepData);
+                } catch (e) {
+                    console.error('Deep dive failed', e);
+                    Toast.error(t('vocab.deepDive.failed'));
+                } finally {
+                    deepDiveBtn.disabled = false;
                 }
             };
         }

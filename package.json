@@ -1,7 +1,7 @@
 {
   "name": "aidu",
   "displayName": "AIDU - AIDE For You",
-  "version": "4.3.0",
+  "version": "4.10.0",
   "description": "Adaptive Immersive Deep English learning assistant.",
   "license": "MIT",
   "type": "module",
@@ -9,7 +9,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "deploy:backend": "wrangler deploy",
+    "deploy:frontend": "wrangler pages deploy mobile --project-name aidu-mobile"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.23",

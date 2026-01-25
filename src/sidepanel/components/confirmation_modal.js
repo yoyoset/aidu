@@ -1,5 +1,7 @@
 
 
+import { t } from '../../locales/index.js';
+
 export class ConfirmationModal {
     constructor(container) {
         this.container = container;
@@ -81,8 +83,8 @@ export class ConfirmationModal {
                 <div class="confirm-title"></div>
                 <div class="confirm-text"></div>
                 <div class="confirm-actions">
-                    <button class="confirm-btn btn-cancel">Cancel</button>
-                    <button class="confirm-btn btn-delete">Delete</button>
+                    <button class="confirm-btn btn-cancel">${t('common.cancel')}</button>
+                    <button class="confirm-btn btn-delete">${t('common.delete')}</button>
                 </div>
             </div>
         `;
@@ -91,7 +93,7 @@ export class ConfirmationModal {
         this.overlay.querySelector('.btn-cancel').onclick = () => this.hide();
     }
 
-    show({ title = 'Confirm Action', message = 'Are you sure?', onConfirm, confirmText = 'Delete', isDestructive = true }) {
+    show({ title = t('confirm.defaultTitle'), message = t('confirm.defaultMessage'), onConfirm, confirmText = t('common.delete'), isDestructive = true }) {
         this.overlay.querySelector('.confirm-title').textContent = title;
         this.overlay.querySelector('.confirm-text').textContent = message;
 

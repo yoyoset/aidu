@@ -1,5 +1,6 @@
 import { ApiClient } from '../background/llm/api_client.js';
 import { StorageHelper, StorageKeys } from '../utils/storage.js';
+import { withRetry } from '../utils/retry.js';
 
 const DICT_CACHE_KEY = 'aidu_dict_cache';
 
@@ -62,16 +63,26 @@ export class DictionaryService {
     }
 
     async fetchDefinition(word, context) {
-        // Construct a specialized prompt for definition
-        const systemPrompt = `You are a dictionary API. Output ONLY valid JSON.
-        Format: { "m": "Concise Chinese definition (max 12 chars)", "p": "IPA", "l": "CEFR Level (A1/A2/B1...)" }
-        If word is proper noun, identify it. No markdown.`;
+        return withRetry(async () => {
+            const systemPrompt = `You are a vocabulary API. Output ONLY valid JSON.
+Format: {
+    "m": "中文释义 (完整，不限字数)",
+    "p": "IPA phonetic",
+    "l": "CEFR Level (A1-C2)",
+    "collocations": ["常见搭配1", "搭配2", "搭配3"]
+}
+Rules:
+- "m": 核心含义，可包含多义项用分号分隔
+- "collocations": 3-5个常见词组搭配
+- Keep response concise for speed
+- No markdown, no examples`;
 
-        const userPrompt = `Word: "${word}"
-        Context: "${context}"`;
+            const userPrompt = `Word: "${word}"
+Context: "${context}"`;
 
-        const jsonStr = await this.apiClient.streamCompletion(userPrompt, systemPrompt);
-        return JSON.parse(jsonStr);
+            const jsonStr = await this.apiClient.streamCompletion(userPrompt, systemPrompt);
+            return JSON.parse(jsonStr);
+        }, { maxRetries: 2, delayMs: 500 });
     }
 
     /**
@@ -80,7 +91,8 @@ export class DictionaryService {
      * @returns {Promise<string>} The example sentence.
      */
     async generateExample(word) {
-        const systemPrompt = `You are a helpful language tutor for a young student. 
+        return withRetry(async () => {
+            const systemPrompt = `You are a helpful language tutor for a young student. 
         Generate ONE English sentence using the word "${word}".
         Constraints:
         1. Structure: Interesting and varied (not just Subject-Verb-Object).
@@ -88,19 +100,50 @@ export class DictionaryService {
         3. Content: Engaging for a child or young learner.
         4. Output: ONLY the sentence. No quotes.`;
 
-        // Add random seed to user prompt to ensure variety
-        const userPrompt = `Word: "${word}" (Random Seed: ${Date.now()})`;
+            // Add random seed to user prompt to ensure variety
+            const userPrompt = `Word: "${word}" (Random Seed: ${Date.now()})`;
 
-        try {
             const sentence = await this.apiClient.streamCompletion(userPrompt, systemPrompt, {
                 responseFormat: 'text',
                 temperature: 0.9 // High creativity
             });
             return sentence.trim();
-        } catch (e) {
-            console.error("Failed to generate example", e);
-            throw e;
-        }
+        }, { maxRetries: 2 });
+    }
+
+    /**
+     * Fetch Tier 2 deep analysis data
+     * @param {string} word
+     * @param {string} context
+     * @returns {Promise<Object>} Deep analysis data
+     */
+    async fetchTier2(word, context = '') {
+        return withRetry(async () => {
+            const systemPrompt = `You are a linguistics expert. Output ONLY valid JSON.
+Format: {
+    "etymology": "词源故事 (中文，简洁)",
+    "wordFamily": ["变形1", "变形2"],
+    "synonyms": [
+        { "word": "同义词", "diff": "区别说明" }
+    ],
+    "antonyms": ["反义词1", "反义词2"],
+    "register": "formal/informal/academic/neutral",
+    "commonMistakes": [
+        { "wrong": "错误用法", "correct": "正确用法", "note": "说明" }
+    ],
+    "culturalNotes": "语用/文化提示 (可选)"
+}
+Rules:
+- All explanations in Chinese
+- Focus on practical usage for Chinese learners
+- No markdown`;
+
+            const userPrompt = `Word: "${word}"
+Context: "${context}"`;
+
+            const jsonStr = await this.apiClient.streamCompletion(userPrompt, systemPrompt);
+            return JSON.parse(jsonStr);
+        }, { maxRetries: 2, delayMs: 800 });
     }
 }
 

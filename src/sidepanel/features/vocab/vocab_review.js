@@ -2,6 +2,7 @@ import { Component } from '../../components/component.js';
 import styles from '../builder/dashboard.module.css';
 import { vocabService } from '../../../services/vocab_service.js';
 import { SRSAlgorithm } from '../../../services/srs_algorithm.js';
+import { t } from '../../../locales/index.js';
 
 export class VocabReview extends Component {
     constructor(element) {
@@ -46,7 +47,7 @@ export class VocabReview extends Component {
         counter.style.fontWeight = 'bold';
         // Calculate progress: 1-based index
         const current = this.totalCount - this.queue.length + 1;
-        counter.textContent = `Card ${current} / ${this.totalCount}`;
+        counter.textContent = t('vocab.card', { current, total: this.totalCount });
 
         const closeBtn = document.createElement('button');
         closeBtn.className = styles.closeReviewBtn;
@@ -71,12 +72,12 @@ export class VocabReview extends Component {
     renderEmpty(container) {
         container.innerHTML += `
             <div style="text-align:center; padding: 40px;">
-                <h2 style="font-size: 2em; margin-bottom: 20px;">🎉 All Done!</h2>
+                <h2 style="font-size: 2em; margin-bottom: 20px;">${t('review.allDone')}</h2>
                 <div style="font-size: 1.1em; color: #555; margin-bottom: 30px;">
-                    <p>You've reviewed <b>${this.stats.reviewed}</b> words.</p>
-                    <p>Mastered: <b>${this.stats.mastered}</b> | Needs Practice: <b>${this.stats.forgotten}</b></p>
+                    <p>${t('review.summary', { reviewed: this.stats.reviewed })}</p>
+                    <p>${t('review.stats', { mastered: this.stats.mastered, forgotten: this.stats.forgotten })}</p>
                 </div>
-                <button class="${styles.btnPrimary}" id="close-review" style="padding: 10px 24px; font-size: 1.2em;">Close</button>
+                <button class="${styles.btnPrimary}" id="close-review" style="padding: 10px 24px; font-size: 1.2em;">${t('common.close')}</button>
             </div>
         `;
         container.querySelector('#close-review').onclick = () => this.finish();
@@ -99,7 +100,7 @@ export class VocabReview extends Component {
             <div class="${styles.cardContext}" style="margin-top:20px; font-size:1.1em; color:#555;">
                 ${this.createCloze(word.context, word.word)}
             </div>
-            <div class="${styles.cardHint}">Click to Flip</div>
+            <div class="${styles.cardHint}">${t('review.flip')}</div>
         `;
 
         // Back (Answer)
@@ -109,17 +110,17 @@ export class VocabReview extends Component {
             <div class="${styles.cardHeader}">
                 <span class="${styles.cardWordSmall}">${word.word}</span>
                 <span class="${styles.cardPos}">${word.pos}</span>
-                <button class="${styles.iconBtn}" id="edit-btn" title="Edit">✏️</button>
+                <button class="${styles.iconBtn}" id="edit-btn" title="${t('dashboard.draft.edit')}">✏️</button>
             </div>
             <div class="${styles.cardMeaning}">${word.meaning}</div>
             <div class="${styles.cardContext}">"${word.context}"</div>
             <div class="${styles.cardActions}">
-                <button class="${styles.srsBtn} ${styles.srsFail}" data-grade="0">Forgot</button>
-                <button class="${styles.srsBtn} ${styles.srsHard}" data-grade="1">Hard</button>
-                <button class="${styles.srsBtn} ${styles.srsGood}" data-grade="2">Good</button>
-                <button class="${styles.srsBtn} ${styles.srsEasy}" data-grade="3">Easy</button>
+                <button class="${styles.srsBtn} ${styles.srsFail}" data-grade="0">${t('review.forgot')}</button>
+                <button class="${styles.srsBtn} ${styles.srsHard}" data-grade="1">${t('review.hard')}</button>
+                <button class="${styles.srsBtn} ${styles.srsGood}" data-grade="2">${t('review.good')}</button>
+                <button class="${styles.srsBtn} ${styles.srsEasy}" data-grade="3">${t('review.easy')}</button>
             </div>
-            <button class="${styles.btnDestructive} ${styles.masterBtn}" id="master-btn">🎓 Mastered (Remove)</button>
+            <button class="${styles.btnDestructive} ${styles.masterBtn}" id="master-btn">${t('review.masterRemove')}</button>
         `;
 
         card.appendChild(front);
@@ -166,7 +167,7 @@ export class VocabReview extends Component {
     }
 
     createCloze(context, word) {
-        if (!context) return 'No context available.';
+        if (!context) return t('review.noContext');
         // Simple case-insensitive replacement
         // Note: Ideally this would handle lemmas/inflections, but for now exact match or simple substring
         try {
@@ -213,7 +214,7 @@ export class VocabReview extends Component {
     }
 
     handleEdit() {
-        const newMeaning = prompt("Edit Meaning:", this.currentCard.meaning);
+        const newMeaning = prompt(t('review.editMeaning'), this.currentCard.meaning);
         if (newMeaning !== null) {
             vocabService.updateEntry(this.currentCard.lemma, { meaning: newMeaning });
             this.currentCard.meaning = newMeaning;

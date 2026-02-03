@@ -5,7 +5,9 @@ export const StorageKeys = {
     USER_SETTINGS: 'userSettings',
     PAGE_ARCHIVE: 'pageArchive',
     USER_STATS: 'userStats',
-    BUILDER_DRAFTS: 'builderDrafts'
+    BUILDER_DRAFTS: 'builderDrafts',
+    LOGS: 'aidu_logs',
+    LOGGER_SETTINGS: 'aidu_logger_settings'
 };
 
 export class StorageHelper {

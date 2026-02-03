@@ -5,12 +5,18 @@ export class VocabService {
         this.currentProfileId = 'default';
         this.baseKey = 'vocab_';
 
+        // Critical: Concurrency & Performance Guards
+        this.queue = Promise.resolve(); // 串行写入锁
+        this._cache = null;             // 内存缓存
+
         // Auto-run migration check on instantiation (async but non-blocking)
         this._migrationComplete = this.checkMigration();
     }
 
     setProfile(profileId) {
+        if (this.currentProfileId === profileId) return;
         this.currentProfileId = profileId || 'default';
+        this._cache = null; // Clear cache on profile switch
         console.log(`VocabService: Switched to profile '${this.currentProfileId}'`);
     }
 
@@ -19,103 +25,32 @@ export class VocabService {
     }
 
     async checkMigration() {
-        // Check for legacy "user_vocab"
+        // ... (Migration logic remains same but safer to not block cache init)
         const legacyKey = 'user_vocab';
         const legacyData = await StorageHelper.get(legacyKey);
 
         if (legacyData && Object.keys(legacyData).length > 0) {
             console.log('VocabService: Found legacy data. Migrating to default profile...');
-
-            // 1. Write to default profile (vocab_default)
-            // We assume default profile because that's where existing users' data belongs
             const targetKey = 'vocab_default';
             const existingDefault = await StorageHelper.get(targetKey) || {};
-
-            // Merge to be safe, though target should be empty if first run
             const merged = { ...legacyData, ...existingDefault };
             await StorageHelper.set(targetKey, merged);
-
-            // 2. Remove legacy key
             await StorageHelper.remove(legacyKey);
-            console.log('VocabService: Migration complete. Legacy data moved to vocab_default.');
+            console.log('VocabService: Migration complete.');
         }
     }
 
-    /**
-     * Add a word to vocab list
-     * @param {Object} entry { 
-     *   word, lemma, meaning, phonetic, context, level,
-     *   collocations  // Tier 1 扩展
-     * }
-     */
-    async add(entry) {
-        const vocab = await this.getAll();
-        // Deduplicate by lemma
-        const key = entry.lemma ? entry.lemma.toLowerCase() : entry.word.toLowerCase();
-
-        if (vocab[key]) return false; // Already exists
-
-        vocab[key] = {
-            // Basic
-            word: entry.word,
-            lemma: entry.lemma,
-            meaning: entry.meaning || '',
-            phonetic: entry.phonetic || '',
-            context: entry.context || '',
-            level: entry.level || '',
-
-            // Tier 1 Extension
-            collocations: entry.collocations || [],
-
-            // Tier 2 (populated on demand)
-            deepData: null,
-
-            // SRS
-            addedAt: Date.now(),
-            reviews: 0,
-            nextReview: Date.now(), // Due immediately
-            stage: 'new',
-            easeFactor: 2.5,
-            interval: 0,
-            updatedAt: Date.now()
-        };
-
-        await StorageHelper.set(this.STORAGE_KEY, vocab);
-        console.log(`Vocab (${this.currentProfileId}): Added ${key}`);
-        return true;
-    }
-
-    async updateEntry(lemma, updates) {
-        const vocab = await this.getAll();
-        const key = lemma.toLowerCase();
-        if (vocab[key]) {
-            vocab[key] = {
-                ...vocab[key],
-                ...updates,
-                updatedAt: Date.now() // For Sync Conflict Resolution
-            };
-            await StorageHelper.set(this.STORAGE_KEY, vocab);
-            return true;
-        }
-        return false;
-    }
-
-    async remove(lemma) {
-        const vocab = await this.getAll();
-        const key = lemma.toLowerCase();
-        if (vocab[key]) {
-            delete vocab[key];
-            await StorageHelper.set(this.STORAGE_KEY, vocab);
-        }
-    }
-
+    // --- Core: Read with Cache ---
     async getAll() {
         await this._migrationComplete;
+
+        // Return memory cache if available (Performance)
+        if (this._cache) return this._cache;
+
         const key = this.STORAGE_KEY;
-        // console.log(`VocabService: Fetching from ${key}`);
         const data = await StorageHelper.get(key) || {};
 
-        // Migration: Ensure fields exist if old data (Just in case)
+        // Data Integrity Check & Migration
         let changed = false;
         Object.values(data).forEach(v => {
             if (!v.stage) {
@@ -127,12 +62,90 @@ export class VocabService {
                 changed = true;
             }
         });
+
+        this._cache = data; // Hydrate cache
+
         if (changed) {
-            await StorageHelper.set(key, data);
+            // Background save fixed data
+            this._save(data);
         }
         return data;
     }
 
+    // --- Core: Write with Queue (Concurrency Safety) ---
+
+    /**
+     * Internal atomic save helper (Do not call directly without queue)
+     */
+    async _save(data) {
+        this._cache = data; // Update cache immediately
+        await StorageHelper.set(this.STORAGE_KEY, data);
+    }
+
+    async add(entry) {
+        // Enqueue operation
+        return this.queue = this.queue.then(async () => {
+            const vocab = await this.getAll();
+            const key = entry.lemma ? entry.lemma.toLowerCase() : entry.word.toLowerCase();
+
+            if (vocab[key]) return false;
+
+            vocab[key] = {
+                word: entry.word,
+                lemma: entry.lemma,
+                meaning: entry.meaning || '',
+                phonetic: entry.phonetic || '',
+                context: entry.context || '',
+                level: entry.level || '',
+                collocations: entry.collocations || [],
+                deepData: null,
+                addedAt: Date.now(),
+                reviews: 0,
+                nextReview: Date.now(),
+                stage: 'new',
+                easeFactor: 2.5,
+                interval: 0,
+                updatedAt: Date.now()
+            };
+
+            await this._save(vocab);
+            console.log(`Vocab (${this.currentProfileId}): Added ${key}`);
+            return true;
+        }).catch(e => {
+            console.error('VocabService: Add failed', e);
+            return false;
+        });
+    }
+
+    async updateEntry(lemma, updates) {
+        return this.queue = this.queue.then(async () => {
+            const vocab = await this.getAll();
+            const key = lemma.toLowerCase();
+            if (vocab[key]) {
+                vocab[key] = {
+                    ...vocab[key],
+                    ...updates,
+                    updatedAt: Date.now()
+                };
+                await this._save(vocab);
+                return true;
+            }
+            return false;
+        });
+    }
+
+    async remove(lemma) {
+        return this.queue = this.queue.then(async () => {
+            const vocab = await this.getAll();
+            const key = lemma.toLowerCase();
+            if (vocab[key]) {
+                delete vocab[key];
+                await this._save(vocab);
+            }
+        });
+    }
+
+    // Read-only helpers (Safe to use getAll which is cached)
     async isSaved(lemma) {
         const vocab = await this.getAll();
         return !!vocab[lemma?.toLowerCase()];

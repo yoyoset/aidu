@@ -3,6 +3,7 @@ import styles from '../builder/dashboard.module.css';
 import { vocabService } from '../../../services/vocab_service.js';
 import { SRSAlgorithm } from '../../../services/srs_algorithm.js';
 import { t } from '../../../locales/index.js';
+import { notificationService } from '../../../utils/notification_service.js';
 
 export class VocabReview extends Component {
     constructor(element) {
@@ -213,8 +214,8 @@ export class VocabReview extends Component {
         this.nextCard();
     }
 
-    handleEdit() {
-        const newMeaning = prompt(t('review.editMeaning'), this.currentCard.meaning);
+    async handleEdit() {
+        const newMeaning = await notificationService.prompt(t('review.editMeaning'), this.currentCard.meaning);
         if (newMeaning !== null) {
             vocabService.updateEntry(this.currentCard.lemma, { meaning: newMeaning });
             this.currentCard.meaning = newMeaning;

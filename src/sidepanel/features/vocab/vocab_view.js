@@ -4,10 +4,9 @@ import { vocabService } from '../../../services/vocab_service.js';
 import { HandwritingSheet } from './handwriting_sheet.js';
 import { VocabReview } from './vocab_review.js';
 import { dictionaryService } from '../../../services/dictionary_service.js';
-import { Toast } from '../../components/toast.js';
-import { showDeepDiveModal } from '../../components/deep_dive_modal.js';
 import { SyncService } from '../../../services/sync_service.js';
 import { t } from '../../../locales/index.js';
+import { notificationService } from '../../../utils/notification_service.js';
 
 export class VocabView extends Component {
     constructor(element) {
@@ -247,14 +246,15 @@ export class VocabView extends Component {
             delBtn.innerHTML = '🗑️';
             delBtn.title = t('vocab.actions.deleteSelected');
             this.styleActionBtn(delBtn, '#ef4444');
-            delBtn.onclick = () => {
-                this.showConfirm(t('vocab.confirm.deleteBatch', { count: this.selectedSet.size }), async () => {
+            delBtn.onclick = async () => {
+                const ok = await notificationService.confirm(t('vocab.confirm.deleteBatch', { count: this.selectedSet.size }));
+                if (ok) {
                     this.saveScroll();
                     const keys = Array.from(this.selectedSet);
                     await Promise.all(keys.map(k => vocabService.remove(k)));
                     this.selectedSet.clear();
                     this.render();
-                });
+                }
             };
 
             // Master Selected
@@ -262,14 +262,15 @@ export class VocabView extends Component {
             masterBtn.innerHTML = '🏆';
             masterBtn.title = t('vocab.actions.masterSelected');
             this.styleActionBtn(masterBtn, '#16a34a');
-            masterBtn.onclick = () => {
-                this.showConfirm(t('vocab.confirm.masterBatch', { count: this.selectedSet.size }), async () => {
+            masterBtn.onclick = async () => {
+                const ok = await notificationService.confirm(t('vocab.confirm.masterBatch', { count: this.selectedSet.size }));
+                if (ok) {
                     this.saveScroll();
                     const keys = Array.from(this.selectedSet);
                     await Promise.all(keys.map(k => vocabService.updateEntry(k, { stage: 'mastered', nextReview: null })));
                     this.selectedSet.clear();
                     this.render();
-                });
+                }
             };
 
             // Export Selected
@@ -297,8 +298,9 @@ export class VocabView extends Component {
             wandBtn.innerHTML = '🪄';
             wandBtn.title = t('vocab.actions.autoContextSelected');
             this.styleActionBtn(wandBtn, '#9333ea');
-            wandBtn.onclick = () => {
-                this.showConfirm(t('vocab.confirm.generateBatch', { count: this.selectedSet.size }), async () => {
+            wandBtn.onclick = async () => {
+                const ok = await notificationService.confirm(t('vocab.confirm.generateBatch', { count: this.selectedSet.size }));
+                if (ok) {
                     this.saveScroll();
                     const keys = Array.from(this.selectedSet);
                     let processed = 0;
@@ -319,7 +321,7 @@ export class VocabView extends Component {
 
                     this.selectedSet.clear();
                     this.render();
-                });
+                }
             };
 
             bulkGroup.appendChild(selLabel);
@@ -356,26 +358,18 @@ export class VocabView extends Component {
 
                         // Sync Suggestion
                         const status = await SyncService.getSyncStatus();
-                        // Always suggest after a review session as data definitely changed (SRS updates)
-                        // But maybe avoid annoyance? Let's check if there are pending changes implied.
-                        // Actually, 'Review' updates 'nextReview', so changes exist.
 
-                        this.showConfirm(
-                            t('vocab.review.syncPrompt'),
-                            async () => {
-                                Toast.info(t('settings.sync.syncing'));
-                                try {
-                                    await SyncService.pull();
-                                    await SyncService.push();
-                                    Toast.success(t('dashboard.sync.success'));
-                                } catch (e) {
-                                    Toast.error(t('dashboard.sync.failed', { error: e.message }));
-                                }
+                        const ok = await notificationService.confirm(t('vocab.review.syncPrompt'));
+                        if (ok) {
+                            notificationService.toast(t('settings.sync.syncing'));
+                            try {
+                                await SyncService.pull();
+                                await SyncService.push();
+                                notificationService.toast(t('dashboard.sync.success'), 'success');
+                            } catch (e) {
+                                notificationService.toast(t('dashboard.sync.failed', { error: e.message }), 'error');
                             }
-                        );
-                        // Customize confirm modal text for "Yes/No" or reuse generic confirm?
-                        // showConfirm uses 'Confirm'/'Cancel'. A bit generic but works.
-                        // Ideally we have a better modal, but recycling showConfirm is efficient.
+                        }
                     };
                     this.reviewComponent.start(reviewCandidates);
                 };
@@ -548,7 +542,7 @@ export class VocabView extends Component {
                 showDeepDiveModal(v, deepData);
             } catch (e) {
                 console.error(e);
-                Toast.error(t('vocab.deepDive.failed'));
+                notificationService.toast(t('vocab.deepDive.failed'), 'error');
             } finally {
                 deepDiveBtn.disabled = false;
             }
@@ -560,12 +554,13 @@ export class VocabView extends Component {
         deleteBtn.title = t('vocab.actions.delete');
         this.styleActionBtn(deleteBtn, '#ef4444');
         deleteBtn.style.opacity = '0.5';
-        deleteBtn.onclick = () => {
-            this.showConfirm(`Delete "${v.word}"?`, async () => {
+        deleteBtn.onclick = async () => {
+            const ok = await notificationService.confirm(`Delete "${v.word}"?`);
+            if (ok) {
                 this.saveScroll();
                 await vocabService.remove(v.lemma || v.word);
                 this.render();
-            });
+            }
         };
 
         const masterBtn = document.createElement('button');
@@ -603,7 +598,7 @@ export class VocabView extends Component {
 
     exportVocab(list) {
         if (!list || list.length === 0) {
-            alert(t('vocab.export.empty'));
+            notificationService.alert(t('vocab.export.empty'));
             return;
         }
 
@@ -632,67 +627,6 @@ export class VocabView extends Component {
         document.body.removeChild(link);
     }
 
-    // Custom Confirm Modal
-    showConfirm(message, onConfirm) {
-        const modal = document.createElement('div');
-        modal.style.position = 'fixed';
-        modal.style.top = '0';
-        modal.style.left = '0';
-        modal.style.width = '100vw';
-        modal.style.height = '100vh';
-        modal.style.background = 'rgba(0,0,0,0.5)';
-        modal.style.zIndex = '10000';
-        modal.style.display = 'flex';
-        modal.style.justifyContent = 'center';
-        modal.style.alignItems = 'center';
-
-        const box = document.createElement('div');
-        box.style.background = 'white';
-        box.style.padding = '20px';
-        box.style.borderRadius = '8px';
-        box.style.boxShadow = '0 4px 10px rgba(0,0,0,0.2)';
-        box.style.minWidth = '300px';
-        box.style.textAlign = 'center';
-
-        const msg = document.createElement('p');
-        msg.textContent = message;
-        msg.style.marginBottom = '20px';
-        msg.style.fontSize = '1.1em';
-
-        const btnGroup = document.createElement('div');
-        btnGroup.style.display = 'flex';
-        btnGroup.style.justifyContent = 'center';
-        btnGroup.style.gap = '10px';
-
-        const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = t('common.cancel');
-        cancelBtn.style.padding = '6px 16px';
-        cancelBtn.style.border = '1px solid #ddd';
-        cancelBtn.style.background = 'white';
-        cancelBtn.style.borderRadius = '4px';
-        cancelBtn.style.cursor = 'pointer';
-        cancelBtn.onclick = () => document.body.removeChild(modal);
-
-        const okBtn = document.createElement('button');
-        okBtn.textContent = t('common.confirm');
-        okBtn.style.padding = '6px 16px';
-        okBtn.style.border = 'none';
-        okBtn.style.background = '#ef4444'; // Destructive red by default? Or primary?
-        okBtn.style.color = 'white';
-        okBtn.style.borderRadius = '4px';
-        okBtn.style.cursor = 'pointer';
-        okBtn.onclick = () => {
-            document.body.removeChild(modal);
-            onConfirm();
-        };
-
-        btnGroup.appendChild(cancelBtn);
-        btnGroup.appendChild(okBtn);
-        box.appendChild(msg);
-        box.appendChild(btnGroup);
-        modal.appendChild(box);
-        document.body.appendChild(modal);
-    }
 
 
     showHelpModal() {

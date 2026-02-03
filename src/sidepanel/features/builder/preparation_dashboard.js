@@ -1,4 +1,5 @@
 import { Component } from '../../components/component.js';
+import { ThemeModal } from '../settings/theme_modal.js';
 import { StorageHelper, StorageKeys } from '../../../utils/storage.js';
 import styles from './dashboard.module.css';
 import { SettingsModal } from '../settings/settings_modal.js';
@@ -12,6 +13,8 @@ import { SyncService } from '../../../services/sync_service.js';
 import { Toast } from '../../components/toast.js';
 import { showDonateModal } from '../../components/donate_modal.js';
 import { t } from '../../../locales/index.js';
+import { notificationService } from '../../../utils/notification_service.js';
+import { logger } from '../../../utils/logger.js';
 
 export class PreparationDashboard extends Component {
     constructor(element) {
@@ -35,6 +38,11 @@ export class PreparationDashboard extends Component {
         // Load User Settings for Profile Context
         try {
             const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
+
+            // Apply Theme
+            this.themeModal = new ThemeModal(modalContainer);
+            this.themeModal.initTheme();
+
             // If no profile, it defaults to 'default' inside service
             if (settings.activeProfileId) {
                 // Verify profile exists
@@ -255,6 +263,16 @@ export class PreparationDashboard extends Component {
             actionsDiv.appendChild(addBtn);
         }
 
+        // Palette Button
+        const paletteBtn = document.createElement('button');
+        paletteBtn.className = styles.iconBtn;
+        paletteBtn.innerHTML = '🎨';
+        paletteBtn.title = t('settings.appearance') || '调色盘';
+        paletteBtn.onclick = () => {
+            if (this.themeModal) this.themeModal.show();
+        };
+        actionsDiv.appendChild(paletteBtn);
+
         // Sync Button
         const syncBtn = document.createElement('button');
         syncBtn.className = 'sync-status'; // Global CSS class
@@ -439,9 +457,60 @@ export class PreparationDashboard extends Component {
         }
         if (draft.status === 'processing') {
             const progress = document.createElement('span');
-            progress.textContent = `${draft.progress?.percentage || 0}%`;
+            progress.className = styles.processingIndicator; // New Class
+            // Add dots animation
+            progress.innerHTML = `${draft.progress?.percentage || 0}% <span class="loading-dots">...</span>`;
+            progress.style.cursor = 'pointer';
+            progress.title = t('dashboard.draft.viewProgress');
+            progress.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Re-open Overlay
+                this.creatorModal.showRealtimeOverlay(draft.id, async () => {
+                    await this.loadDrafts();
+                    const updated = this.drafts.find(d => d.id === draft.id);
+                    if (updated && updated.status === 'ready') {
+                        this.handleAction(updated, 'read_partial');
+                    }
+                });
+            };
             meta.appendChild(progress);
         }
+
+        // Reading Time Tracker
+        if (draft.status === 'ready') {
+            const seconds = draft.readingTime || 0;
+            const minutes = Math.floor(seconds / 60);
+            const percentage = Math.min(100, (seconds / 3600) * 100);
+            const isCapped = seconds >= 3600;
+
+            const timeContainer = document.createElement('div');
+            timeContainer.className = styles.readingTimeContainer;
+            timeContainer.title = t('dashboard.draft.readingTime', { minutes }) || `已阅读 ${minutes} 分钟`;
+
+            // Progress Bar
+            const bar = document.createElement('div');
+            bar.className = styles.readingProgressBar;
+
+            const fill = document.createElement('div');
+            fill.className = styles.readingProgressFill;
+            fill.style.width = `${percentage}%`;
+
+            if (isCapped) {
+                fill.style.backgroundColor = '#F59E0B'; // Amber
+            }
+
+            bar.appendChild(fill);
+
+            const text = document.createElement('span');
+            text.className = styles.readingTimeText;
+            text.textContent = `${minutes}m`;
+
+            timeContainer.appendChild(bar);
+            timeContainer.appendChild(text);
+            meta.appendChild(timeContainer);
+        }
+
         contentCol.appendChild(meta);
 
         const actionArea = document.createElement('div');
@@ -475,37 +544,46 @@ export class PreparationDashboard extends Component {
                 readBtn.onclick = () => this.handleAction(draft, 'read_partial');
                 actionArea.appendChild(readBtn);
             }
-        } else if (draft.status === 'processing' && hasData) {
-            const readBtn = document.createElement('button');
-            readBtn.className = styles.btnSecondary;
-            readBtn.style.fontSize = '0.8em';
-            readBtn.innerHTML = t('dashboard.draft.readLive');
-            readBtn.onclick = () => this.handleAction(draft, 'read_partial');
-            actionArea.appendChild(readBtn);
-
-            // Emergency Reset for Stuck Processing
-            const resetBtn = document.createElement('button');
-            resetBtn.className = styles.btnDestructive;
-            resetBtn.style.fontSize = '0.8em';
-            resetBtn.style.marginLeft = '8px';
-            resetBtn.innerHTML = t('dashboard.draft.resetStuck');
-            resetBtn.title = "Force reset status if stuck at 0%";
-            resetBtn.onclick = async () => {
-                draft.status = 'error'; // Force to error state
-                await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.drafts);
-                this.render();
+        } else if (draft.status === 'processing') {
+            // 1. View Progress (Primary Action for Processing)
+            const viewBtn = document.createElement('button');
+            viewBtn.className = styles.btnGhost; // New style
+            viewBtn.innerHTML = `<span>👁️</span> ${t('dashboard.draft.viewProgress') || '查看进度'}`;
+            viewBtn.onclick = (e) => {
+                this.creatorModal.showRealtimeOverlay(draft.id, async () => {
+                    await this.loadDrafts();
+                    const updated = this.drafts.find(d => d.id === draft.id);
+                    if (updated && updated.status === 'ready') {
+                        this.handleAction(updated, 'read_partial');
+                    }
+                });
             };
-            actionArea.appendChild(resetBtn);
-        } else if (draft.status === 'processing' && !hasData) {
-            // Stuck at 0% case
+            actionArea.appendChild(viewBtn);
+
+            // 2. Read Partial (If data exists)
+            if (hasData) {
+                const readBtn = document.createElement('button');
+                readBtn.className = styles.btnGhost;
+                readBtn.innerHTML = `<span>📖</span> ${t('dashboard.draft.readLive')}`;
+                readBtn.onclick = () => this.handleAction(draft, 'read_partial');
+                actionArea.appendChild(readBtn);
+            }
+
+            // 3. Reset (Destructive)
             const resetBtn = document.createElement('button');
-            resetBtn.className = styles.btnDestructive;
-            resetBtn.innerHTML = t('dashboard.draft.resetStuck');
+            resetBtn.className = styles.btnGhostDestructive; // New style
+            resetBtn.innerHTML = `<span>🔄</span> ${t('dashboard.draft.resetStuck')}`;
             resetBtn.onclick = async () => {
-                // Reset logic
-                draft.status = 'error';
-                await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.drafts);
-                this.render();
+                this.confirmationModal.show({
+                    title: t('dashboard.reset.title') || '重置状态',
+                    message: t('dashboard.reset.message') || '如果任务卡住，重置将将其设为错误状态以便重试。',
+                    confirmText: t('common.confirm'),
+                    onConfirm: async () => {
+                        draft.status = 'error';
+                        await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.drafts);
+                        this.render();
+                    }
+                });
             };
             actionArea.appendChild(resetBtn);
         }
@@ -567,12 +645,17 @@ export class PreparationDashboard extends Component {
                 return;
             }
 
-            if (mode === 'realtime') {
-                this.creatorModal.showRealtimeOverlay(draft.id);
-                MessageRouter.sendMessage(MessageTypes.REQUEST_ANALYSIS, { draftId: draft.id });
-            } else {
-                MessageRouter.sendMessage(MessageTypes.REQUEST_ANALYSIS, { draftId: draft.id });
-            }
+            // User Note: "Background" and "Realtime" share UI logic.
+            // We show the overlay for both. User can minimize if desired.
+            this.creatorModal.showRealtimeOverlay(draft.id, async () => {
+                // On Complete -> Transitions directly to Reader
+                await this.loadDrafts(); // Refresh state
+                const updated = this.drafts.find(d => d.id === draft.id);
+                if (updated && updated.status === 'ready') {
+                    this.handleAction(updated, 'read_partial');
+                }
+            });
+            MessageRouter.sendMessage(MessageTypes.REQUEST_ANALYSIS, { draftId: draft.id });
         }
     }
 
@@ -623,7 +706,53 @@ export class PreparationDashboard extends Component {
                 }
                 this.handleNewDraft(draft, true, 'background');
             } else {
-                this.creatorModal.showRealtimeOverlay(draft.id);
+                this.creatorModal.show({
+                    title: draft.title || '',
+                    rawText: draft.rawText,
+                    mode: 'edit', // Hack: Show modal so overlay has a place to live, or use standalone?
+                    // Actually CreatorModal expects to be OPEN for showRealtimeOverlay to append.
+                    // If we are calling handleAction from Dashboard list, the modal is CLOSED.
+                    // We need to OPEN it or use a global overlay.
+                    // Looking at `showRealtimeOverlay`: "if (this.modalContent) this.modalContent.appendChild(overlay);"
+                    // So we must open the modal first?
+                    // No, `handleAction` (Retry or Draft) might not open modal.
+                    // Let's check if CreatorModal supports standalone overlay.
+                    // It uses `this.element` which is body. But it appends to `this.modalContent` which is created in `render`.
+                    // So yes, we need to show the modal or change where overlay appends.
+                    // BUT, `handleAction` logic in `preparation_dashboard.js` line 628 just calls `showRealtimeOverlay`.
+                    // If modal isn't open, content is null.
+                    // Fix: We'll modify CreatorModal to append to `this.element` (body) if modalContent is missing?
+                    // Or just ensure we pass the callback. The existing code assumes it works.
+                });
+                // Wait, the original code had:
+                // this.creatorModal.showRealtimeOverlay(draft.id);
+                // If this worked before, it means the modal state was handled or I missed something.
+                // Ah, line 628 is inside `handleAction`.
+                // If I click "Start Analysis" from the list... the modal IS NOT open.
+                // So `this.modalContent` would be null.
+                // Does `showRealtimeOverlay` handle this? It checks `if (this.modalContent)`.
+                // If null, it does nothing? That seems like a bug in existing code or my understanding.
+                // Let's look at `creator_modal.js` again.
+                // `if (this.modalContent) this.modalContent.appendChild(overlay);`
+                // Yes, if modal is closed, it shows NOTHING.
+                // So "Start Analysis" from list might be broken visually or relies on something else?
+                // The user complained about "Window popping up and disappearing".
+                // This implies it DOES show up.
+                // Maybe `handleAction` opens it? No.
+                // Wait, maybe `viewer` opens it?
+                // Actually, if I look at `handleNewDraft`, it calls `showRealtimeOverlay` AFTER `handleNewDraft` which follows `creatorModal.show` and `close`.
+                // If `close` is called, `overlay` is removed.
+
+                // Let's fix the logic to be safe: Append to `document.body` if modal is closed.
+                // I will apply the fix in `creator_modal.js` instead.
+
+                this.creatorModal.showRealtimeOverlay(draft.id, async () => {
+                    await this.loadDrafts();
+                    const updated = this.drafts.find(d => d.id === draft.id);
+                    if (updated && updated.status === 'ready') {
+                        this.handleAction(updated, 'read_partial');
+                    }
+                });
                 MessageRouter.sendMessage(MessageTypes.REQUEST_ANALYSIS, { draftId: draft.id });
             }
         }
@@ -634,11 +763,15 @@ export class PreparationDashboard extends Component {
         const activeProfileId = settings.activeProfileId;
         const profile = settings.profiles?.[activeProfileId];
         const providerName = profile?.provider || 'gemini';
+
+        // GLM-Free uses a built-in key, skip check
+        if (providerName === 'glm-free') return true;
+
         const providerConfig = profile?.providerConfig?.[providerName];
         const hasKey = providerConfig?.apiKey || profile?.apiKey;
 
         if (!hasKey) {
-            alert(t('dashboard.apiKey.missing', { provider: providerName }));
+            notificationService.alert(t('dashboard.apiKey.missing', { provider: providerName }));
             this.settingsModal.show();
             return false;
         }

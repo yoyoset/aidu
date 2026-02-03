@@ -208,13 +208,19 @@
 }
 
 .bubble.interactive:hover {
-    background-color: #e8f5e9;
+    background-color: var(--user-color-hover-bg, #dcfce7);
+    color: var(--user-color-hover-text, #14532d);
     transform: translateY(-1px);
 }
 
 .bubble.active {
-    background-color: #2e7d32;
-    color: white;
+    background-color: var(--user-color-highlight-bg, #fff9c4);
+    color: var(--user-color-highlight-text, inherit);
+}
+
+.bubble.active:hover {
+    background-color: var(--user-color-hover-bg, #dcfce7);
+    color: var(--user-color-hover-text, #14532d);
 }
 
 .bubble.stop {
@@ -308,15 +314,13 @@
 }
 
 .savedBubble {
-    border-bottom: 2px solid #a5d6a7;
-    /* Green underline */
-    background-color: rgba(232, 245, 233, 0.4);
-    /* Subtle green bg */
+    border-bottom: 2px solid var(--user-color-saved-underline, #a5d6a7);
+    background-color: var(--user-color-saved-bg, rgba(232, 245, 233, 0.4));
 }
 
 .savedBubble:hover {
-    background-color: #c8e6c9;
-    /* Darker on hover */
+    background-color: var(--user-color-hover-bg, #dcfce7);
+    color: var(--user-color-hover-text, #14532d);
 }
 
 .savedBtn {

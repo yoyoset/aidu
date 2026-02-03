@@ -13,6 +13,15 @@
   /* Deep Green */
   --color-brand-light: hsl(var(--primary-hue), var(--primary-sat), 95%);
 
+  /* User Customizable Colors (Defaults) */
+  --user-color-highlight-bg: #fff9c4;
+  --user-color-highlight-text: inherit;
+  --user-color-hover-bg: #dcfce7;
+  --user-color-hover-text: #14532d;
+  --user-color-saved-bg: rgba(232, 245, 233, 0.4);
+  --user-color-saved-underline: #a5d6a7;
+  --user-color-mastered-text: #2e7d32;
+
   --color-text-main: #1f2937;
   --color-text-secondary: #6b7280;
   --color-text-tertiary: #9ca3af;

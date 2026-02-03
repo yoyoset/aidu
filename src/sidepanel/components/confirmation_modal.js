@@ -82,9 +82,12 @@ export class ConfirmationModal {
             <div class="confirm-box">
                 <div class="confirm-title"></div>
                 <div class="confirm-text"></div>
+                <div class="confirm-prompt" style="display:none; margin-bottom: 20px;">
+                    <input type="text" id="confirm-input" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
                 <div class="confirm-actions">
                     <button class="confirm-btn btn-cancel">${t('common.cancel')}</button>
-                    <button class="confirm-btn btn-delete">${t('common.delete')}</button>
+                    <button class="confirm-btn btn-delete">${t('common.confirm')}</button>
                 </div>
             </div>
         `;
@@ -93,16 +96,49 @@ export class ConfirmationModal {
         this.overlay.querySelector('.btn-cancel').onclick = () => this.hide();
     }
 
-    show({ title = t('confirm.defaultTitle'), message = t('confirm.defaultMessage'), onConfirm, confirmText = t('common.delete'), isDestructive = true }) {
+    /**
+     * @param {Object} options
+     * @param {string} options.type - 'alert' | 'confirm' | 'prompt'
+     */
+    show({
+        title = t('confirm.defaultTitle'),
+        message = t('confirm.defaultMessage'),
+        onConfirm,
+        onCancel,
+        confirmText = t('common.confirm'),
+        cancelText = t('common.cancel'),
+        isDestructive = false,
+        type = 'confirm',
+        defaultValue = ''
+    }) {
         this.overlay.querySelector('.confirm-title').textContent = title;
         this.overlay.querySelector('.confirm-text').textContent = message;
 
         const confirmBtn = this.overlay.querySelector('.btn-delete');
+        const cancelBtn = this.overlay.querySelector('.btn-cancel');
+        const promptContainer = this.overlay.querySelector('.confirm-prompt');
+        const input = promptContainer.querySelector('input');
+
         confirmBtn.textContent = confirmText;
+        cancelBtn.textContent = cancelText;
         confirmBtn.style.background = isDestructive ? '#ef4444' : '#2e7d32';
 
+        // 切换模式
+        cancelBtn.style.display = type === 'alert' ? 'none' : 'block';
+        promptContainer.style.display = type === 'prompt' ? 'block' : 'none';
+        if (type === 'prompt') {
+            input.value = defaultValue;
+            setTimeout(() => input.focus(), 100);
+        }
+
         confirmBtn.onclick = () => {
-            if (onConfirm) onConfirm();
+            const value = type === 'prompt' ? input.value : true;
+            if (onConfirm) onConfirm(value);
+            this.hide();
+        };
+
+        cancelBtn.onclick = () => {
+            if (onCancel) onCancel();
             this.hide();
         };
 

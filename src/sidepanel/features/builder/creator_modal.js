@@ -2,6 +2,7 @@ import { Component } from '../../components/component.js';
 import { StorageHelper, StorageKeys } from '../../../utils/storage.js';
 import styles from './creator.module.css';
 import { t } from '../../../locales/index.js';
+import { notificationService } from '../../../utils/notification_service.js';
 
 export class CreatorModal extends Component {
     constructor(element, callbacks) {
@@ -220,7 +221,7 @@ export class CreatorModal extends Component {
         const title = this.overlay.querySelector('#draft-title').value.trim() || t('dashboard.draft.untitled');
         const text = this.overlay.querySelector('#draft-content').value.trim();
 
-        if (!text) return alert(t('creator.error.noContent'));
+        if (!text) return notificationService.alert(t('creator.error.noContent'));
 
         // Status: 'draft' if queue, 'processing' (trigger) if analyze
         const status = autoStart ? 'processing' : 'draft';
@@ -236,7 +237,7 @@ export class CreatorModal extends Component {
     async handleJsonAction() {
         // Implementation for JSON Import
         const jsonStr = this.overlay.querySelector('#json-content').value.trim();
-        if (!jsonStr) return alert(t('creator.error.noJson'));
+        if (!jsonStr) return notificationService.alert(t('creator.error.noJson'));
         try {
             const data = JSON.parse(jsonStr);
             // Basic Schema Check based on D.2
@@ -248,7 +249,7 @@ export class CreatorModal extends Component {
             this.callbacks.onDraftCreated(draft, false);
             this.close();
         } catch (e) {
-            alert(t('creator.error.invalidSchema', { error: e.message }));
+            notificationService.alert(t('creator.error.invalidSchema', { error: e.message }));
         }
     }
 
@@ -326,36 +327,81 @@ export class CreatorModal extends Component {
         setTimeout(() => btn.textContent = originalText, 2000);
     }
 
-    showRealtimeOverlay(draftId) {
-        // Create a blocking overlay
-        let overlay = this.element.querySelector('.realtime-overlay');
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.className = styles.realtimeOverlay || 'realtime-overlay';
-            overlay.style.position = 'absolute';
-            overlay.style.top = '0';
-            overlay.style.left = '0';
-            overlay.style.width = '100%';
-            overlay.style.height = '100%';
-            overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-            overlay.style.display = 'flex';
-            overlay.style.flexDirection = 'column';
-            overlay.style.alignItems = 'center';
-            overlay.style.justifyContent = 'center';
-            overlay.style.zIndex = '1000';
+    showRealtimeOverlay(draftId, onComplete) {
+        // Remove logic: Check for existing global overlay
+        let overlay = document.querySelector('.aidu-realtime-overlay');
+        if (overlay) overlay.remove();
 
-            overlay.innerHTML = `
-                <div style="font-size: 2rem; margin-bottom: 1rem;">⏳</div>
-                <h3 style="margin: 0; color: #1e293b;">${t('creator.analyzing')}</h3>
-                <p style="color: #64748b; font-size: 0.9em;">${t('creator.analyzing.hint')}</p>
-                <div class="progress-bar-container" style="width: 200px; height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 15px; overflow: hidden;">
-                    <div class="progress-bar-fill" style="width: 0%; height: 100%; background: #3b82f6; transition: width 0.3s ease;"></div>
-                </div>
-            `;
-            // Ensure we append to current visible modal
-            if (this.modalContent) this.modalContent.appendChild(overlay);
-        }
+        overlay = document.createElement('div');
+        overlay.className = 'aidu-realtime-overlay';
+        overlay.style.position = 'fixed'; // Fixed to viewport
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100vw';
+        overlay.style.height = '100vh';
+        overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
         overlay.style.display = 'flex';
+        overlay.style.flexDirection = 'column';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.zIndex = '99999'; // Topmost
+
+        overlay.innerHTML = `
+            <style>
+                @keyframes pulse-blue {
+                    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+                    70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+                }
+                @keyframes shimmer {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                }
+                .loading-icon-pulse {
+                    border-radius: 50%;
+                    animation: pulse-blue 2s infinite;
+                }
+            </style>
+            <div class="loading-icon-pulse" style="font-size: 3rem; margin-bottom: 2rem; background: #eff6ff; padding: 20px; border-radius: 50%;">🤖</div>
+            <h2 style="margin: 0; color: #1e293b; font-weight: 600;">${t('creator.analyzing')}</h2>
+            <p id="overlay-status-text" style="color: #64748b; font-size: 1.1em; margin-top: 12px; min-height: 1.4em; font-weight: 500;">AI 正在准备...</p>
+            
+            <div class="progress-bar-container" style="width: 300px; height: 10px; background: #e2e8f0; border-radius: 5px; margin-top: 30px; overflow: hidden; position: relative;">
+                <div class="progress-bar-active" style="position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent); animation: shimmer 1.5s infinite;"></div>
+                <div class="progress-bar-fill" style="width: 5%; height: 100%; background: #3b82f6; transition: width 0.3s ease; border-radius: 5px;"></div>
+            </div>
+            
+            <button id="cancel-overlay-btn" style="margin-top: 40px; border: 1px solid #cbd5e1; background: white; color: #64748b; padding: 8px 24px; border-radius: 20px; cursor: pointer; transition: all 0.2s;">
+                ${t('common.cancel') || '最小化后台运行'}
+            </button>
+        `;
+
+        // Cancel/Minimize action
+        overlay.querySelector('#cancel-overlay-btn').onclick = () => {
+            overlay.remove();
+            // Note: Process continues in background
+            notificationService.toast('已转入后台运行');
+        };
+
+        // Dynamic Messaging
+        const messages = [
+            "正在建立安全连接...",
+            "正在解析文本结构...",
+            "正在识别关键生词...",
+            "AI 正在生成深度解读...",
+            "正在优化阅读排版..."
+        ];
+        let msgIdx = 0;
+        const statusText = overlay.querySelector('#overlay-status-text');
+        const msgInterval = setInterval(() => {
+            if (document.body.contains(overlay) && msgIdx < messages.length) {
+                statusText.textContent = messages[msgIdx++];
+            } else {
+                clearInterval(msgInterval);
+            }
+        }, 1500);
+
+        document.body.appendChild(overlay);
 
         const onProgress = (changes, area) => {
             if (area === 'local' && changes[StorageKeys.BUILDER_DRAFTS]) {
@@ -368,7 +414,16 @@ export class CreatorModal extends Component {
 
                         if (draft.status === 'ready' || draft.status === 'error') {
                             chrome.storage.onChanged.removeListener(onProgress);
-                            this.close();
+                            if (draft.status === 'ready' && onComplete) {
+                                // Short delay to show 100%
+                                setTimeout(() => {
+                                    overlay.remove();
+                                    onComplete();
+                                }, 500);
+                            } else {
+                                overlay.remove();
+                                if (draft.status === 'error') notificationService.alert(t('creator.error.general'));
+                            }
                         }
                     }
                 });

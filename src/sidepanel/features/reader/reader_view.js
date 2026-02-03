@@ -3,6 +3,7 @@ import styles from './reader.module.css';
 import { ReaderAudio } from './reader_audio.js';
 import { ReaderDictionary } from './reader_dictionary.js';
 import { vocabService } from '../../../services/vocab_service.js';
+import { StorageHelper, StorageKeys } from '../../../utils/storage.js';
 import { t } from '../../../locales/index.js';
 
 export class ReaderView extends Component {
@@ -19,6 +20,10 @@ export class ReaderView extends Component {
 
         this.currentIndex = 0;
         this.sentences = [];
+
+        // Timer
+        this.readingTime = 0;
+        this.timerInterval = null;
     }
 
     show(draft) {
@@ -28,10 +33,52 @@ export class ReaderView extends Component {
             this.element.style.display = 'block';
             this.draft = draft || { data: { sentences: [] }, title: 'Error' };
             this.sentences = this.draft.data?.sentences || [];
+
+            // Initialize Timer
+            this.readingTime = this.draft.readingTime || 0;
+            this.startTimer();
+
             this.render();
         } catch (e) {
             console.error("ReaderView Show Error:", e);
             this.element.innerHTML = `<div style="padding:20px; color:red">${t('reader.error', { error: e.message })}</div>`;
+        }
+    }
+
+    startTimer() {
+        this.stopTimer(); // Safety
+        this.timerInterval = setInterval(() => {
+            this.readingTime++;
+            // Save every 10 seconds to avoid data loss
+            if (this.readingTime % 10 === 0) {
+                this.saveProgress();
+            }
+        }, 1000);
+    }
+
+    stopTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+            this.saveProgress(); // Final save
+        }
+    }
+
+    async saveProgress() {
+        if (!this.draft || !this.draft.id) return;
+        try {
+            // We read fresh drafts to avoid overwriting other changes (race condition mitigation)
+            const drafts = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS) || [];
+            if (Array.isArray(drafts)) {
+                const index = drafts.findIndex(d => d.id === this.draft.id);
+                if (index !== -1) {
+                    drafts[index].readingTime = this.readingTime;
+                    drafts[index].lastReadAt = Date.now();
+                    await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, drafts);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to save reading progress", e);
         }
     }
 
@@ -91,6 +138,7 @@ export class ReaderView extends Component {
         backBtn.innerHTML = '←';
         backBtn.onclick = () => {
             this.audio.cancel();
+            this.stopTimer(); // Stop Timer on exit
             if (this.callbacks.onExit) this.callbacks.onExit();
         };
 
@@ -137,6 +185,7 @@ export class ReaderView extends Component {
         header.appendChild(controls);
         container.appendChild(header);
     }
+
 
     renderSettings(container) {
         const settingsPanel = document.createElement('div');

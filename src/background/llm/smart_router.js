@@ -38,6 +38,7 @@ export class SmartRouter {
         const baseProtocol = `你是一个专业的英语语言教练。
 ## 核心约束
 - 必须返回纯 JSON，禁止包含 \`\`\`json 标记。
+- 字段 original_text 必须严格保留原文（包括标点符号），严禁重写、纠错或缩略。
 - 所有解释性内容（translation, explanation）必须使用【简体中文】。
 - 词性标签 (POS) 仅限使用: [NOUN, VERB, ADJ, ADV, PRON, PREP, CONJ, PART, INTJ, DET, NUM, PUNCT, STOP]。
 - 如果输入包含非英文或无意义字符，请在 JSON explanation 中返回说明。`;

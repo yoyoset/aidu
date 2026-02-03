@@ -590,3 +590,122 @@
     color: #64748b;
     font-size: 0.8rem;
 }
+
+/* Loading Dots Animation */
+@keyframes loadingDots {
+    0% {
+        content: '.';
+    }
+
+    33% {
+        content: '..';
+    }
+
+    66% {
+        content: '...';
+    }
+}
+
+.loading-dots::after {
+    content: '.';
+    display: inline-block;
+    width: 1em;
+    text-align: left;
+    animation: loadingDots 1.5s infinite steps(1);
+}
+
+.processingIndicator {
+    color: #3B82F6;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.processingIndicator:hover {
+    color: #2563EB;
+    text-decoration: underline;
+}
+
+/* New Action Buttons */
+.btnGhost {
+    background: transparent;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 8px;
+}
+
+.btnGhost:hover {
+    background: #f1f5f9;
+    color: #334155;
+    border-color: #cbd5e1;
+}
+
+.btnGhostDestructive {
+    background: transparent;
+    border: 1px solid #fee2e2;
+    color: #ef4444;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 8px;
+}
+
+.btnGhostDestructive:hover {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+/* Reading Time Tracker */
+.readingTimeContainer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #F8FAFC;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    color: #64748B;
+    border: 1px solid #E2E8F0;
+    height: 20px;
+}
+
+.readingTimeText {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+.readingProgressBar {
+    width: 30px;
+    height: 4px;
+    background: #E2E8F0;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.readingProgressFill {
+    height: 100%;
+    background: #22C55E;
+    /* Green */
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.readingProgressFill.capped {
+    background: #F59E0B;
+    /* Amber for >60m */
+}

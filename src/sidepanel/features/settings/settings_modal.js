@@ -6,6 +6,8 @@ import { vocabService } from '../../../services/vocab_service.js';
 import { PERSONA_OPTIONS } from '../../../background/llm/persona.js';
 import styles from './settings.module.css';
 import { t, getCurrentLocale, getSupportedLocales, setLocale } from '../../../locales/index.js';
+import { logger } from '../../../utils/logger.js';
+import { notificationService } from '../../../utils/notification_service.js';
 
 export class SettingsModal extends Component {
     constructor(element) {
@@ -107,6 +109,13 @@ export class SettingsModal extends Component {
                             <option value="openai" ${this.activeProfile.provider === 'openai' ? 'selected' : ''}>OpenAI Compatible</option>
                             <option value="custom" ${this.activeProfile.provider === 'custom' ? 'selected' : ''}>Custom Endpoint</option>
                         </select>
+                    </div>
+
+                    <!-- AI Proxy URL (Global) -->
+                    <div class="${styles.formGroup}">
+                        <label class="${styles.label}" for="proxy-url-input">🔐 安全代理 (Cloudflare Worker)</label>
+                        <input type="text" id="proxy-url-input" class="${styles.input}" 
+                            value="${this.settings.proxyUrl || ''}" placeholder="https://aidu-proxy.<you>.workers.dev">
                     </div>
 
                     <div class="${styles.formGroup}" id="base-url-group">
@@ -223,6 +232,23 @@ export class SettingsModal extends Component {
                         ${t('settings.backup.hint')}
                     </p>
                 </div>
+
+                <!-- Logging Section -->
+                <div class="${styles.formSection}">
+                    <label class="${styles.sectionTitle}">调试与日志</label>
+                    <div class="${styles.formGroup}" style="display:flex; align-items:center; justify-content:space-between;">
+                        <label class="${styles.label}" for="log-enabled">开启日志记录</label>
+                        <input type="checkbox" id="log-enabled" ${logger.enabled ? 'checked' : ''} style="width:20px; height:20px;">
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:8px;">
+                        <button id="view-logs-btn" class="${styles.btnSecondary}" style="flex:1;">
+                            查看日志
+                        </button>
+                        <button id="clear-logs-btn" class="${styles.btnSecondary}" style="flex:1; color:#ef4444;">
+                            清理日志
+                        </button>
+                    </div>
+                </div>
                 
                  <!-- Delete Action -->
                  ${this.settings.activeProfileId !== 'default' ? `
@@ -230,6 +256,12 @@ export class SettingsModal extends Component {
                         <button id="delete-btn" class="${styles.btnDestructive}">${t('settings.deleteProfile')}</button>
                     </div>
                  ` : ''}
+
+                 <!-- Copyright Footer -->
+                 <div style="text-align: center; margin: 30px 0 10px; padding-top: 20px; color: #999; font-size: 0.75em; border-top: 1px solid #f0f0f0;">
+                    <p>AIDU v${chrome.runtime.getManifest().version}</p>
+                    <p style="margin-top:4px;">&copy; ${new Date().getFullYear()} SquareUncle 方砖叔 | <a href="https://squareuncle.com" target="_blank" style="color: #666; text-decoration: none;">squareuncle.com</a></p>
+                 </div>
             </div>
 
             <div class="${styles.modalFooter}">
@@ -388,7 +420,7 @@ export class SettingsModal extends Component {
                 } catch (e) {
                     console.error(e);
                     backupBtn.innerHTML = t('settings.sync.error');
-                    alert(t('settings.backup.exportFailed'));
+                    notificationService.alert(t('settings.backup.exportFailed'));
                 }
             };
         }
@@ -404,15 +436,16 @@ export class SettingsModal extends Component {
                 reader.onload = async (ev) => {
                     try {
                         const json = JSON.parse(ev.target.result);
-                        if (confirm(t('settings.backup.restoreConfirm', { filename: file.name }))) {
+                        const ok = await notificationService.confirm(t('settings.backup.restoreConfirm', { filename: file.name }));
+                        if (ok) {
                             restoreBtn.innerHTML = t('settings.backup.restoring');
                             await DataService.importAll(json);
-                            alert(t('settings.backup.restoreSuccess'));
+                            notificationService.alert(t('settings.backup.restoreSuccess'));
                             window.location.reload();
                         }
                     } catch (err) {
                         console.error(err);
-                        alert(t('settings.backup.restoreFailed'));
+                        notificationService.alert(t('settings.backup.restoreFailed'));
                     } finally {
                         restoreInput.value = ''; // Reset
                         restoreBtn.innerHTML = t('settings.backup.import');
@@ -567,6 +600,87 @@ export class SettingsModal extends Component {
             this.settings.teachingStyle = styleSelect.value;
             updateDesc();
         };
+
+        // Logging Events
+        const logEnabled = content.querySelector('#log-enabled');
+        logEnabled.onchange = (e) => {
+            logger.setEnabled(e.target.checked);
+            notificationService.toast(`日志已${e.target.checked ? '开启' : '关闭'}`);
+        };
+
+        const viewLogsBtn = content.querySelector('#view-logs-btn');
+        viewLogsBtn.onclick = async () => {
+            const logs = await logger.getAll();
+            if (logs.length === 0) {
+                notificationService.toast('暂无日志记录');
+                return;
+            }
+
+            // 简单弹窗展示日志 (实际项目中可能会有专门的 LogView)
+            const logStr = logs.map(l => `[${l.timestamp}] [${l.level.toUpperCase()}] ${l.message}`).join('\n');
+            const blob = new Blob([logStr], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            window.open(url); // 在新页面查看日志
+        };
+
+        const clearLogsBtn = content.querySelector('#clear-logs-btn');
+        clearLogsBtn.onclick = async () => {
+            const ok = await notificationService.confirm('确定要清空所有日志记录吗？');
+            if (ok) {
+                await logger.clear();
+                notificationService.toast('日志已清空');
+            }
+        };
+
+        // Theme Logic
+        const applyTheme = (key, value) => {
+            document.documentElement.style.setProperty(key, value);
+        };
+
+        const themeMap = {
+            '#color-highlight-bg': '--user-color-highlight-bg',
+            '#color-highlight-text': '--user-color-highlight-text',
+            '#color-hover-bg': '--user-color-hover-bg',
+            '#color-hover-text': '--user-color-hover-text',
+            '#color-saved-bg': '--user-color-saved-bg',
+            '#color-saved-underline': '--user-color-saved-underline'
+        };
+
+        Object.keys(themeMap).forEach(selector => {
+            const input = content.querySelector(selector);
+            if (input) {
+                input.oninput = (e) => {
+                    applyTheme(themeMap[selector], e.target.value);
+                };
+            }
+        });
+
+        const resetThemeBtn = content.querySelector('#reset-theme-btn');
+        if (resetThemeBtn) {
+            resetThemeBtn.onclick = async () => {
+                const ok = await notificationService.confirm('确定要恢复默认颜色吗？');
+                if (ok) {
+                    // Defaults
+                    const defaults = {
+                        '--user-color-highlight-bg': '#fff9c4',
+                        '--user-color-highlight-text': 'inherit',
+                        '--user-color-hover-bg': '#dcfce7',
+                        '--user-color-hover-text': '#14532d',
+                        '--user-color-saved-bg': '#e8f5e9', // Approximate rgba to hex
+                        '--user-color-saved-underline': '#a5d6a7'
+                    };
+                    Object.entries(defaults).forEach(([k, v]) => applyTheme(k, v));
+
+                    // Update Inputs
+                    content.querySelector('#color-highlight-bg').value = '#fff9c4';
+                    content.querySelector('#color-highlight-text').value = '#000000'; // Fallback for inherit in picker
+                    content.querySelector('#color-hover-bg').value = '#dcfce7';
+                    content.querySelector('#color-hover-text').value = '#14532d';
+                    content.querySelector('#color-saved-bg').value = '#e8f5e9';
+                    content.querySelector('#color-saved-underline').value = '#a5d6a7';
+                }
+            };
+        }
     }
 
     async createNewProfile() {
@@ -594,6 +708,9 @@ export class SettingsModal extends Component {
     }
 
     async switchProfile(profileId) {
+        // Capture current state before switching, so edits aren't lost
+        this.updateSettingsFromDOM();
+
         this.settings.activeProfileId = profileId;
         this.activeProfile = this.settings.profiles[profileId];
 
@@ -604,7 +721,8 @@ export class SettingsModal extends Component {
     }
 
     async deleteProfile() {
-        if (confirm(t('settings.deleteProfile.confirm'))) {
+        const ok = await notificationService.confirm(t('settings.deleteProfile.confirm'));
+        if (ok) {
             const idToDelete = this.settings.activeProfileId;
 
             // Clean up associated vocab data to prevent storage leaks
@@ -625,15 +743,15 @@ export class SettingsModal extends Component {
         }
     }
 
-    async save() {
-        // Collect Data from Form
+    updateSettingsFromDOM() {
+        if (!this.overlay) return;
+
+        // 1. Profile Data
         const name = this.overlay.querySelector('#profile-name').value.trim();
         const provider = this.overlay.querySelector('#provider-select').value;
         const baseUrl = this.overlay.querySelector('#base-url-input').value.trim();
         const model = this.overlay.querySelector('#model-input').value.trim();
         const apiKey = this.overlay.querySelector('#api-key-input').value.trim();
-        const teachingStyle = this.overlay.querySelector('#teaching-style').value;
-        const language = this.overlay.querySelector('#language-select').value;
 
         let realtimeMode = '2';
         const rtRadio = this.overlay.querySelector('input[name="realtimeMode"]:checked');
@@ -643,30 +761,47 @@ export class SettingsModal extends Component {
         const buRadio = this.overlay.querySelector('input[name="builderMode"]:checked');
         if (buRadio) builderMode = buRadio.value;
 
-        // Update the CURRENTLY ACTIVE profile in the settings object
-
-        // Ensure current form values are saved to the current provider config
-        const currentConfig = {
-            apiKey, baseUrl, model
-        };
+        // Save to current profile config
         const currentProviderConfig = this.activeProfile.providerConfig || {};
-        currentProviderConfig[provider] = currentConfig;
+        currentProviderConfig[provider] = { apiKey, baseUrl, model };
 
         this.settings.profiles[this.settings.activeProfileId] = {
             ...this.activeProfile,
             name,
             provider,
-            baseUrl, // Keep flat for backward compatibility access
-            model,   // Keep flat for backward compatibility access
-            apiKey,  // Keep flat for backward compatibility access
-            providerConfig: currentProviderConfig, // New Source of Truth
+            baseUrl,
+            model,
+            apiKey,
+            providerConfig: currentProviderConfig,
             realtimeMode,
             builderMode,
             updatedAt: Date.now()
         };
 
-        // Update Global Settings
+        // 2. Global Data
+        this.settings.proxyUrl = this.overlay.querySelector('#proxy-url-input').value.trim();
+        const teachingStyle = this.overlay.querySelector('#teaching-style').value;
         this.settings.teachingStyle = teachingStyle;
+
+        // 3. Sync Data
+        const customUrl = this.overlay.querySelector('#custom-url').value.trim();
+        const customToken = this.overlay.querySelector('#custom-token').value.trim();
+
+        this.settings.sync = {
+            ...this.settings.sync,
+            customUrl,
+            customToken,
+            provider: 'custom'
+        };
+
+        // Theme Data has been moved to ThemeModal, do not overwrite it here.
+    }
+
+    async save() {
+        // Collect Data from Form
+        this.updateSettingsFromDOM();
+
+        const language = this.overlay.querySelector('#language-select').value;
 
         // Handle Language Change
         if (language && language !== getCurrentLocale()) {
@@ -677,7 +812,7 @@ export class SettingsModal extends Component {
         await StorageHelper.set(StorageKeys.USER_SETTINGS, this.settings);
         console.log('Settings Profile Saved:', this.settings.activeProfileId);
 
-        // Ensure VocabService is in sync (should be already, but safety first)
+        // Ensure VocabService is in sync
         vocabService.setProfile(this.settings.activeProfileId);
 
         this.close();

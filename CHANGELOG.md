@@ -1,5 +1,27 @@
 # Changelog
 
+## [4.11.0] - 2026-02-03
+
+### New Features (新功能)
+
+- **Security Proxy Gateway (安全网关)**:
+  - Implemented a Cloudflare Worker proxy for third-party LLM providers.
+  - **Zero-Config Experience**: Free tier users now get instant access without configuring API keys.
+  - **Enhanced Security**: API Keys are now strictly server-side, protected by Installation ID authentication and Rate Limiting (5 req/min, 50 req/day).
+- **Reading Time Tracker (阅读时长统计)**:
+  - Automatically tracks time spent on each article.
+  - **Visual Progress**: Added a progress bar in the Dashboard (capped at 60m) to differentiate between unread, in-progress, and mastered content.
+- **Smart Theme System (智能主题系统)**:
+  - New **Visual Palette** entrance in the Dashboard header.
+  - Redesigned Theme Modal with real-time CSS variable updating for a seamless customization experience.
+
+### Improvements (改进项目)
+
+- **UI Robustness**: Optimized "Deep Analysis" loading feedback with pulse animations and staggered message delivery.
+- **Cloud Sync Fixes**: Resolved a bug where custom sync server URLs were not persisting correctly in settings.
+
+---
+
 ## [4.10.0] - 2026-01-25
 
 ### New Features (新功能)

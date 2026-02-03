@@ -33,13 +33,13 @@ export class ApiClient {
 
         const providerName = profile.provider || 'gemini';
 
-        // Handle glm-free provider (uses built-in key)
+        // Handle glm-free provider (uses secure proxy by default)
         if (providerName === 'glm-free') {
             const config = {
                 provider: 'glm-free',
-                apiKey: getDefaultGlmKey(),
+                apiKey: 'proxy-managed', // Real key is in CF Secrets
                 model: 'glm-4-flash',
-                baseUrl: 'https://open.bigmodel.cn/api/paas/v4'
+                proxyUrl: settings.proxyUrl || 'https://aidu-proxy.yoyoset1.workers.dev'
             };
             this._configCache = config;
             this._configCacheTime = Date.now();
@@ -55,7 +55,8 @@ export class ApiClient {
             provider: providerName,
             apiKey: apiKey,
             model: providerConfig?.model,
-            baseUrl: providerConfig?.baseUrl
+            baseUrl: providerConfig?.baseUrl,
+            proxyUrl: settings.proxyUrl || providerConfig?.proxyUrl
         };
 
         // Cache the result
@@ -67,13 +68,17 @@ export class ApiClient {
 
     /**
      * Stream completion (Simulated for now via blocking call)
-     * Updated to accept systemPrompt
      */
     async streamCompletion(textChunk, systemPrompt, options = {}) {
         const config = await this.getConfig();
-        const prompt = `${textChunk}`; // User just sends text. System Prompt handles instructions.
+        const prompt = `${textChunk}`;
 
-        console.log(`[ApiClient] Requesting ${config.provider} (${config.model || 'default'})`);
+        console.log(`[ApiClient] Requesting ${config.provider} via ${config.proxyUrl ? 'Proxy' : 'Direct'}`);
+
+        // If Proxy URL is configured globally or for this profile
+        if (config.proxyUrl) {
+            return this.callProxy(config, prompt, systemPrompt, options);
+        }
 
         if (config.provider === 'deepseek' || config.provider === 'openai' || config.provider === 'custom' || config.provider === 'glm' || config.provider === 'glm-free') {
             return this.callOpenAICompatible(config, prompt, systemPrompt, options);
@@ -82,6 +87,70 @@ export class ApiClient {
         } else {
             throw new Error(`Unsupported provider: ${config.provider}`);
         }
+    }
+
+    async callProxy(config, prompt, systemPrompt, options = {}) {
+        const installId = await this.getInstallId();
+        const providerMapping = {
+            'gemini': 'gemini',
+            'glm': 'zhipu',
+            'glm-free': 'zhipu',
+            'deepseek': 'openai', // Adjust if worker supports more
+            'openai': 'openai'
+        };
+
+        const providerIdent = providerMapping[config.provider] || 'gemini';
+        let payload = {};
+
+        if (providerIdent === 'gemini') {
+            const model = config.model || 'gemini-1.5-flash';
+            payload = {
+                contents: [{ parts: [{ text: `${systemPrompt}\n\nUser Input:\n${prompt}` }] }],
+                generationConfig: { temperature: options.temperature || 0.1, maxOutputTokens: 8192 }
+            };
+        } else {
+            payload = {
+                model: config.model || 'glm-4-flash',
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: prompt }
+                ]
+            };
+        }
+
+        const response = await this.fetchWithRetry(config.proxyUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Install-ID': installId
+            },
+            body: JSON.stringify({
+                provider: providerIdent,
+                payload: payload
+            })
+        });
+
+        const data = await response.json();
+
+        // Handle variations in response format
+        let content = '';
+        if (providerIdent === 'gemini') {
+            content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        } else {
+            content = data.choices?.[0]?.message?.content;
+        }
+
+        if (!content) throw new Error('Proxy returned empty content');
+        return this.cleanJson(content);
+    }
+
+    async getInstallId() {
+        const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
+        if (!settings.installId) {
+            settings.installId = crypto.randomUUID();
+            await StorageHelper.set(StorageKeys.USER_SETTINGS, settings);
+        }
+        return settings.installId;
     }
 
     async callOpenAICompatible(config, prompt, systemPrompt, options = {}) {
@@ -178,6 +247,18 @@ export class ApiClient {
 
                 // Rate Limit: Use Retry-After header
                 if (response.status === 429) {
+                    // Optimized: Check for our proxy's limit message to avoid pointless retries
+                    const clone = response.clone();
+                    try {
+                        const errorData = await clone.json();
+                        if (errorData.error === 'RATE_LIMIT_EXCEEDED' || errorData.error === 'DAILY_LIMIT_EXCEEDED') {
+                            throw new Error(errorData.message);
+                        }
+                    } catch (e) {
+                        if (e.message.includes('DAILY_LIMIT') || e.message.includes('RATE_LIMIT')) throw e;
+                        // Not our JSON, proceed to standard retry
+                    }
+
                     const retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
                     console.warn(`Rate limited. Waiting ${retryAfter}s before retry...`);
                     await new Promise(r => setTimeout(r, retryAfter * 1000));
@@ -205,32 +286,56 @@ export class ApiClient {
         if (!text) return text;
         let clean = text.trim();
 
-        // 1. Try to unwrap markdown code blocks
-        const matches = clean.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        if (matches && matches[1]) {
-            clean = matches[1].trim();
+        // 1. Try to unwrap markdown code blocks (standard)
+        // Match ```json ... ``` or just ``` ... ```
+        const markdownMatch = clean.match(/```(?:json|JSON)?\s*([\s\S]*?)\s*```/);
+        if (markdownMatch && markdownMatch[1]) {
+            clean = markdownMatch[1].trim();
         }
 
-        // 2. Detect JSON type (object or array)
+        // 2. Heuristic Extraction: Find the widest possible JSON object/array
+        // This handles cases like: "Sure, here is your JSON: { ... } Hope it helps."
         const firstOpen = clean.indexOf('{');
         const firstBracket = clean.indexOf('[');
-        const lastClose = clean.lastIndexOf('}');
-        const lastBracket = clean.lastIndexOf(']');
 
-        // Determine which comes first and is valid
-        if (firstBracket !== -1 && (firstOpen === -1 || firstBracket < firstOpen)) {
-            // Array response
-            if (lastBracket >= firstBracket) {
-                clean = clean.substring(firstBracket, lastBracket + 1);
+        // Determine start index (earliest valid opener)
+        let startIndex = -1;
+        let isArray = false;
+
+        if (firstOpen !== -1 && firstBracket !== -1) {
+            if (firstOpen < firstBracket) {
+                startIndex = firstOpen;
+            } else {
+                startIndex = firstBracket;
+                isArray = true;
             }
         } else if (firstOpen !== -1) {
-            // Object response
-            if (lastClose >= firstOpen) {
-                clean = clean.substring(firstOpen, lastClose + 1);
-            }
-        } else {
-            throw new Error(`No JSON found in response. Raw start: "${text.substring(0, 50)}..."`);
+            startIndex = firstOpen;
+        } else if (firstBracket !== -1) {
+            startIndex = firstBracket;
+            isArray = true;
         }
+
+        if (startIndex !== -1) {
+            // Find the corresponding last closer
+            const lastClose = clean.lastIndexOf('}');
+            const lastBracket = clean.lastIndexOf(']');
+            let endIndex = -1;
+
+            if (isArray) {
+                endIndex = lastBracket;
+            } else {
+                endIndex = lastClose;
+            }
+
+            if (endIndex !== -1 && endIndex > startIndex) {
+                clean = clean.substring(startIndex, endIndex + 1);
+            }
+        }
+
+        // 3. Final cleanup of common bad chars (optional)
+        // e.g. control characters that break JSON.parse
+        // clean = clean.replace(/[\x00-\x1F\x7F-\x9F]/g, ""); 
 
         return clean;
     }

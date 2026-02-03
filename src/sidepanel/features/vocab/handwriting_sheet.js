@@ -1,15 +1,16 @@
 import { t } from '../../../locales/index.js';
+import { notificationService } from '../../../utils/notification_service.js';
 
 export class HandwritingSheet {
     static generate(vocabList, title = t('print.title')) {
         if (!vocabList || vocabList.length === 0) {
-            alert(t('print.empty'));
+            notificationService.alert(t('print.empty'));
             return;
         }
 
         const win = window.open('', '_blank');
         if (!win) {
-            alert(t('print.popupBlock'));
+            notificationService.alert(t('print.popupBlock'));
             return;
         }
 

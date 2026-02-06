@@ -608,6 +608,10 @@ export class PreparationDashboard extends Component {
         await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.drafts);
 
         if (autoStart) {
+            // EXPLICIT STATUS UPDATE (For UI Consistency)
+            draft.status = 'processing';
+            draft.updatedAt = Date.now();
+
             // Auto switch to processing tab
             this.currentFilter = 'processing';
             this.activeTab = 'library';
@@ -677,13 +681,25 @@ export class PreparationDashboard extends Component {
                 }
                 this.handleNewDraft(draft, true, 'background');
             } else {
-                // For direct list action, we still need some feedback. 
-                // Let's at least switch tab and show toast.
+                // EXPLICIT STATUS UPDATE (CRITICAL for filter-based UI)
+                draft.status = 'processing';
+                draft.progress = { current: 0, total: 0, percentage: 0 };
+                draft.updatedAt = Date.now();
+
+                // Sync local array and storage
+                const idx = this.drafts.findIndex(d => d.id === draft.id);
+                if (idx !== -1) this.drafts[idx] = draft;
+                await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.drafts);
+
+                // UI Feedback
                 this.currentFilter = 'processing';
                 notificationService.toast(t('creator.bgProcess.toast') || '分析已启动，请在下表查看进度');
 
+                // Trigger Analysis
                 MessageRouter.sendMessage(MessageTypes.REQUEST_ANALYSIS, { draftId: draft.id });
-                this.loadDrafts();
+
+                // Reload in UI context (optional but safe)
+                await this.loadDrafts();
                 this.render();
             }
         }

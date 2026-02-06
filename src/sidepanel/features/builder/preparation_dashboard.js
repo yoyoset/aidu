@@ -455,23 +455,9 @@ export class PreparationDashboard extends Component {
         }
         if (draft.status === 'processing') {
             const progress = document.createElement('span');
-            progress.className = styles.processingIndicator; // New Class
-            // Add dots animation
+            progress.className = styles.processingIndicator;
             progress.innerHTML = `${draft.progress?.percentage || 0}% <span class="loading-dots"><i class="ri-more-line"></i></span>`;
-            progress.style.cursor = 'pointer';
-            progress.title = t('dashboard.draft.viewProgress');
-            progress.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                // Re-open Overlay
-                this.creatorModal.showRealtimeOverlay(draft.id, async () => {
-                    await this.loadDrafts();
-                    const updated = this.drafts.find(d => d.id === draft.id);
-                    if (updated && updated.status === 'ready') {
-                        this.handleAction(updated, 'read_partial');
-                    }
-                });
-            };
+            progress.title = t('dashboard.draft.processing') || '处理中...';
             meta.appendChild(progress);
         }
 
@@ -544,20 +530,7 @@ export class PreparationDashboard extends Component {
                 actionArea.appendChild(readBtn);
             }
         } else if (draft.status === 'processing') {
-            // 1. View Progress (Primary Action for Processing)
-            const viewBtn = document.createElement('button');
-            viewBtn.className = styles.btnGhost; // New style
-            viewBtn.innerHTML = `<span><i class="ri-eye-line"></i></span> ${t('dashboard.draft.viewProgress') || '查看进度'}`;
-            viewBtn.onclick = (e) => {
-                this.creatorModal.showRealtimeOverlay(draft.id, async () => {
-                    await this.loadDrafts();
-                    const updated = this.drafts.find(d => d.id === draft.id);
-                    if (updated && updated.status === 'ready') {
-                        this.handleAction(updated, 'read_partial');
-                    }
-                });
-            };
-            actionArea.appendChild(viewBtn);
+            // Processing items already show chunk grid, no need for "View Progress" button
 
             // 2. Read Partial (If data exists)
             if (hasData) {
@@ -627,7 +600,6 @@ export class PreparationDashboard extends Component {
         const index = this.drafts.findIndex(d => d.id === draft.id);
         if (index !== -1) {
             const existing = this.drafts[index];
-            // Smart Merge: If text hasn't changed and we aren't forcing re-analysis, preserve data.
             if (!autoStart && existing.rawText === draft.rawText) {
                 draft.data = existing.data;
                 draft.status = existing.status;
@@ -638,29 +610,22 @@ export class PreparationDashboard extends Component {
             this.drafts.unshift(draft);
         }
         await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.drafts);
-        this.render();
 
         if (autoStart) {
-            const hasKey = await this.checkApiKey();
-            if (!hasKey) {
-                draft.status = 'draft';
-                await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.drafts);
-                this.render();
-                return;
-            }
+            // Auto switch to processing tab
+            this.currentFilter = 'processing';
+            this.activeTab = 'library';
 
-            // User Note: "Background" and "Realtime" share UI logic.
-            // We show the overlay for both. User can minimize if desired.
-            this.creatorModal.showRealtimeOverlay(draft.id, async () => {
-                // On Complete -> Transitions directly to Reader
-                await this.loadDrafts(); // Refresh state
-                const updated = this.drafts.find(d => d.id === draft.id);
-                if (updated && updated.status === 'ready') {
-                    this.handleAction(updated, 'read_partial');
-                }
-            });
-            MessageRouter.sendMessage(MessageTypes.REQUEST_ANALYSIS, { draftId: draft.id });
+            // Guidance Toast
+            notificationService.toast(t('creator.bgProcess.toast') || '分析已启动，请在下表查看进度');
+
+            if (mode === 'realtime') {
+                MessageRouter.sendMessage(MessageTypes.REQUEST_ANALYSIS, { draftId: draft.id });
+            }
         }
+
+        await this.loadDrafts();
+        this.render();
     }
 
     async handleMerge() {
@@ -716,14 +681,14 @@ export class PreparationDashboard extends Component {
                 }
                 this.handleNewDraft(draft, true, 'background');
             } else {
-                this.creatorModal.showRealtimeOverlay(draft.id, async () => {
-                    await this.loadDrafts();
-                    const updated = this.drafts.find(d => d.id === draft.id);
-                    if (updated && updated.status === 'ready') {
-                        this.handleAction(updated, 'read_partial');
-                    }
-                });
+                // For direct list action, we still need some feedback. 
+                // Let's at least switch tab and show toast.
+                this.currentFilter = 'processing';
+                notificationService.toast(t('creator.bgProcess.toast') || '分析已启动，请在下表查看进度');
+
                 MessageRouter.sendMessage(MessageTypes.REQUEST_ANALYSIS, { draftId: draft.id });
+                this.loadDrafts();
+                this.render();
             }
         }
     }

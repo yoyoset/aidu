@@ -238,8 +238,25 @@ export class CreatorModal extends Component {
         const draft = await this.createDraftObject(title, text, status);
         draft.analysisMode = analysisMode; // Use specific mode
 
-        this.callbacks.onDraftCreated(draft, autoStart, mode);
-        this.close();
+        if (autoStart) {
+            this.animateShrink(() => {
+                this.callbacks.onDraftCreated(draft, autoStart, mode);
+                this.close();
+            });
+        } else {
+            this.callbacks.onDraftCreated(draft, autoStart, mode);
+            this.close();
+        }
+    }
+
+    /**
+     * Shrink animation before closing
+     */
+    animateShrink(callback) {
+        if (!this.modalContent) return callback();
+        this.modalContent.classList.add(styles.shrinkOut);
+        // Wait for animation duration (0.4s)
+        setTimeout(callback, 400);
     }
 
     async handleJsonAction() {

@@ -315,3 +315,23 @@
         transform: translateY(0);
     }
 }
+
+.shrinkOut {
+    animation: shrinkToTab 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+    pointer-events: none;
+}
+
+@keyframes shrinkToTab {
+    0% {
+        transform: scale(1) translate(0, 0);
+        opacity: 1;
+        filter: blur(0);
+    }
+
+    100% {
+        /* Aim towards the top-left area where tabs usually are */
+        transform: scale(0.1) translate(-200px, -300px);
+        opacity: 0;
+        filter: blur(4px);
+    }
+}

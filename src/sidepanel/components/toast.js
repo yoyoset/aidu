@@ -25,13 +25,27 @@ export class Toast {
 
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
-        toast.textContent = message;
+
+        // Icon mapping for M3 Snackbar
+        const icons = {
+            'info': 'ri-information-line',
+            'success': 'ri-checkbox-circle-line',
+            'error': 'ri-error-warning-line',
+            'warning': 'ri-alert-line'
+        };
+        const iconClass = icons[type] || icons.info;
+
+        toast.innerHTML = `
+            <i class="${iconClass}" style="font-size: 1.25rem;"></i>
+            <span>${message}</span>
+        `;
 
         this.container.appendChild(toast);
 
+        // Auto removal logic managed by CSS animations
         setTimeout(() => {
             toast.style.opacity = '0';
-            toast.style.transform = 'translateY(-10px)';
+            toast.style.transform = 'translate(-50%, -10px)';
             setTimeout(() => toast.remove(), 300);
         }, duration);
     }

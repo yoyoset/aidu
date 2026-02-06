@@ -148,7 +148,7 @@ export default {
     'creator.save': '保存草稿',
     'creator.saveChanges': '保存更改',
     'creator.bgProcess.hint': '后台静默处理',
-    'creator.bgProcess.toast': '已转入后台运行',
+    'creator.bgProcess.toast': '分析已启动，请在下表中查看进度',
     'creator.analyze': '开始分析',
     'creator.analyze.simple': '简单分析',
     'creator.analyze.deep': '深度分析',

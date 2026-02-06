@@ -147,8 +147,8 @@ export default {
 
     'creator.save': 'Save Draft',
     'creator.saveChanges': 'Save Changes',
-    'creator.bgProcess.hint': 'Run in background (Silent)',
-    'creator.bgProcess.toast': 'Analysis minimized to background.',
+    'creator.bgProcess.hint': 'Process silently in background',
+    'creator.bgProcess.toast': 'Analysis started. View progress below.',
     'creator.analyze': 'Start Analysis',
     'creator.analyze.simple': 'Simple Analysis',
     'creator.analyze.deep': 'Deep Analysis',

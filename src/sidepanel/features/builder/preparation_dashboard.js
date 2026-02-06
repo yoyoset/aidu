@@ -412,10 +412,6 @@ export class PreparationDashboard extends Component {
                     createdAt: draft.createdAt
                 });
             }));
-            actionsCol.appendChild(this.createIconBtn('<i class="ri-hourglass-2-line"></i>', t('dashboard.draft.bgProcess'), (e) => {
-                e.stopPropagation();
-                this.handleAction(draft, 'background');
-            }));
         }
         actionsCol.appendChild(this.createIconBtn('<i class="ri-delete-bin-line"></i>', t('dashboard.draft.delete'), (e) => { e.stopPropagation(); this.handleDelete(draft); }));
 

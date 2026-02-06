@@ -5,6 +5,9 @@ import { ReaderDictionary } from './reader_dictionary.js';
 import { vocabService } from '../../../services/vocab_service.js';
 import { StorageHelper, StorageKeys } from '../../../utils/storage.js';
 import { t } from '../../../locales/index.js';
+import { analysisQueue } from '../../../services/analysis_queue_manager.js';
+import { AnalysisTray } from './analysis_tray.js';
+import { ThemeModal } from '../settings/theme_modal.js';
 
 export class ReaderView extends Component {
     constructor(element, callbacks) {
@@ -18,17 +21,22 @@ export class ReaderView extends Component {
         this.audio = new ReaderAudio();
         this.dictionary = null; // Init on render
 
-        this.currentIndex = 0;
-        this.sentences = [];
-
         // Timer
         this.readingTime = 0;
         this.timerInterval = null;
+        this.locateTimeout = null;
+        this.tray = null;
+        this.currentHighlightIndex = null;
+        this.sentences = [];
     }
 
     show(draft) {
         try {
             console.log('ReaderView: Showing draft', draft?.id);
+
+            // Lifecycle Governance: Cleanup previous state if any
+            this.destroy();
+
             this.element.classList.remove('hidden');
             this.element.style.display = 'block';
             this.draft = draft || { data: { sentences: [] }, title: 'Error' };
@@ -38,6 +46,9 @@ export class ReaderView extends Component {
             this.readingTime = this.draft.readingTime || 0;
             this.startTimer();
 
+            // Apply Custom Appearance (Persistence Fix)
+            new ThemeModal().initTheme();
+
             this.render();
         } catch (e) {
             console.error("ReaderView Show Error:", e);
@@ -45,15 +56,64 @@ export class ReaderView extends Component {
         }
     }
 
+    destroy() {
+        // 1. Stop Intervals
+        this.stopTimer();
+        if (this.audio) this.audio.cancel();
+
+        // 2. Kill Subscriptions
+        if (this.queueUnsubscribe) {
+            this.queueUnsubscribe();
+            this.queueUnsubscribe = null;
+        }
+
+        // 3. Destroy Sub-components
+        if (this.tray) {
+            this.tray.destroy();
+            this.tray = null;
+        }
+        if (this.dictionary) {
+            this.dictionary.close();
+            this.dictionary = null;
+        }
+
+        // 4. Remove Global Listeners
+        if (this.isListening && this.storageHandler) {
+            chrome.storage.onChanged.removeListener(this.storageHandler);
+            this.isListening = false;
+        }
+
+        // 5. Reset State
+        if (this.locateTimeout) {
+            clearTimeout(this.locateTimeout);
+            this.locateTimeout = null;
+        }
+        this.currentHighlightIndex = null;
+        this.sentences = [];
+        analysisQueue.clearSession(); // Prevent cache growth between articles
+    }
+
     startTimer() {
         this.stopTimer(); // Safety
+        this.updateTimerUI(); // Initial draw
         this.timerInterval = setInterval(() => {
             this.readingTime++;
+            this.updateTimerUI();
+
             // Save every 10 seconds to avoid data loss
             if (this.readingTime % 10 === 0) {
                 this.saveProgress();
             }
         }, 1000);
+    }
+
+    updateTimerUI() {
+        if (!this.timerEl) return;
+        const totalSecs = this.readingTime;
+        const mins = Math.floor(totalSecs / 60);
+        const secs = totalSecs % 60;
+        const formatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        this.timerEl.innerHTML = `<i class="ri-time-line" style="margin-right:4px;"></i>${formatted}`;
     }
 
     stopTimer() {
@@ -86,14 +146,29 @@ export class ReaderView extends Component {
         this.element.innerHTML = '';
         this.dictionary = new ReaderDictionary(this.element); // Pass container for popovers
 
+        // Analysis Tray
+        this.tray = new AnalysisTray(this.element, {
+            onLocate: (lemma) => this.locateWordInText(lemma)
+        });
+        this.tray.render();
+
+        // Listen for analysis completion & Store unsubscribe
+        this.queueUnsubscribe = analysisQueue.subscribe(({ lemma, status }) => {
+            if (status === 'ready') {
+                this.refreshWordStyling(lemma);
+                // AnalysisTray will update itself via its own subscription
+            }
+        });
+
         // Auto-Refresh Listener
         this.startStorageListener();
 
-        // Preload saved words for highlighting
-        let savedSet = new Set();
+        // Preload saved words and analysis status
+        let vocabData = {};
         try {
-            savedSet = await vocabService.getSavedSet();
-        } catch (e) { console.error("Failed to load saved words", e); }
+            vocabData = await vocabService.getAll();
+        } catch (e) { console.error("Failed to load vocab data", e); }
+        const savedSet = new Set(Object.keys(vocabData));
 
         const container = document.createElement('div');
         container.className = styles.readerContainer || 'readerContainer';
@@ -127,6 +202,25 @@ export class ReaderView extends Component {
         this.element.appendChild(container);
 
         this.updateTranslationVisibility();
+
+        // 4. Sync existing deep analysis results to the tray
+        const uniqueLemmas = new Set();
+        this.sentences.forEach(s => {
+            if (s.segments) {
+                s.segments.forEach(seg => {
+                    const l = seg[2];
+                    if (l) uniqueLemmas.add(l.toLowerCase());
+                });
+            }
+        });
+
+        uniqueLemmas.forEach(l => {
+            const entry = vocabData[l];
+            if (entry && entry.deepData) {
+                // Notifying analysisQueue will update AnalysisTray and Dashed Underlines
+                analysisQueue.push(entry.word, l, '');
+            }
+        });
     }
 
     renderHeader(container) {
@@ -135,28 +229,42 @@ export class ReaderView extends Component {
 
         const backBtn = document.createElement('button');
         backBtn.className = styles.iconBtn || 'iconBtn';
-        backBtn.innerHTML = '←';
+        backBtn.innerHTML = '<i class="ri-arrow-left-s-line"></i>';
         backBtn.onclick = () => {
-            this.audio.cancel();
-            this.stopTimer(); // Stop Timer on exit
+            this.destroy(); // Full cleanup on exit
             if (this.callbacks.onExit) this.callbacks.onExit();
         };
 
         const title = document.createElement('div');
         title.className = styles.readerTitle || 'readerTitle';
-        title.textContent = (this.draft?.title || t('reader.title')).substring(0, 20) + '...';
+        title.textContent = (this.draft?.title || t('reader.title')).substring(0, 15) + '...';
+
+        const timerCapsule = document.createElement('div');
+        timerCapsule.className = styles.timerCapsule || 'timerCapsule';
+        timerCapsule.title = t('reader.readingTime') || 'Reading Time';
+        this.timerEl = timerCapsule;
+        this.updateTimerUI(); // Render current time immediately
 
         const controls = document.createElement('div');
         controls.className = styles.headerControls || 'headerControls';
 
+        // Analysis Tray Toggle (New Position)
+        const trayBtn = document.createElement('button');
+        trayBtn.className = styles.iconBtn || 'iconBtn';
+        trayBtn.innerHTML = '<i class="ri-flask-line"></i>';
+        trayBtn.title = t('deep.analysis');
+        trayBtn.onclick = () => {
+            if (this.tray) this.tray.toggle();
+        };
+
         // Translation Toggle
         const transBtn = document.createElement('button');
         transBtn.className = styles.iconBtn || 'iconBtn';
-        transBtn.innerHTML = this.showTranslations ? '👁️' : '👁️‍🗨️';
+        transBtn.innerHTML = this.showTranslations ? '<i class="ri-eye-line"></i>' : '<i class="ri-eye-off-line"></i>';
         transBtn.title = t('reader.toggleTrans');
         transBtn.onclick = () => {
             this.showTranslations = !this.showTranslations;
-            transBtn.innerHTML = this.showTranslations ? '👁️' : '👁️‍🗨️';
+            transBtn.innerHTML = this.showTranslations ? '<i class="ri-eye-line"></i>' : '<i class="ri-eye-off-line"></i>';
             this.updateTranslationVisibility();
         };
 
@@ -164,27 +272,30 @@ export class ReaderView extends Component {
         const ttsBtn = document.createElement('button');
         ttsBtn.className = styles.iconBtn || 'iconBtn';
         ttsBtn.id = 'tts-btn';
-        ttsBtn.innerHTML = '🔊';
+        ttsBtn.innerHTML = '<i class="ri-volume-up-line"></i>';
         ttsBtn.onclick = () => this.toggleTTS(ttsBtn);
 
         // Settings Button
         const settingsBtn = document.createElement('button');
         settingsBtn.className = styles.iconBtn || 'iconBtn';
-        settingsBtn.innerHTML = '⚙️';
+        settingsBtn.innerHTML = '<i class="ri-equalizer-line"></i>';
         settingsBtn.onclick = () => {
             const panel = container.querySelector(`.${styles.settingsPanel || 'settingsPanel'}`);
             if (panel) panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
         };
 
+        controls.appendChild(trayBtn);
         controls.appendChild(transBtn);
         controls.appendChild(ttsBtn);
         controls.appendChild(settingsBtn);
 
         header.appendChild(backBtn);
         header.appendChild(title);
+        header.appendChild(timerCapsule);
         header.appendChild(controls);
         container.appendChild(header);
     }
+
 
 
     renderSettings(container) {
@@ -196,9 +307,28 @@ export class ReaderView extends Component {
             <div class="${styles.settingGroup}"><label>${t('reader.settings.voice')}:</label><select id="tts-voice" style="max-width:120px;"><option>${t('common.loading')}</option></select></div>
             <div class="${styles.settingGroup}"><label>${t('reader.settings.speed')}:</label><select id="tts-speed"><option value="0.8">0.8x</option><option value="1.0" selected>1.0x</option><option value="1.2">1.2x</option></select></div>
             <div class="${styles.settingGroup}"><label>${t('reader.settings.size')}:</label><button id="font-dec">-</button><span id="font-val">${this.fontSize}%</span><button id="font-inc">+</button></div>
+            <div class="${styles.settingGroup}">
+                <label>${t('reader.settings.font')}:</label>
+                <select id="reader-font-family">
+                    <option value="'Inter', sans-serif">${t('reader.font.sans')}</option>
+                    <option value="'Merriweather', serif">${t('reader.font.serif')}</option>
+                    <option value="'JetBrains Mono', monospace">${t('reader.font.mono')}</option>
+                </select>
+            </div>
+            <div class="${styles.settingGroup}">
+                <label>${t('reader.settings.bold')}:</label>
+                <input type="checkbox" id="reader-font-bold" style="cursor:pointer;">
+            </div>
+            <div class="${styles.settingGroup}"><label>${t('settings.appearance')}:</label><button id="open-theme-btn" class="${styles.iconBtnInline}"><i class="ri-palette-line"></i></button></div>
         `;
 
         container.appendChild(settingsPanel);
+
+        // Bind Theme Modal
+        settingsPanel.querySelector('#open-theme-btn').onclick = () => {
+            const modal = new ThemeModal(document.body);
+            modal.show();
+        };
 
         // Bind Audio Settings
         this.audio.loadVoices(settingsPanel.querySelector('#tts-voice'));
@@ -215,7 +345,54 @@ export class ReaderView extends Component {
             this.fontSize = Math.max(80, this.fontSize - 10);
             val.textContent = this.fontSize + '%';
             if (this.contentArea) this.contentArea.style.fontSize = this.fontSize + '%';
+            this.saveTypography();
         };
+
+        // Typography Settings
+        const fontSelect = settingsPanel.querySelector('#reader-font-family');
+        const boldCheck = settingsPanel.querySelector('#reader-font-bold');
+
+        fontSelect.onchange = (e) => {
+            document.documentElement.style.setProperty('--user-font-family', e.target.value);
+            this.saveTypography();
+        };
+
+        boldCheck.onchange = (e) => {
+            document.documentElement.style.setProperty('--user-font-weight', e.target.checked ? '700' : '400');
+            this.saveTypography();
+        };
+
+        // Load Typography
+        this.loadTypography(fontSelect, boldCheck);
+    }
+
+    async saveTypography() {
+        const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
+        const fontSelect = this.element.querySelector('#reader-font-family');
+        const boldCheck = this.element.querySelector('#reader-font-bold');
+
+        settings.typography = {
+            fontSize: this.fontSize,
+            fontFamily: fontSelect?.value || "'Inter', sans-serif",
+            fontWeight: boldCheck?.checked ? '700' : '400'
+        };
+        await StorageHelper.set(StorageKeys.USER_SETTINGS, settings);
+    }
+
+    async loadTypography(fontSelect, boldCheck) {
+        const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
+        const typo = settings.typography || { fontSize: 100, fontFamily: "'Inter', sans-serif", fontWeight: '400' };
+
+        this.fontSize = typo.fontSize || 100;
+        if (fontSelect) fontSelect.value = typo.fontFamily;
+        if (boldCheck) boldCheck.checked = typo.fontWeight === '700';
+
+        document.documentElement.style.setProperty('--user-font-family', typo.fontFamily);
+        document.documentElement.style.setProperty('--user-font-weight', typo.fontWeight);
+        if (this.contentArea) this.contentArea.style.fontSize = `${this.fontSize}%`;
+
+        const val = this.element.querySelector('#font-val');
+        if (val) val.textContent = this.fontSize + '%';
     }
 
     createAtomicBlock(sentence, index, savedSet) {
@@ -227,7 +404,7 @@ export class ReaderView extends Component {
             // Ignore if clicking bubble or button
             if (e.target.tagName === 'BUTTON' || (e.target.closest && e.target.closest('button'))) return;
             if (styles.bubble && e.target.closest && e.target.closest(`.${styles.bubble}`)) return;
-            this.playSequence(index);
+            this.playSequence(index, { continuous: false });
         };
 
         // --- 1. Original Text Row ---
@@ -237,22 +414,31 @@ export class ReaderView extends Component {
         // Play Button
         const playBtn = document.createElement('button');
         playBtn.className = `${styles.controlBtn || 'controlBtn'} ${styles.playBtn || 'playBtn'} js-play-btn`;
-        playBtn.innerHTML = '▶️';
+        playBtn.innerHTML = '<i class="ri-play-mini-line"></i>';
         playBtn.onclick = (e) => {
             e.stopPropagation();
-            this.playSequence(index);
+            this.playSequence(index, { continuous: false });
         };
         originalDiv.appendChild(playBtn);
 
         const textContainer = document.createElement('div');
         textContainer.style.flex = '1';
 
+        // Build Index-to-PV mapping
+        const indexToPv = new Map();
+        if (sentence.phrasal_verbs) {
+            sentence.phrasal_verbs.forEach(pv => {
+                pv.indices.forEach(idx => indexToPv.set(idx, pv));
+            });
+        }
+
         if (sentence.segments && Array.isArray(sentence.segments)) {
-            sentence.segments.forEach(seg => {
+            sentence.segments.forEach((seg, segIdx) => {
                 const [word, pos, lemma] = seg;
                 const bubble = document.createElement('span');
                 bubble.textContent = word + ' ';
                 bubble.className = styles.bubble || 'bubble';
+                bubble.dataset.segIdx = segIdx;
                 const isInteractive = !['STOP', 'NUM', 'PUNCT'].includes(pos);
 
                 if (isInteractive) {
@@ -260,16 +446,63 @@ export class ReaderView extends Component {
 
                     if (lemma) bubble.dataset.lemma = lemma.toLowerCase(); // For auto-update
 
+                    // Initial styling if already analyzed
+                    if (analysisQueue.getCache(lemma)) {
+                        bubble.classList.add(styles.deepReady || 'deepReady');
+                    }
+
                     if (savedSet && savedSet.has(lemma?.toLowerCase())) {
                         bubble.classList.add(styles.savedBubble || 'savedBubble');
                     }
 
+                    const linkedPv = indexToPv.get(segIdx);
+                    if (linkedPv) {
+                        bubble.classList.add(styles.phrasalMember || 'phrasalMember');
+                        bubble.title = `${t('deep.phrasalVerb') || 'Phrasal Verb'}: ${linkedPv.lemma}`;
+                    }
+
+                    // Hover Pre-highlight
+                    bubble.onmouseenter = () => {
+                        const pv = indexToPv.get(segIdx);
+                        if (pv) {
+                            block.querySelectorAll(`.${styles.bubble}`).forEach(b => {
+                                if (pv.indices.includes(parseInt(b.dataset.segIdx))) {
+                                    b.classList.add(styles.linkedHover || 'linkedHover');
+                                }
+                            });
+                        }
+                    };
+                    bubble.onmouseleave = () => {
+                        block.querySelectorAll(`.${styles.linkedHover}`).forEach(b => b.classList.remove(styles.linkedHover || 'linkedHover'));
+                    };
+
                     bubble.onclick = (e) => {
                         e.stopPropagation();
-                        // Delegate to Dictionary Module
+
+                        // 1. Phrasal Verb Special Case
+                        const pv = indexToPv.get(segIdx);
+                        let finalSeg = seg;
+
+                        if (pv) {
+                            // Highlighting members
+                            block.querySelectorAll(`.${styles.linkedHighlight}`).forEach(b => b.classList.remove(styles.linkedHighlight || 'linkedHighlight'));
+                            block.querySelectorAll(`.${styles.bubble}`).forEach(b => {
+                                if (pv.indices.includes(parseInt(b.dataset.segIdx))) {
+                                    b.classList.add(styles.linkedHighlight || 'linkedHighlight');
+                                }
+                            });
+
+                            // Create synthetic segment for the whole phrase
+                            finalSeg = [pv.text, 'VERB', pv.lemma];
+                        } else {
+                            // Standard single word click: clear PV highlights
+                            block.querySelectorAll(`.${styles.linkedHighlight}`).forEach(b => b.classList.remove(styles.linkedHighlight || 'linkedHighlight'));
+                        }
+
+                        // Delegate to Dictionary Module with (possibly synthetic) segment
                         this.dictionary.handleBubbleClick(
                             bubble,
-                            seg,
+                            finalSeg,
                             sentence.original_text,
                             (txt) => this.audio.speak(txt),
                             (isSaved) => {
@@ -294,7 +527,7 @@ export class ReaderView extends Component {
         // Toggle Button
         const transToggle = document.createElement('button');
         transToggle.className = `${styles.controlBtn || 'controlBtn'} ${styles.transBtn || 'transBtn'} js-trans-toggle`;
-        transToggle.innerHTML = this.showTranslations ? '👁️' : '👁️‍🗨️';
+        transToggle.innerHTML = this.showTranslations ? '<i class="ri-eye-line"></i>' : '<i class="ri-eye-off-line"></i>';
 
         transToggle.onclick = (e) => {
             e.stopPropagation();
@@ -303,10 +536,10 @@ export class ReaderView extends Component {
                 const isObscured = textEl.classList.contains(styles.obscured || 'obscured');
                 if (isObscured) {
                     textEl.classList.remove(styles.obscured || 'obscured');
-                    transToggle.innerHTML = '👁️';
+                    transToggle.innerHTML = '<i class="ri-eye-line"></i>';
                 } else {
                     textEl.classList.add(styles.obscured || 'obscured');
-                    transToggle.innerHTML = '👁️‍🗨️';
+                    transToggle.innerHTML = '<i class="ri-eye-off-line"></i>';
                 }
             }
         };
@@ -327,7 +560,7 @@ export class ReaderView extends Component {
             e.stopPropagation();
             if (transText.classList.contains(styles.obscured || 'obscured')) {
                 transText.classList.remove(styles.obscured || 'obscured');
-                transToggle.innerHTML = '👁️';
+                transToggle.innerHTML = '<i class="ri-eye-line"></i>';
             }
         };
 
@@ -342,7 +575,7 @@ export class ReaderView extends Component {
 
             const expToggle = document.createElement('button');
             expToggle.className = `${styles.controlBtn || 'controlBtn'} ${styles.transBtn || 'transBtn'} js-exp-toggle`;
-            expToggle.innerHTML = this.showTranslations ? '👁️' : '👁️‍🗨️';
+            expToggle.innerHTML = this.showTranslations ? '<i class="ri-eye-line"></i>' : '<i class="ri-eye-off-line"></i>';
 
             expToggle.onclick = (e) => {
                 e.stopPropagation();
@@ -351,10 +584,10 @@ export class ReaderView extends Component {
                     const isObscured = textEl.classList.contains(styles.obscured || 'obscured');
                     if (isObscured) {
                         textEl.classList.remove(styles.obscured || 'obscured');
-                        expToggle.innerHTML = '👁️';
+                        expToggle.innerHTML = '<i class="ri-eye-line"></i>';
                     } else {
                         textEl.classList.add(styles.obscured || 'obscured');
-                        expToggle.innerHTML = '👁️‍🗨️';
+                        expToggle.innerHTML = '<i class="ri-eye-off-line"></i>';
                     }
                 }
             };
@@ -364,7 +597,7 @@ export class ReaderView extends Component {
             expText.className = 'js-exp-text';
             expText.style.fontSize = '0.85em';
             expText.style.color = '#795548';
-            expText.textContent = `💡 ${sentence.explanation}`;
+            expText.innerHTML = `<i class="ri-lightbulb-line" style="margin-right:4px;"></i>${sentence.explanation}`;
             expText.style.flex = '1';
 
             if (!this.showTranslations) {
@@ -375,7 +608,7 @@ export class ReaderView extends Component {
                 e.stopPropagation();
                 if (expText.classList.contains(styles.obscured || 'obscured')) {
                     expText.classList.remove(styles.obscured || 'obscured');
-                    expToggle.innerHTML = '👁️';
+                    expToggle.innerHTML = '<i class="ri-eye-line"></i>';
                 }
             };
 
@@ -389,7 +622,7 @@ export class ReaderView extends Component {
     updateTranslationVisibility() {
         const method = this.showTranslations ? 'remove' : 'add';
         const cls = styles.obscured || 'obscured';
-        const icon = this.showTranslations ? '👁️' : '👁️‍🗨️';
+        const icon = this.showTranslations ? '<i class="ri-eye-line"></i>' : '<i class="ri-eye-off-line"></i>';
 
         // Update Text
         this.element.querySelectorAll('.js-trans-text').forEach(el => el.classList[method](cls));
@@ -405,7 +638,7 @@ export class ReaderView extends Component {
             this.stopPlayback();
         } else {
             const startIdx = this.currentHighlightIndex !== null && this.currentHighlightIndex !== undefined ? this.currentHighlightIndex : 0;
-            this.playSequence(startIdx);
+            this.playSequence(startIdx, { continuous: true });
         }
     }
 
@@ -413,16 +646,15 @@ export class ReaderView extends Component {
         this.audio.cancel();
 
         // Reset all individual play buttons
-        this.element.querySelectorAll('.js-play-btn').forEach(b => b.innerHTML = '▶️');
+        this.element.querySelectorAll('.js-play-btn').forEach(b => b.innerHTML = '<i class="ri-play-mini-line"></i>');
 
         this.highlightSentence(null);
         const btn = this.element.querySelector('#tts-btn');
-        if (btn) btn.innerHTML = '🔊';
+        if (btn) btn.innerHTML = '<i class="ri-volume-up-line"></i>';
     }
 
-    playSequence(index, isAuto = false) {
-        const btn = this.element.querySelector('#tts-btn');
-        if (btn) btn.innerHTML = '⏹️';
+    playSequence(index, options = {}) {
+        const { isAuto = false, continuous = true } = options;
 
         // Toggle Logic: If manual click and already playing this index, stop it.
         if (!isAuto && this.audio.isPlaying && this.currentIndex === index) {
@@ -435,14 +667,17 @@ export class ReaderView extends Component {
             return;
         }
 
+        const btn = this.element.querySelector('#tts-btn');
+        if (btn) btn.innerHTML = '<i class="ri-stop-mini-line"></i>';
+
         this.currentIndex = index;
 
         // Update individual buttons
-        this.element.querySelectorAll('.js-play-btn').forEach(b => b.innerHTML = '▶️');
+        this.element.querySelectorAll('.js-play-btn').forEach(b => b.innerHTML = '<i class="ri-play-mini-line"></i>');
         const currentBlock = this.contentArea.querySelector(`div[data-index="${index}"]`);
         if (currentBlock) {
             const playBtn = currentBlock.querySelector('.js-play-btn');
-            if (playBtn) playBtn.innerHTML = '⏹️';
+            if (playBtn) playBtn.innerHTML = '<i class="ri-stop-mini-line"></i>';
         }
 
         // Manual interactions should highlight immediately for feedback
@@ -459,16 +694,13 @@ export class ReaderView extends Component {
         setTimeout(() => {
             this.audio.speak(text,
                 () => {
-                    // On End -> Play Next
+                    // On End -> Play Next if continuous mode
                     // Only continue if we are still in "playing" mode (user didn't stop)
-                    if (this.audio.isPlaying) {
-                        this.playSequence(index + 1, true);
-                    } else {
-                        // If stopped naturally (e.g. end of sequence but isPlaying false?), ensure button reset
-                        // But isPlaying is likely true here if we are chaining.
-                        // If we are here, it means this sentence finished. 
-                        // If we DON'T recurse, we should reset buttons.
-                        // But playSequence recurses.
+                    if (this.audio.isPlaying && continuous) {
+                        this.playSequence(index + 1, { isAuto: true, continuous: true });
+                    } else if (this.audio.isPlaying && !continuous) {
+                        // If single sentence finished, just stop visual indicators but keep global state clean
+                        this.stopPlayback();
                     }
                 },
                 (e) => {
@@ -501,8 +733,30 @@ export class ReaderView extends Component {
             const newBlock = this.contentArea.querySelector(`div[data-index="${index}"]`);
             if (newBlock) {
                 newBlock.classList.add(styles.active || 'active');
-                newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                newBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
+        }
+    }
+
+    refreshWordStyling(lemma) {
+        const bubbles = this.element.querySelectorAll(`span[data-lemma="${lemma.toLowerCase()}"]`);
+        bubbles.forEach(b => b.classList.add(styles.deepReady || 'deepReady'));
+    }
+
+    locateWordInText(lemma) {
+        if (this.locateTimeout) {
+            clearTimeout(this.locateTimeout);
+            this.locateTimeout = null;
+        }
+
+        const target = this.element.querySelector(`span[data-lemma="${lemma.toLowerCase()}"]`);
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.classList.add(styles.active || 'active');
+            this.locateTimeout = setTimeout(() => {
+                target.classList.remove(styles.active || 'active');
+                this.locateTimeout = null;
+            }, 2000);
         }
     }
 
@@ -510,7 +764,7 @@ export class ReaderView extends Component {
         if (this.isListening) return;
         this.isListening = true;
 
-        chrome.storage.onChanged.addListener((changes, area) => {
+        this.storageHandler = (changes, area) => {
             if (area === 'local') {
                 // Check if changes involve vocab (any key starting with vocab_)
                 const hasVocabChange = Object.keys(changes).some(k => k.startsWith('vocab_'));
@@ -518,7 +772,8 @@ export class ReaderView extends Component {
                     this.updateHighlights();
                 }
             }
-        });
+        };
+        chrome.storage.onChanged.addListener(this.storageHandler);
     }
 
     async updateHighlights() {

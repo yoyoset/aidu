@@ -43,7 +43,7 @@ export class VocabReview extends Component {
         header.style.padding = '0 4px';
 
         const counter = document.createElement('span');
-        counter.style.color = '#555'; // Fixed: visible on white
+        counter.style.color = 'var(--md-sys-color-on-surface-variant)';
         counter.style.fontSize = '0.9em';
         counter.style.fontWeight = 'bold';
         // Calculate progress: 1-based index
@@ -52,7 +52,7 @@ export class VocabReview extends Component {
 
         const closeBtn = document.createElement('button');
         closeBtn.className = styles.closeReviewBtn;
-        closeBtn.innerHTML = '×';
+        closeBtn.innerHTML = '<i class="ri-close-line"></i>';
         closeBtn.onclick = () => this.finish();
 
         header.appendChild(counter);
@@ -74,7 +74,7 @@ export class VocabReview extends Component {
         container.innerHTML += `
             <div style="text-align:center; padding: 40px;">
                 <h2 style="font-size: 2em; margin-bottom: 20px;">${t('review.allDone')}</h2>
-                <div style="font-size: 1.1em; color: #555; margin-bottom: 30px;">
+                <div style="font-size: 1.1em; color: var(--md-sys-color-on-surface-variant); margin-bottom: 30px;">
                     <p>${t('review.summary', { reviewed: this.stats.reviewed })}</p>
                     <p>${t('review.stats', { mastered: this.stats.mastered, forgotten: this.stats.forgotten })}</p>
                 </div>
@@ -98,7 +98,7 @@ export class VocabReview extends Component {
         front.innerHTML = `
             <div class="${styles.cardWord}">${word.word}</div>
             <div class="${styles.cardPhonetic}">${word.phonetic || ''}</div>
-            <div class="${styles.cardContext}" style="margin-top:20px; font-size:1.1em; color:#555;">
+            <div class="${styles.cardContext}" style="margin-top:20px; font-size:1.1em; color:var(--md-sys-color-on-surface-variant);">
                 ${this.createCloze(word.context, word.word)}
             </div>
             <div class="${styles.cardHint}">${t('review.flip')}</div>
@@ -111,7 +111,7 @@ export class VocabReview extends Component {
             <div class="${styles.cardHeader}">
                 <span class="${styles.cardWordSmall}">${word.word}</span>
                 <span class="${styles.cardPos}">${word.pos}</span>
-                <button class="${styles.iconBtn}" id="edit-btn" title="${t('dashboard.draft.edit')}">✏️</button>
+                <button class="${styles.iconBtn}" id="edit-btn" title="${t('dashboard.draft.edit')}"><i class="ri-edit-line"></i></button>
             </div>
             <div class="${styles.cardMeaning}">${word.meaning}</div>
             <div class="${styles.cardContext}">"${word.context}"</div>

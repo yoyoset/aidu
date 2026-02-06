@@ -17,43 +17,45 @@ export class ConfirmationModal {
                 .confirm-overlay {
                     position: fixed;
                     top: 0; left: 0; right: 0; bottom: 0;
-                    background: rgba(0,0,0,0.5);
+                    background: var(--md-sys-color-scrim);
+                    opacity: 0;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     z-index: 2000;
-                    opacity: 0;
                     transition: opacity 0.2s;
                     visibility: hidden;
                 }
                 .confirm-overlay.active {
-                    opacity: 1;
+                    opacity: 0.45;
                     visibility: visible;
                 }
                 .confirm-box {
-                    background: white;
+                    background: var(--md-sys-color-surface);
                     padding: 24px;
-                    border-radius: 12px;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                    border-radius: var(--md-sys-radius-xl);
+                    box-shadow: var(--md-sys-elevation-3);
                     width: 90%;
                     max-width: 320px;
                     transform: scale(0.95);
-                    transition: transform 0.2s;
+                    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
                     text-align: center;
                 }
                 .confirm-overlay.active .confirm-box {
                     transform: scale(1);
+                    opacity: 1;
                 }
                 .confirm-title {
-                    font-size: 1.1em;
-                    font-weight: bold;
+                    font-size: 1.125rem;
+                    font-weight: 700;
                     margin-bottom: 12px;
-                    color: #333;
+                    color: var(--md-sys-color-on-surface);
                 }
                 .confirm-text {
-                    color: #666;
+                    color: var(--md-sys-color-on-surface-variant);
                     margin-bottom: 24px;
-                    line-height: 1.4;
+                    line-height: 1.5;
+                    font-size: 0.95rem;
                 }
                 .confirm-actions {
                     display: flex;
@@ -61,17 +63,27 @@ export class ConfirmationModal {
                     justify-content: center;
                 }
                 .confirm-btn {
-                    padding: 8px 16px;
-                    border-radius: 6px;
+                    padding: 10px 16px;
+                    border-radius: var(--md-sys-radius-pill);
                     border: none;
                     cursor: pointer;
-                    font-weight: 500;
+                    font-weight: 600;
                     flex: 1;
-                    transition: opacity 0.2s;
+                    transition: all 0.2s;
+                    font-size: 0.9rem;
                 }
-                .confirm-btn:hover { opacity: 0.8; }
-                .btn-cancel { background: #f0f0f0; color: #333; }
-                .btn-delete { background: #ef4444; color: white; }
+                .btn-cancel { 
+                    background: var(--md-sys-color-surface-variant); 
+                    color: var(--md-sys-color-on-surface-variant); 
+                }
+                .btn-delete { 
+                    background: var(--md-sys-color-primary); 
+                    color: var(--md-sys-color-on-primary); 
+                }
+                .btn-delete.destructive {
+                    background: var(--md-sys-color-error);
+                    color: var(--md-sys-color-on-error);
+                }
             `;
             document.head.appendChild(style);
         }
@@ -121,7 +133,7 @@ export class ConfirmationModal {
 
         confirmBtn.textContent = confirmText;
         cancelBtn.textContent = cancelText;
-        confirmBtn.style.background = isDestructive ? '#ef4444' : '#2e7d32';
+        confirmBtn.classList.toggle('destructive', isDestructive);
 
         // 切换模式
         cancelBtn.style.display = type === 'alert' ? 'none' : 'block';

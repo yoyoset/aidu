@@ -4,6 +4,7 @@ import { Toast } from '../../components/toast.js';
 import { showDeepDiveModal } from '../../components/deep_dive_modal.js';
 import styles from './reader.module.css';
 import { t } from '../../../locales/index.js';
+import { analysisQueue } from '../../../services/analysis_queue_manager.js';
 
 export class ReaderDictionary {
     constructor(container) {
@@ -33,14 +34,17 @@ export class ReaderDictionary {
 
         const [word, pos, lemma] = segment;
 
-        // Show Loading State
+        // Analysis Tray integration (Optional: show 'pending' if not analyzed)
+        // We no longer auto-push to queue here per user request.
+
+        // Show Loading State (Dictionary Popup)
         this.showPopover({
             word, lemma, pos,
             phonetic: '...', meaning: t('dict.loading'), level: ''
         }, onPlayAudio, contextText, onStatusChange);
 
         try {
-            // Fetch Data
+            // Fetch Data (Fast Path)
             const def = await dictionaryService.lookup(lemma, contextText);
             this.currentDef = def; // Cache for Add button
 
@@ -102,13 +106,13 @@ export class ReaderDictionary {
             <div class="${pHeader}">
                 <div style="display:flex; align-items:center;">
                     <span class="${pWord}">${data.word}</span>
-                    <button class="${btnClass}" data-role="word-tts" title="${t('dict.pronounce')}" style="font-size:1em; margin-left:8px;">🔊</button>
+                    <button class="${btnClass}" data-role="word-tts" title="${t('dict.pronounce')}" style="font-size:1.1em; margin-left:8px; color:#7c4dff;"><i class="ri-volume-up-line"></i></button>
                     <span class="${pPhonetic}">${data.phonetic ? `[${data.phonetic}]` : ''}</span>
-                    ${data.level ? `<span style="font-size:0.8em; color:#999; border:1px solid #ddd; padding:0 4px; border-radius:4px; margin-left:4px;">${data.level}</span>` : ''}
+                    ${data.level ? `<span style="font-size:0.75em; color:#64748b; background:#f1f5f9; padding:2px 6px; border-radius:4px; margin-left:8px; font-weight:600;">${data.level}</span>` : ''}
                 </div>
                 <div style="display:flex; align-items:center;">
-                    <div style="font-style:italic; color:#999; font-size:0.9em; margin-right:8px;">${data.pos}</div>
-                    <button class="${closeBtnClass}" data-role="close-popover" title="${t('common.close')}">✕</button>
+                    <div style="font-style:italic; color:#94a3b8; font-size:0.85em; margin-right:12px;">${data.pos}</div>
+                    <button class="${closeBtnClass}" data-role="close-popover" title="${t('common.close')}"><i class="ri-close-line"></i></button>
                 </div>
             </div>
             <div class="${pMeaning}">
@@ -116,7 +120,7 @@ export class ReaderDictionary {
             </div>
             <div class="${pActions}">
                  <button class="${actionBtn} ${addBtnClass}" data-role="add-vocab">${t('dict.add')}</button>
-                 <button class="${actionBtn}" data-role="deep-dive" style="margin-left:8px; background:transparent; border:1px solid #ddd; color:#666;" title="${t('dict.deepDive')}">🔍</button>
+                 <button class="${actionBtn} ${savedBtnClass}" data-role="deep-dive" style="margin-left:8px; display:flex; align-items:center; gap:4px; min-width:auto; padding:8px 16px;" title="${t('dict.deepDive')}"><i class="ri-search-line"></i> <span>${t('dict.expand') || '展开'}</span></button>
             </div>
         `;
 
@@ -195,31 +199,23 @@ export class ReaderDictionary {
             };
         }
 
-        // Deep Dive Logic
+        // Deep Dive Logic (On-demand)
         const deepDiveBtn = popover.querySelector('[data-role="deep-dive"]');
         if (deepDiveBtn) {
             deepDiveBtn.onclick = async () => {
-                Toast.info(t('vocab.deepDive.generating'));
-                deepDiveBtn.disabled = true;
-                try {
-                    const entry = await vocabService.getEntry(data.lemma);
-                    let deepData = null;
+                const lemma = data.lemma.toLowerCase();
 
-                    if (entry && entry.deepData) {
-                        deepData = entry.deepData;
-                    } else {
-                        deepData = await dictionaryService.fetchTier2(data.lemma, contextText);
-                        if (entry) {
-                            await vocabService.updateEntry(data.lemma, { deepData });
-                        }
-                    }
+                // Always call push to notify AnalysisTray (via subscription)
+                analysisQueue.push(data.word, data.lemma, contextText);
 
+                const entry = await vocabService.getEntry(lemma);
+                const deepData = (entry && entry.deepData) ? entry.deepData : analysisQueue.getCache(lemma);
+
+                if (deepData) {
                     showDeepDiveModal({ word: data.word }, deepData);
-                } catch (e) {
-                    console.error('Deep dive failed', e);
-                    Toast.error(t('vocab.deepDive.failed'));
-                } finally {
-                    deepDiveBtn.disabled = false;
+                } else {
+                    Toast.info(t('vocab.deepDive.queued') || '已加入深度解析队列');
+                    this.close();
                 }
             };
         }

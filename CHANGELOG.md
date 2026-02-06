@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.12.0] - 2026-02-06
+
+### New Features (新功能)
+
+- **DPV Support (离散短语支持)**:
+  - **Smart Recognition**: Automatically identifies split phrasal verbs (e.g., "set it up") via a new indexing protocol.
+  - **Linked Interaction**: Hoover or click any member of a phrase to highlight the entire group.
+  - **Phrase Aggregation**: Dictionary lookups now prioritize the definition of the whole phrase over individual words.
+- **Reader Typography (排版升级)**:
+  - Added **Font Family** switcher (Serif, Sans, Mono).
+  - Added **Bold Toggle** for enhanced readability.
+  - Both settings are persistent and cloud-synced.
+
+### Improvements & Fixes (改进与修复)
+
+- **Visual Polish**: Fixed the donate button color scope and updated it to a premium pink (#ff3366).
+- **Console Cleaning**: Resolved "invalid color format" warnings and unified Vite import strategies to eliminate build noise.
+
+---
+
 ## [4.11.0] - 2026-02-03
 
 ### New Features (新功能)

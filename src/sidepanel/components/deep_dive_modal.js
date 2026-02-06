@@ -112,8 +112,8 @@ export function showDeepDiveModal(entry, deepData) {
         html += `<div style="${sectionStyle}"><h3 style="${h3Style}">${t('deep.commonMistakes')}</h3>
         ${deepData.commonMistakes.map(m => `
             <div style="background:#fef2f2; border:1px solid #fecaca; padding:10px; border-radius:6px; margin-bottom:8px;">
-                <div style="color:#dc2626; margin-bottom:4px;">❌ ${escapeHTML(m.wrong)}</div>
-                <div style="color:#16a34a; margin-bottom:4px;">✅ ${escapeHTML(m.correct)}</div>
+                <div style="color:var(--md-sys-color-error); margin-bottom:4px;"><i class="ri-close-circle-line"></i> ${escapeHTML(m.wrong)}</div>
+                <div style="color:#16a34a; margin-bottom:4px;"><i class="ri-checkbox-circle-line"></i> ${escapeHTML(m.correct)}</div>
                 <div style="font-size:0.85rem; color:#64748b;">${escapeHTML(m.note)}</div>
             </div>
         `).join('')}

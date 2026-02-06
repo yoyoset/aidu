@@ -21,7 +21,7 @@ export class HandwritingSheet {
                     <span class="word-number">${index + 1}.</span>
                     <strong class="word-text">${v.word}</strong>
                     <span class="word-phonetic">${v.phonetic ? `[${v.phonetic}]` : ''}</span>
-                    <span class="word-pos">(${v.pos})</span>
+                    <span class="word-pos">${v.pos ? `(${v.pos})` : ''}</span>
                 </div>
                 <div class="word-meaning">${v.meaning || ''}</div>
                 <div class="writing-area">

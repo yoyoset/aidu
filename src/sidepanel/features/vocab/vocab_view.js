@@ -37,6 +37,9 @@ export class VocabView extends Component {
         } else if (this.filter === 'mastered') {
             // Show ONLY mastered
             list = list.filter(v => v.stage === 'mastered');
+        } else if (this.filter === 'loading') {
+            // Show only incomplete
+            list = list.filter(v => !v.meaning || v.meaning === 'Loading...' || v.meaning === t('dict.loading'));
         } else if (this.filter === 'all') {
             // Show all ACTIVE (exclude mastered to keep "loop" clean, as per request?) 
             // User asked for "Mastered" filter, implies "All" might usually hide them? 
@@ -64,7 +67,7 @@ export class VocabView extends Component {
         const visibleList = list.slice(0, this.displayLimit);
 
         if (list.length === 0) {
-            listContent.innerHTML = `<div style="color:#999; text-align:center; padding:40px;">${t('vocab.empty')}</div>`;
+            listContent.innerHTML = `<div style="color:var(--md-sys-color-on-surface-variant); text-align:center; padding:40px;">${t('vocab.empty')}</div>`;
         } else {
             visibleList.forEach(v => {
                 const item = this.createVocabItem(v);
@@ -145,10 +148,10 @@ export class VocabView extends Component {
         actionsDiv.style.display = 'flex';
         actionsDiv.style.justifyContent = 'space-between';
         actionsDiv.style.alignItems = 'center';
-        actionsDiv.style.borderBottom = '1px solid #eee';
+        actionsDiv.style.borderBottom = '1px solid var(--md-sys-color-outline-variant)';
         actionsDiv.style.marginBottom = '10px';
         actionsDiv.style.gap = '10px';
-        actionsDiv.style.background = '#fff';
+        actionsDiv.style.background = 'var(--md-sys-color-surface)';
         actionsDiv.style.position = 'sticky';
         actionsDiv.style.top = '0';
         actionsDiv.style.zIndex = '10'; // Keep header visible
@@ -162,12 +165,13 @@ export class VocabView extends Component {
         const filterSelect = document.createElement('select');
         filterSelect.style.padding = '4px 8px';
         filterSelect.style.borderRadius = '4px';
-        filterSelect.style.border = '1px solid #ddd';
+        filterSelect.style.border = '1px solid var(--md-sys-color-outline-variant)';
         filterSelect.innerHTML = `
             <option value="all" ${this.filter === 'all' ? 'selected' : ''}>${t('vocab.filter.all')}</option>
             <option value="today" ${this.filter === 'today' ? 'selected' : ''}>${t('vocab.filter.today')}</option>
             <option value="week" ${this.filter === 'week' ? 'selected' : ''}>${t('vocab.filter.week')}</option>
             <option value="mastered" ${this.filter === 'mastered' ? 'selected' : ''}>${t('vocab.filter.mastered')}</option>
+            <option value="loading" ${this.filter === 'loading' ? 'selected' : ''}>${t('common.loading')}</option>
         `;
         filterSelect.onchange = (e) => {
             this.filter = e.target.value;
@@ -178,13 +182,16 @@ export class VocabView extends Component {
 
         // Help Button
         const helpBtn = document.createElement('button');
-        helpBtn.innerHTML = '❓';
+        helpBtn.innerHTML = '<i class="ri-question-line"></i>';
         helpBtn.title = t('vocab.actions.help');
         helpBtn.style.background = 'none';
         helpBtn.style.border = 'none';
         helpBtn.style.cursor = 'pointer';
-        helpBtn.style.fontSize = '1.1em';
-        helpBtn.style.opacity = '0.7';
+        helpBtn.style.fontSize = '1.25rem';
+        helpBtn.style.display = 'flex';
+        helpBtn.style.alignItems = 'center';
+        helpBtn.style.color = 'var(--md-sys-color-on-surface-variant)';
+        helpBtn.style.padding = '4px';
         helpBtn.onclick = () => this.showHelpModal();
 
         // Select All Checkbox
@@ -193,7 +200,7 @@ export class VocabView extends Component {
         selectAllLabel.style.alignItems = 'center';
         selectAllLabel.style.gap = '4px';
         selectAllLabel.style.fontSize = '0.9em';
-        selectAllLabel.style.color = '#666';
+        selectAllLabel.style.color = 'var(--md-sys-color-on-surface-variant)';
         selectAllLabel.style.cursor = 'pointer';
 
         const selectAll = document.createElement('input');
@@ -220,12 +227,33 @@ export class VocabView extends Component {
 
         const countSpan = document.createElement('span');
         countSpan.textContent = `(${list.length})`;
-        countSpan.style.color = '#999';
+        countSpan.style.color = 'var(--md-sys-color-secondary)';
         countSpan.style.fontSize = '0.85em';
+
+        const selectAllLoading = document.createElement('button');
+        selectAllLoading.innerHTML = '<i class="ri-loader-2-line"></i>';
+        selectAllLoading.title = t('vocab.actions.selectAllLoading');
+        selectAllLoading.style.background = 'none';
+        selectAllLoading.style.border = 'none';
+        selectAllLoading.style.cursor = 'pointer';
+        selectAllLoading.style.fontSize = '1.1rem';
+        selectAllLoading.style.color = 'var(--md-sys-color-primary)';
+        selectAllLoading.style.display = 'flex';
+        selectAllLoading.style.alignItems = 'center';
+        selectAllLoading.style.padding = '4px';
+        selectAllLoading.onclick = () => {
+            const loadingKeys = list.filter(v => !v.meaning || v.meaning === 'Loading...' || v.meaning === t('dict.loading')).map(v => v.lemma || v.word);
+            if (loadingKeys.length > 0) {
+                loadingKeys.forEach(k => this.selectedSet.add(k));
+                this.refreshActionBar();
+                this.updateCheckboxes();
+            }
+        };
 
         filterGroup.appendChild(filterSelect);
         filterGroup.appendChild(helpBtn);
         filterGroup.appendChild(selectAllLabel);
+        filterGroup.appendChild(selectAllLoading);
         filterGroup.appendChild(countSpan);
 
         // Bulk Actions Bar (Replaces Buttons if selection > 0)
@@ -238,14 +266,14 @@ export class VocabView extends Component {
             const selLabel = document.createElement('span');
             selLabel.textContent = `${this.selectedSet.size}`;
             selLabel.style.fontWeight = 'bold';
-            selLabel.style.color = '#166534';
+            selLabel.style.color = 'var(--md-sys-color-primary)';
             selLabel.style.marginRight = '4px';
 
             // Delete Selected
             const delBtn = document.createElement('button');
-            delBtn.innerHTML = '🗑️';
+            delBtn.innerHTML = '<i class="ri-delete-bin-line"></i>';
             delBtn.title = t('vocab.actions.deleteSelected');
-            this.styleActionBtn(delBtn, '#ef4444');
+            this.styleActionBtn(delBtn, 'var(--md-sys-color-error)');
             delBtn.onclick = async () => {
                 const ok = await notificationService.confirm(t('vocab.confirm.deleteBatch', { count: this.selectedSet.size }));
                 if (ok) {
@@ -259,9 +287,9 @@ export class VocabView extends Component {
 
             // Master Selected
             const masterBtn = document.createElement('button');
-            masterBtn.innerHTML = '🏆';
+            masterBtn.innerHTML = '<i class="ri-medal-2-line"></i>';
             masterBtn.title = t('vocab.actions.masterSelected');
-            this.styleActionBtn(masterBtn, '#16a34a');
+            this.styleActionBtn(masterBtn, 'var(--md-sys-color-primary)');
             masterBtn.onclick = async () => {
                 const ok = await notificationService.confirm(t('vocab.confirm.masterBatch', { count: this.selectedSet.size }));
                 if (ok) {
@@ -275,9 +303,9 @@ export class VocabView extends Component {
 
             // Export Selected
             const exportBtn = document.createElement('button');
-            exportBtn.innerHTML = '📥';
+            exportBtn.innerHTML = '<i class="ri-download-2-line"></i>';
             exportBtn.title = t('vocab.actions.exportSelected');
-            this.styleActionBtn(exportBtn, '#166534');
+            this.styleActionBtn(exportBtn, 'var(--md-sys-color-on-surface-variant)');
             exportBtn.onclick = () => {
                 const selectedItems = list.filter(v => this.selectedSet.has(v.lemma || v.word));
                 this.exportVocab(selectedItems);
@@ -285,19 +313,55 @@ export class VocabView extends Component {
 
             // Print Selected
             const printBtn = document.createElement('button');
-            printBtn.innerHTML = '🖨️';
+            printBtn.innerHTML = '<i class="ri-printer-line"></i>';
             printBtn.title = t('vocab.actions.printSelected');
-            this.styleActionBtn(printBtn, '#166534');
+            this.styleActionBtn(printBtn, 'var(--md-sys-color-on-surface-variant)');
             printBtn.onclick = () => {
                 const selectedItems = list.filter(v => this.selectedSet.has(v.lemma || v.word));
                 HandwritingSheet.generate(selectedItems, t('vocab.print.titleBatch', { count: selectedItems.length }));
             };
 
+            // Batch Re-lookup Selected
+            const relookupSelectedBtn = document.createElement('button');
+            relookupSelectedBtn.innerHTML = '<i class="ri-book-read-line"></i>';
+            relookupSelectedBtn.title = t('vocab.actions.relookupSelected');
+            this.styleActionBtn(relookupSelectedBtn, 'var(--md-sys-color-primary)');
+            relookupSelectedBtn.onclick = async () => {
+                const ok = await notificationService.confirm(t('vocab.confirm.relookupBatch', { count: this.selectedSet.size }));
+                if (ok) {
+                    this.saveScroll();
+                    const keys = Array.from(this.selectedSet);
+                    let processed = 0;
+                    selLabel.style.fontSize = '0.8em';
+
+                    for (const k of keys) {
+                        try {
+                            processed++;
+                            selLabel.textContent = `${processed}/${keys.length}`;
+                            const def = await dictionaryService.lookup(k, '', true);
+                            if (def) {
+                                await vocabService.updateEntry(k, {
+                                    meaning: def.m,
+                                    phonetic: def.p,
+                                    level: def.l,
+                                    pos: def.pos || (list.find(v => (v.lemma || v.word) === k)?.pos)
+                                });
+                            }
+                        } catch (e) {
+                            console.error(`Batch relookup failed for ${k}`, e);
+                        }
+                    }
+
+                    this.selectedSet.clear();
+                    this.render();
+                }
+            };
+
             // Batch Magic Wand (Clean)
             const wandBtn = document.createElement('button');
-            wandBtn.innerHTML = '🪄';
+            wandBtn.innerHTML = '<i class="ri-magic-line"></i>';
             wandBtn.title = t('vocab.actions.autoContextSelected');
-            this.styleActionBtn(wandBtn, '#9333ea');
+            this.styleActionBtn(wandBtn, 'var(--md-sys-color-primary)');
             wandBtn.onclick = async () => {
                 const ok = await notificationService.confirm(t('vocab.confirm.generateBatch', { count: this.selectedSet.size }));
                 if (ok) {
@@ -325,6 +389,7 @@ export class VocabView extends Component {
             };
 
             bulkGroup.appendChild(selLabel);
+            bulkGroup.appendChild(relookupSelectedBtn);
             bulkGroup.appendChild(wandBtn); // Add Wand first
             bulkGroup.appendChild(masterBtn);
             bulkGroup.appendChild(delBtn);
@@ -349,7 +414,7 @@ export class VocabView extends Component {
                 reviewBtn.className = styles.btnPrimary;
                 reviewBtn.style.padding = '4px 12px';
                 reviewBtn.style.fontSize = '0.85em';
-                reviewBtn.style.background = '#ea580c';
+                reviewBtn.style.background = 'var(--md-sys-color-primary)';
                 reviewBtn.onclick = () => {
                     if (!this.reviewComponent) this.reviewComponent = new VocabReview(document.body);
                     this.reviewComponent.onFinish = async () => {
@@ -377,13 +442,13 @@ export class VocabView extends Component {
             }
 
             const printBtn = document.createElement('button');
-            printBtn.innerHTML = '🖨️';
-            this.styleActionBtn(printBtn, '#666');
+            printBtn.innerHTML = '<i class="ri-printer-line"></i>';
+            this.styleActionBtn(printBtn, 'var(--md-sys-color-on-surface-variant)');
             printBtn.onclick = () => HandwritingSheet.generate(list, t('vocab.print.titleAll', { count: list.length }));
 
             const exportBtn = document.createElement('button');
-            exportBtn.innerHTML = '📥';
-            this.styleActionBtn(exportBtn, '#666');
+            exportBtn.innerHTML = '<i class="ri-download-2-line"></i>';
+            this.styleActionBtn(exportBtn, 'var(--md-sys-color-on-surface-variant)');
             exportBtn.onclick = () => this.exportVocab(list);
 
             btnGroup.appendChild(printBtn);
@@ -419,10 +484,10 @@ export class VocabView extends Component {
         // ... (Item creation logic same until actions)
         const item = document.createElement('div');
         item.style.padding = '12px 16px';
-        item.style.background = 'white';
+        item.style.background = 'var(--md-sys-color-surface-container-low)';
         item.style.marginBottom = '8px';
-        item.style.borderRadius = '8px';
-        item.style.border = '1px solid #eee';
+        item.style.borderRadius = 'var(--md-sys-radius-md)';
+        item.style.border = '1px solid var(--md-sys-color-outline-variant)';
         item.style.display = 'flex';
         item.style.justifyContent = 'space-between';
         item.style.alignItems = 'flex-start';
@@ -453,13 +518,14 @@ export class VocabView extends Component {
         const contentDiv = document.createElement('div');
         contentDiv.style.flexGrow = '1';
         contentDiv.innerHTML = `
-            <div style="font-weight:bold; font-size:1.1em; color:${v.stage === 'mastered' ? '#2e7d32' : '#2e7d32'}; margin-bottom:2px;">${v.word} 
-               <span style="font-weight:normal; font-size:0.85em; color:#999; margin-left:6px;">(${v.pos})</span>
-               ${v.stage === 'mastered' ? `<span style="font-size:0.75em; background:#e8f5e9; color:#2e7d32; padding:1px 4px; border-radius:4px;">${t('vocab.mastered')}</span>` : ''}
+            <div style="font-weight:bold; font-size:1.1em; color:var(--md-sys-color-primary); margin-bottom:2px;">${v.word} 
+               ${v.phonetic ? `<span style="font-weight:normal; font-size:0.85em; color:var(--md-sys-color-outline); margin-left:6px; font-family:monospace;">[${v.phonetic}]</span>` : ''}
+               ${v.pos ? `<span style="font-weight:normal; font-size:0.85em; color:var(--md-sys-color-on-surface-variant); margin-left:6px;">(${v.pos})</span>` : ''}
+               ${v.stage === 'mastered' ? `<span style="font-size:0.75em; background:var(--md-sys-color-secondary-container); color:var(--md-sys-color-on-secondary-container); padding:1px 6px; border-radius:100px; margin-left:8px;">${t('vocab.mastered')}</span>` : ''}
             </div>
-            <div style="font-size:0.95em; color:#333; margin-bottom:4px;">${v.meaning}</div>
-            <div style="font-size:0.85em; color:#757575; font-style:italic; border-left:2px solid #ddd; padding-left:8px;">"${v.context || ''}"</div>
-            <div style="font-size:0.75em; color:#aaa; margin-top:4px;">${t('vocab.added', { date: new Date(v.addedAt).toLocaleDateString() })}</div>
+            <div style="font-size:0.95em; color:var(--md-sys-color-on-surface); margin-bottom:4px;">${v.meaning}</div>
+            <div style="font-size:0.85em; color:var(--md-sys-color-on-surface-variant); font-style:italic; border-left:3px solid var(--md-sys-color-primary-container); padding-left:8px;">"${v.context || ''}"</div>
+            <div style="font-size:0.75em; color:var(--md-sys-color-outline); margin-top:4px;">${t('vocab.added', { date: new Date(v.addedAt).toLocaleDateString() })}</div>
         `;
 
         // Actions Column
@@ -469,16 +535,16 @@ export class VocabView extends Component {
         actionsCol.style.gap = '4px';
         actionsCol.style.flexShrink = '0';
 
-        // Retry Button (If incomplete)
-        if (isIncomplete) {
-            const retryBtn = document.createElement('button');
-            retryBtn.innerHTML = '🔄';
-            retryBtn.title = t('vocab.actions.retry');
-            this.styleActionBtn(retryBtn, '#2563EB');
-            retryBtn.onclick = async () => {
-                retryBtn.innerHTML = '⏳';
-                try {
-                    const def = await dictionaryService.lookup(v.lemma || v.word, v.context || '');
+        // Re-lookup Button
+        const relookupBtn = document.createElement('button');
+        relookupBtn.innerHTML = '<i class="ri-book-read-line"></i>';
+        relookupBtn.title = t('vocab.actions.relookup');
+        this.styleActionBtn(relookupBtn, 'var(--md-sys-color-primary)');
+        relookupBtn.onclick = async () => {
+            relookupBtn.innerHTML = '<i class="ri-loader-2-line ri-spin"></i>';
+            try {
+                const def = await dictionaryService.lookup(v.lemma || v.word, v.context || '', true);
+                if (def) {
                     await vocabService.updateEntry(v.lemma || v.word, {
                         meaning: def.m,
                         phonetic: def.p,
@@ -490,22 +556,22 @@ export class VocabView extends Component {
                     const updatedV = { ...v, meaning: def.m, phonetic: def.p, level: def.l, pos: def.pos || v.pos };
                     const newItem = this.createVocabItem(updatedV);
                     item.replaceWith(newItem);
-                } catch (e) {
-                    console.error("Retry failed", e);
-                    retryBtn.innerHTML = '⚠️';
                 }
-            };
-            actionsCol.appendChild(retryBtn);
-        }
+            } catch (e) {
+                console.error("Relookup failed", e);
+                relookupBtn.innerHTML = '<i class="ri-error-warning-line"></i>';
+            }
+        };
+        actionsCol.appendChild(relookupBtn);
 
         // Fetch Context (Magic Wand) - Always show
         const ctxBtn = document.createElement('button');
-        ctxBtn.innerHTML = '🪄';
+        ctxBtn.innerHTML = '<i class="ri-magic-line"></i>';
         ctxBtn.title = t('vocab.actions.regenerate');
-        this.styleActionBtn(ctxBtn, '#9333ea');
+        this.styleActionBtn(ctxBtn, 'var(--md-sys-color-primary)');
         ctxBtn.onclick = async () => {
             this.saveScroll();
-            ctxBtn.innerHTML = '⏳';
+            ctxBtn.innerHTML = '<i class="ri-loader-2-line ri-spin"></i>';
             try {
                 const newContext = await dictionaryService.generateExample(v.word);
                 await vocabService.updateEntry(v.lemma || v.word, { context: newContext });
@@ -518,15 +584,15 @@ export class VocabView extends Component {
                 // Note: We don't call this.render(), preserving specific scroll completely.
             } catch (e) {
                 console.error("Context fetch failed", e);
-                ctxBtn.innerHTML = '⚠️';
+                ctxBtn.innerHTML = '<i class="ri-error-warning-line"></i>';
             }
         };
         actionsCol.appendChild(ctxBtn);
 
         const deepDiveBtn = document.createElement('button');
-        deepDiveBtn.innerHTML = '🔍';
+        deepDiveBtn.innerHTML = '<i class="ri-zoom-in-line"></i>';
         deepDiveBtn.title = t('vocab.actions.deepDive');
-        this.styleActionBtn(deepDiveBtn, '#2563EB');
+        this.styleActionBtn(deepDiveBtn, 'var(--md-sys-color-primary)');
         deepDiveBtn.onclick = async () => {
             Toast.info(t('vocab.deepDive.generating'));
             deepDiveBtn.disabled = true;
@@ -550,9 +616,9 @@ export class VocabView extends Component {
         actionsCol.appendChild(deepDiveBtn);
 
         const deleteBtn = document.createElement('button');
-        deleteBtn.innerHTML = '🗑️';
+        deleteBtn.innerHTML = '<i class="ri-delete-bin-line"></i>';
         deleteBtn.title = t('vocab.actions.delete');
-        this.styleActionBtn(deleteBtn, '#ef4444');
+        this.styleActionBtn(deleteBtn, 'var(--md-sys-color-error)');
         deleteBtn.style.opacity = '0.5';
         deleteBtn.onclick = async () => {
             const ok = await notificationService.confirm(`Delete "${v.word}"?`);
@@ -564,9 +630,9 @@ export class VocabView extends Component {
         };
 
         const masterBtn = document.createElement('button');
-        masterBtn.innerHTML = v.stage === 'mastered' ? '🏆' : '🎓';
+        masterBtn.innerHTML = v.stage === 'mastered' ? '<i class="ri-medal-2-line"></i>' : '<i class="ri-graduation-cap-line"></i>';
         masterBtn.title = v.stage === 'mastered' ? t('vocab.actions.alreadyMastered') : t('vocab.actions.master');
-        this.styleActionBtn(masterBtn, '#16a34a');
+        this.styleActionBtn(masterBtn, 'var(--md-sys-color-primary)');
         masterBtn.style.opacity = v.stage === 'mastered' ? '1' : '0.5';
         if (v.stage !== 'mastered') {
             masterBtn.onclick = async () => {
@@ -586,14 +652,27 @@ export class VocabView extends Component {
     }
 
     styleActionBtn(btn, color) {
-        btn.style.background = 'none';
+        btn.style.background = 'transparent';
         btn.style.border = 'none';
         btn.style.cursor = 'pointer';
-        btn.style.fontSize = '1.1em';
-        btn.style.padding = '4px';
-        btn.style.color = color || '#666';
-        btn.onmouseover = () => btn.style.opacity = 1;
-        btn.onmouseout = () => btn.style.opacity = 0.7; // Hover effect
+        btn.style.fontSize = '1.25rem';
+        btn.style.padding = '8px';
+        btn.style.color = color || 'var(--md-sys-color-on-surface-variant)';
+        btn.style.borderRadius = 'var(--md-sys-radius-sm)';
+        btn.style.display = 'inline-flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+        btn.style.lineHeight = '0';
+
+        btn.onmouseover = () => {
+            btn.style.background = 'var(--md-sys-state-hover)';
+            btn.style.transform = 'scale(1.08)';
+        };
+        btn.onmouseout = () => {
+            btn.style.background = 'transparent';
+            btn.style.transform = 'scale(1)';
+        };
     }
 
     exportVocab(list) {
@@ -654,46 +733,45 @@ export class VocabView extends Component {
 
         content.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <h2 style="margin:0; font-size:1.4em; color:#2e7d32;">${t('vocab.help.title')}</h2>
-                <button id="close-help" style="background:none; border:none; font-size:1.5em; cursor:pointer; color:#999;">&times;</button>
+                <h2 style="margin:0; font-size:1.4em; color:var(--md-sys-color-primary);">${t('vocab.help.title')}</h2>
+                <button id="close-help" style="background:none; border:none; font-size:1.5em; cursor:pointer; color:var(--md-sys-color-on-surface-variant);">&times;</button>
             </div>
             
-            <div style="margin-bottom:20px;">
                 <div style="display:flex; gap:12px; margin-bottom:12px;">
-                    <div style="font-size:1.5em;">📥</div>
+                    <div style="font-size:1.5rem; color:var(--md-sys-color-on-surface-variant);"><i class="ri-download-2-line"></i></div>
                     <div>
-                        <strong style="color:#333;">${t('vocab.help.step1')}</strong>
-                        <div style="color:#666; font-size:0.9em;">${t('vocab.help.step1.desc')}</div>
+                        <strong style="color:var(--md-sys-color-on-surface);">${t('vocab.help.step1')}</strong>
+                        <div style="color:var(--md-sys-color-on-surface-variant); font-size:0.9em;">${t('vocab.help.step1.desc')}</div>
                     </div>
                 </div>
 
                 <div style="display:flex; gap:12px; margin-bottom:12px;">
-                    <div style="font-size:1.5em;">🧹</div>
+                    <div style="font-size:1.5rem; color:var(--md-sys-color-on-surface-variant);"><i class="ri-delete-bin-line"></i></div>
                     <div>
-                        <strong style="color:#333;">${t('vocab.help.step2')}</strong>
-                        <div style="color:#666; font-size:0.9em;">${t('vocab.help.step2.desc')}</div>
+                        <strong style="color:var(--md-sys-color-on-surface);">${t('vocab.help.step2')}</strong>
+                        <div style="color:var(--md-sys-color-on-surface-variant); font-size:0.9em;">${t('vocab.help.step2.desc')}</div>
                     </div>
                 </div>
 
                 <div style="display:flex; gap:12px; margin-bottom:12px;">
-                    <div style="font-size:1.5em;">🧠</div>
+                    <div style="font-size:1.5rem; color:var(--md-sys-color-on-surface-variant);"><i class="ri-brain-line"></i></div>
                     <div>
-                        <strong style="color:#333;">${t('vocab.help.step3')}</strong>
-                        <div style="color:#666; font-size:0.9em;">${t('vocab.help.step3.desc')}</div>
+                        <strong style="color:var(--md-sys-color-on-surface);">${t('vocab.help.step3')}</strong>
+                        <div style="color:var(--md-sys-color-on-surface-variant); font-size:0.9em;">${t('vocab.help.step3.desc')}</div>
                     </div>
                 </div>
 
                 <div style="display:flex; gap:12px; margin-bottom:12px;">
-                    <div style="font-size:1.5em;">🏆</div>
+                    <div style="font-size:1.5rem; color:var(--md-sys-color-primary);"><i class="ri-medal-2-line"></i></div>
                     <div>
-                        <strong style="color:#333;">${t('vocab.help.step4')}</strong>
-                        <div style="color:#666; font-size:0.9em;">${t('vocab.help.step4.desc')}</div>
+                        <strong style="color:var(--md-sys-color-on-surface);">${t('vocab.help.step4')}</strong>
+                        <div style="color:var(--md-sys-color-on-surface-variant); font-size:0.9em;">${t('vocab.help.step4.desc')}</div>
                     </div>
                 </div>
             </div>
             
             <div style="text-align:right;">
-                <button id="ok-help" style="background:#2e7d32; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">${t('common.gotIt')}</button>
+                <button id="ok-help" style="background:var(--md-sys-color-primary); color:var(--md-sys-color-on-primary); border:none; padding:10px 24px; border-radius:100px; cursor:pointer; font-weight:500;">${t('common.gotIt')}</button>
             </div>
         `;
 

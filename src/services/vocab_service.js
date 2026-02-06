@@ -50,9 +50,19 @@ export class VocabService {
         const key = this.STORAGE_KEY;
         const data = await StorageHelper.get(key) || {};
 
-        // Data Integrity Check & Migration
+        // Data Integrity Check & Cleaning
         let changed = false;
-        Object.values(data).forEach(v => {
+        const cleanedData = {};
+
+        Object.entries(data).forEach(([key, v]) => {
+            // 1. Prune completely broken entries
+            if (!v || (!v.word && !v.lemma) || key === 'undefined' || key === 'null') {
+                console.warn(`VocabService: Pruning invalid entry at key '${key}'`, v);
+                changed = true;
+                return;
+            }
+
+            // 2. Ensure basic fields
             if (!v.stage) {
                 v.stage = 'new';
                 v.reviews = 0;
@@ -61,15 +71,17 @@ export class VocabService {
                 v.easeFactor = 2.5;
                 changed = true;
             }
+
+            cleanedData[key] = v;
         });
 
-        this._cache = data; // Hydrate cache
+        this._cache = cleanedData; // Hydrate cache
 
         if (changed) {
-            // Background save fixed data
-            this._save(data);
+            // Background save fixed data (using cleaned version)
+            this._save(cleanedData);
         }
-        return data;
+        return cleanedData;
     }
 
     // --- Core: Write with Queue (Concurrency Safety) ---
@@ -86,7 +98,8 @@ export class VocabService {
         // Enqueue operation
         return this.queue = this.queue.then(async () => {
             const vocab = await this.getAll();
-            const key = entry.lemma ? entry.lemma.toLowerCase() : entry.word.toLowerCase();
+            if (!entry || (!entry.lemma && !entry.word)) return false;
+            const key = (entry.lemma || entry.word).toLowerCase();
 
             if (vocab[key]) return false;
 
@@ -119,6 +132,7 @@ export class VocabService {
 
     async updateEntry(lemma, updates) {
         return this.queue = this.queue.then(async () => {
+            if (!lemma) return false;
             const vocab = await this.getAll();
             const key = lemma.toLowerCase();
             if (vocab[key]) {
@@ -136,24 +150,28 @@ export class VocabService {
 
     async remove(lemma) {
         return this.queue = this.queue.then(async () => {
+            if (!lemma) return false;
             const vocab = await this.getAll();
             const key = lemma.toLowerCase();
             if (vocab[key]) {
                 delete vocab[key];
                 await this._save(vocab);
             }
+            return true;
         });
     }
 
     // Read-only helpers (Safe to use getAll which is cached)
     async isSaved(lemma) {
+        if (!lemma) return false;
         const vocab = await this.getAll();
-        return !!vocab[lemma?.toLowerCase()];
+        return !!vocab[lemma.toLowerCase()];
     }
 
     async getEntry(lemma) {
+        if (!lemma) return null;
         const vocab = await this.getAll();
-        return vocab[lemma?.toLowerCase()] || null;
+        return vocab[lemma.toLowerCase()] || null;
     }
 
     async getSavedSet() {

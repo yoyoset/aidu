@@ -1,5 +1,6 @@
 import { Component } from '../../../components/component.js';
-import styles from '../dashboard.module.css'; // Shared styles? Or use draft_item.module.css?
+import styles from '../dashboard.module.css';
+import { t } from '../../../../locales/index.js';
 // Reusing dashboard.module.css for now to avoid breaking styles, until we split CSS.
 
 export class DraftItem extends Component {
@@ -51,7 +52,7 @@ export class DraftItem extends Component {
 
         const titleDiv = document.createElement('div');
         titleDiv.className = styles.draftTitle;
-        titleDiv.textContent = draft.title || '(Untitled Draft)';
+        titleDiv.textContent = draft.title || t('dashboard.draft.untitled');
         titleDiv.title = draft.title;
         header.appendChild(titleDiv);
 
@@ -60,8 +61,8 @@ export class DraftItem extends Component {
 
         // Allow Edit/Manual/Process for Draft AND Error states
         if (draft.status === 'draft' || draft.status === 'error') {
-            controls.appendChild(this.createIconBtn('✏️', 'Edit', (e) => this.callbacks.onEdit(draft)));
-            controls.appendChild(this.createIconBtn('🤖', 'Manual AI', (e) => this.callbacks.onManual(draft)));
+            controls.appendChild(this.createIconBtn('<i class="ri-edit-line"></i>', 'Edit', (e) => this.callbacks.onEdit(draft)));
+            controls.appendChild(this.createIconBtn('<i class="ri-robot-line"></i>', 'Manual AI', (e) => this.callbacks.onManual(draft)));
 
             // Only show BG Process if 'draft' (Error has Resume below, prevent duplicate visual clutter?)
             // Actually user might want to BG Process from Error.
@@ -69,9 +70,9 @@ export class DraftItem extends Component {
             // Let's keep Process button for consistency? Or just let Resume handle it?
             // User compliant "only resume visible, others disappear".
             // So they WANT others.
-            controls.appendChild(this.createIconBtn('⏳', 'BG Process', (e) => this.callbacks.onProcess(draft)));
+            controls.appendChild(this.createIconBtn('<i class="ri-time-line"></i>', 'BG Process', (e) => this.callbacks.onProcess(draft)));
         }
-        controls.appendChild(this.createIconBtn('🗑️', 'Delete', (e) => this.callbacks.onDelete(draft)));
+        controls.appendChild(this.createIconBtn('<i class="ri-delete-bin-line"></i>', 'Delete', (e) => this.callbacks.onDelete(draft)));
 
         header.appendChild(controls);
         contentCol.appendChild(header);
@@ -113,16 +114,16 @@ export class DraftItem extends Component {
         const isCorrupt = draft.status === 'ready' && !hasData;
 
         if (draft.status === 'ready' && !isCorrupt) {
-            actionArea.appendChild(this.createBtn(styles.btnPrimary, 'Read Now &rarr;', () => this.callbacks.onAction(draft)));
+            actionArea.appendChild(this.createBtn(styles.btnPrimary, t('dashboard.draft.readNow'), () => this.callbacks.onAction(draft)));
         } else if (draft.status === 'draft') {
-            actionArea.appendChild(this.createBtn(styles.btnPrimary, 'Start Analysis', () => this.callbacks.onAction(draft)));
+            actionArea.appendChild(this.createBtn(styles.btnPrimary, t('dashboard.draft.startAnalysis'), () => this.callbacks.onAction(draft)));
         } else if (draft.status === 'error') {
-            actionArea.appendChild(this.createBtn(styles.btnDestructive, '↻ Resume', () => this.callbacks.onAction(draft, 'retry')));
+            actionArea.appendChild(this.createBtn(styles.btnDestructive, t('dashboard.draft.resume'), () => this.callbacks.onAction(draft, 'retry')));
             if (hasData) {
-                actionArea.appendChild(this.createBtn(styles.btnSecondary, 'Read (Partial)', () => this.callbacks.onAction(draft, 'read_partial')));
+                actionArea.appendChild(this.createBtn(styles.btnSecondary, t('dashboard.draft.readPartial'), () => this.callbacks.onAction(draft, 'read_partial')));
             }
         } else if (draft.status === 'processing' && hasData) {
-            const btn = this.createBtn(styles.btnSecondary, 'Read (Live)', () => this.callbacks.onAction(draft, 'read_partial'));
+            const btn = this.createBtn(styles.btnSecondary, t('dashboard.draft.readLive'), () => this.callbacks.onAction(draft, 'read_partial'));
             btn.style.fontSize = '0.8em';
             actionArea.appendChild(btn);
         }

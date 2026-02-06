@@ -55,7 +55,7 @@ export class DonateModal {
         link.href = 'https://squareuncle.com';
         link.target = '_blank';
         link.className = 'donate-link';
-        link.textContent = '🔗 ' + t('donate.website');
+        link.innerHTML = '<i class="ri-link" style="margin-right:4px;"></i>' + t('donate.website');
 
         info.appendChild(name);
         info.appendChild(link);

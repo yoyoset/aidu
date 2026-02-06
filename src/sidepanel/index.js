@@ -4,6 +4,7 @@ import { initI18n, t } from '../locales/index.js';
 import { PreparationDashboard } from './features/builder/preparation_dashboard.js';
 import { MessageRouter, MessageTypes } from '../utils/message_router.js';
 import { Toast } from './components/toast.js';
+import { ThemeModal } from './features/settings/theme_modal.js';
 
 let dashboard;
 const messageRouter = new MessageRouter();
@@ -19,6 +20,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize i18n (Must be before component init)
     await initI18n();
+
+    // Load User Theme (Global Persistence Fix)
+    await new ThemeModal().initTheme();
 
     init();
 });

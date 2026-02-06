@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "AIDU - English Learning Assistant",
-    "version": "4.11.0",
+    "version": "4.12.0",
     "author": "SquareUncle 方砖叔",
     "description": "Adaptive Immersive Deep English (AIDE) - Structured Semantic Analysis for deep reading.",
     "permissions": [

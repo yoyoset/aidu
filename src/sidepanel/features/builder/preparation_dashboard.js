@@ -205,8 +205,8 @@ export class PreparationDashboard extends Component {
             btn.style.border = 'none';
             btn.style.cursor = 'pointer';
             btn.style.fontSize = '1.05em';
-            btn.style.borderBottom = this.activeTab === id ? '2px solid #2e7d32' : '2px solid transparent';
-            btn.style.color = this.activeTab === id ? '#2e7d32' : '#666';
+            btn.style.borderBottom = this.activeTab === id ? '2px solid var(--md-sys-color-primary)' : '2px solid transparent';
+            btn.style.color = this.activeTab === id ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-on-surface-variant)';
             btn.style.fontWeight = this.activeTab === id ? 'bold' : '500';
             btn.style.transition = 'all 0.2s';
 
@@ -234,10 +234,10 @@ export class PreparationDashboard extends Component {
         mergeBtn.style.display = 'none';
         mergeBtn.style.fontSize = '0.9em';
         mergeBtn.style.fontWeight = 'bold';
-        mergeBtn.style.color = '#2e7d32';
-        mergeBtn.style.background = '#e8f5e9';
+        mergeBtn.style.color = 'var(--md-sys-color-primary)';
+        mergeBtn.style.background = 'var(--md-sys-color-primary-container)';
         mergeBtn.style.padding = '6px 12px';
-        mergeBtn.style.borderRadius = '20px';
+        mergeBtn.style.borderRadius = 'var(--md-sys-radius-pill)';
         mergeBtn.style.width = 'auto';
         mergeBtn.onclick = () => this.handleMerge();
         actionsDiv.appendChild(mergeBtn);
@@ -266,7 +266,7 @@ export class PreparationDashboard extends Component {
         // Palette Button
         const paletteBtn = document.createElement('button');
         paletteBtn.className = styles.iconBtn;
-        paletteBtn.innerHTML = '🎨';
+        paletteBtn.innerHTML = '<i class="ri-palette-line"></i>';
         paletteBtn.title = t('settings.appearance') || '调色盘';
         paletteBtn.onclick = () => {
             if (this.themeModal) this.themeModal.show();
@@ -275,17 +275,17 @@ export class PreparationDashboard extends Component {
 
         // Sync Button
         const syncBtn = document.createElement('button');
-        syncBtn.className = 'sync-status'; // Global CSS class
+        syncBtn.className = styles.iconBtn;
         syncBtn.id = 'sync-status-btn';
         syncBtn.innerHTML = `
-            <span class="sync-icon">☁️</span>
+            <span class="sync-icon"><i class="ri-loop-right-line"></i></span>
             <span class="sync-badge" id="sync-badge"></span>
         `;
         syncBtn.title = t('dashboard.cloudSync');
         syncBtn.onclick = async () => {
             const btn = document.getElementById('sync-status-btn');
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = '⏳'; // Loading state
+            btn.innerHTML = '<i class="ri-loader-2-line ri-spin"></i>'; // Loading state
             try {
                 await SyncService.pull();
                 await SyncService.push();
@@ -303,9 +303,9 @@ export class PreparationDashboard extends Component {
 
         // Donate Button
         const donateBtn = document.createElement('button');
-        donateBtn.className = styles.iconBtn;
+        donateBtn.className = `${styles.iconBtn} ${styles.donateBtn}`;
         donateBtn.id = 'donate-btn';
-        donateBtn.innerHTML = '❤️';
+        donateBtn.innerHTML = '<i class="ri-heart-3-fill"></i>';
         donateBtn.title = t('donate.title');
         donateBtn.onclick = () => showDonateModal();
         actionsDiv.appendChild(donateBtn);
@@ -313,7 +313,7 @@ export class PreparationDashboard extends Component {
         const settingsBtn = document.createElement('button');
         settingsBtn.className = styles.iconBtn;
         settingsBtn.id = 'settings-btn';
-        settingsBtn.innerHTML = '⚙️';
+        settingsBtn.innerHTML = '<i class="ri-settings-4-line"></i>';
         settingsBtn.title = t('dashboard.settings');
         settingsBtn.onclick = () => this.settingsModal.show();
         actionsDiv.appendChild(settingsBtn);
@@ -391,18 +391,18 @@ export class PreparationDashboard extends Component {
         titleDiv.className = styles.draftTitle;
         titleDiv.textContent = draft.title || t('dashboard.draft.untitled');
         header.appendChild(titleDiv);
-
-        const controls = document.createElement('div');
-        controls.className = styles.draftControls;
+        contentCol.appendChild(header);
+        const actionsCol = document.createElement('div');
+        actionsCol.className = styles.draftActions;
 
         // Edit Button: Available for all states (including Ready for renaming)
         if (draft.status === 'draft' || draft.status === 'error' || draft.status === 'processing' || draft.status === 'ready') {
-            controls.appendChild(this.createIconBtn('✏️', t('dashboard.draft.edit'), (e) => { e.stopPropagation(); this.handleEdit(draft); }));
+            actionsCol.appendChild(this.createIconBtn('<i class="ri-edit-line"></i>', t('dashboard.draft.edit'), (e) => { e.stopPropagation(); this.handleEdit(draft); }));
         }
 
         // Processing Actions: Only for non-ready states
         if (draft.status === 'draft' || draft.status === 'error' || draft.status === 'processing') {
-            controls.appendChild(this.createIconBtn('🤖', t('dashboard.draft.manualAi'), (e) => {
+            actionsCol.appendChild(this.createIconBtn('<i class="ri-robot-line"></i>', t('dashboard.draft.manualAi'), (e) => {
                 e.stopPropagation();
                 this.creatorModal.show({
                     title: draft.title || '',
@@ -412,19 +412,17 @@ export class PreparationDashboard extends Component {
                     createdAt: draft.createdAt
                 });
             }));
-            controls.appendChild(this.createIconBtn('⏳', t('dashboard.draft.bgProcess'), (e) => {
+            actionsCol.appendChild(this.createIconBtn('<i class="ri-hourglass-2-line"></i>', t('dashboard.draft.bgProcess'), (e) => {
                 e.stopPropagation();
                 this.handleAction(draft, 'background');
             }));
         }
-        controls.appendChild(this.createIconBtn('🗑️', t('dashboard.draft.delete'), (e) => { e.stopPropagation(); this.handleDelete(draft); }));
-        header.appendChild(controls);
-        contentCol.appendChild(header);
+        actionsCol.appendChild(this.createIconBtn('<i class="ri-delete-bin-line"></i>', t('dashboard.draft.delete'), (e) => { e.stopPropagation(); this.handleDelete(draft); }));
 
         const preview = document.createElement('div');
         preview.className = styles.draftPreview;
         const raw = draft.rawText || '';
-        preview.textContent = raw.substring(0, 150) + (raw.length > 150 ? '...' : '');
+        preview.textContent = raw.substring(0, 120) + (raw.length > 120 ? '...' : '');
         contentCol.appendChild(preview);
 
         // Chunk Visualization (Parallel Progress)
@@ -459,7 +457,7 @@ export class PreparationDashboard extends Component {
             const progress = document.createElement('span');
             progress.className = styles.processingIndicator; // New Class
             // Add dots animation
-            progress.innerHTML = `${draft.progress?.percentage || 0}% <span class="loading-dots">...</span>`;
+            progress.innerHTML = `${draft.progress?.percentage || 0}% <span class="loading-dots"><i class="ri-more-line"></i></span>`;
             progress.style.cursor = 'pointer';
             progress.title = t('dashboard.draft.viewProgress');
             progress.onclick = (e) => {
@@ -504,14 +502,13 @@ export class PreparationDashboard extends Component {
 
             const text = document.createElement('span');
             text.className = styles.readingTimeText;
-            text.textContent = `${minutes}m`;
+            text.textContent = ``;
+            text.innerHTML = `<i class="ri-time-line" style="margin-right:4px;"></i>${minutes}m`;
 
             timeContainer.appendChild(bar);
             timeContainer.appendChild(text);
             meta.appendChild(timeContainer);
         }
-
-        contentCol.appendChild(meta);
 
         const actionArea = document.createElement('div');
         actionArea.className = styles.actionArea;
@@ -548,7 +545,7 @@ export class PreparationDashboard extends Component {
             // 1. View Progress (Primary Action for Processing)
             const viewBtn = document.createElement('button');
             viewBtn.className = styles.btnGhost; // New style
-            viewBtn.innerHTML = `<span>👁️</span> ${t('dashboard.draft.viewProgress') || '查看进度'}`;
+            viewBtn.innerHTML = `<span><i class="ri-eye-line"></i></span> ${t('dashboard.draft.viewProgress') || '查看进度'}`;
             viewBtn.onclick = (e) => {
                 this.creatorModal.showRealtimeOverlay(draft.id, async () => {
                     await this.loadDrafts();
@@ -564,7 +561,7 @@ export class PreparationDashboard extends Component {
             if (hasData) {
                 const readBtn = document.createElement('button');
                 readBtn.className = styles.btnGhost;
-                readBtn.innerHTML = `<span>📖</span> ${t('dashboard.draft.readLive')}`;
+                readBtn.innerHTML = `<span><i class="ri-book-open-line"></i></span> ${t('dashboard.draft.readLive')}`;
                 readBtn.onclick = () => this.handleAction(draft, 'read_partial');
                 actionArea.appendChild(readBtn);
             }
@@ -572,7 +569,7 @@ export class PreparationDashboard extends Component {
             // 3. Reset (Destructive)
             const resetBtn = document.createElement('button');
             resetBtn.className = styles.btnGhostDestructive; // New style
-            resetBtn.innerHTML = `<span>🔄</span> ${t('dashboard.draft.resetStuck')}`;
+            resetBtn.innerHTML = `<span><i class="ri-restart-line"></i></span> ${t('dashboard.draft.resetStuck')}`;
             resetBtn.onclick = async () => {
                 this.confirmationModal.show({
                     title: t('dashboard.reset.title') || '重置状态',
@@ -588,9 +585,14 @@ export class PreparationDashboard extends Component {
             actionArea.appendChild(resetBtn);
         }
 
-
-        if (actionArea.children.length > 0) contentCol.appendChild(actionArea);
+        if (actionArea.children.length > 0) {
+            // Move buttons to meta area for extreme compactness
+            actionArea.style.marginLeft = 'auto';
+            meta.appendChild(actionArea);
+        }
+        contentCol.appendChild(meta);
         item.appendChild(contentCol);
+        item.appendChild(actionsCol);
 
         return item;
     }

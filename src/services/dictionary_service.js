@@ -24,16 +24,17 @@ export class DictionaryService {
      * Lookup a word. Checks memory/storage cache first, then API.
      * @param {string} word - The lemma/word to define
      * @param {string} contextSentence - Optional context
+     * @param {boolean} skipCache - Whether to bypass existing cache
      * @returns {Promise<Object>} { m: meaning, p: phonetic, l: level }
      */
-    async lookup(word, contextSentence = "") {
+    async lookup(word, contextSentence = "", skipCache = false) {
         if (!word) return null;
         await this.initPromise; // Ensure cache is loaded
 
         const lemma = word.toLowerCase();
 
         // 1. Check Cache
-        if (this.memCache[lemma]) return this.memCache[lemma];
+        if (!skipCache && this.memCache[lemma]) return this.memCache[lemma];
 
         // 2. Fetch from API (LLM)
         try {

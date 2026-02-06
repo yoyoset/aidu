@@ -144,9 +144,9 @@ export class CreatorModal extends Component {
         queueBtn.id = 'queue-btn';
         queueBtn.className = `${styles.btnSecondary} ${styles.btnLeft}`;
         if (isEdit) {
-            queueBtn.innerHTML = `<span class="icon">&#128190;</span> ${t('creator.saveChanges')}`;
+            queueBtn.innerHTML = `<i class="ri-save-line" style="margin-right:6px;"></i> ${t('creator.saveChanges')}`;
         } else {
-            queueBtn.innerHTML = `<span class="icon">&#128229;</span> ${t('creator.save')}`;
+            queueBtn.innerHTML = `<i class="ri-download-cloud-line" style="margin-right:6px;"></i> ${t('creator.save')}`;
         }
         queueBtn.onclick = () => this.handleTextAction(false);
 
@@ -154,7 +154,7 @@ export class CreatorModal extends Component {
         const processBtn = document.createElement('button');
         processBtn.id = 'process-btn';
         processBtn.className = `${styles.btnSecondary} ${styles.btnMiddle}`;
-        processBtn.innerHTML = `<span class="icon">&#8987;</span> ${t('creator.bgProcess')}`;
+        processBtn.innerHTML = `<i class="ri-time-line" style="margin-right:6px;"></i> ${t('creator.bgProcess')}`;
         processBtn.title = t('creator.bgProcess.hint');
         processBtn.onclick = () => this.handleTextAction(true, 'background');
 
@@ -162,7 +162,7 @@ export class CreatorModal extends Component {
         const analyzeBtn = document.createElement('button');
         analyzeBtn.id = 'analyze-btn';
         analyzeBtn.className = `${styles.btnPrimary} ${styles.btnRight}`;
-        analyzeBtn.innerHTML = `<span class="icon">&#9889;</span> ${t('creator.analyze')}`;
+        analyzeBtn.innerHTML = `<i class="ri-flashlight-line" style="margin-right:6px;"></i> ${t('creator.analyze')}`;
         analyzeBtn.onclick = () => this.handleTextAction(true, 'realtime');
 
         footer.appendChild(queueBtn);
@@ -339,7 +339,7 @@ export class CreatorModal extends Component {
         overlay.style.left = '0';
         overlay.style.width = '100vw';
         overlay.style.height = '100vh';
-        overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+        overlay.style.backgroundColor = 'var(--md-sys-color-surface)';
         overlay.style.display = 'flex';
         overlay.style.flexDirection = 'column';
         overlay.style.alignItems = 'center';
@@ -349,9 +349,9 @@ export class CreatorModal extends Component {
         overlay.innerHTML = `
             <style>
                 @keyframes pulse-blue {
-                    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-                    70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
-                    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+                    0% { box-shadow: 0 0 0 0 var(--md-sys-color-primary-fixed-dim); }
+                    70% { box-shadow: 0 0 0 15px transparent; }
+                    100% { box-shadow: 0 0 0 0 transparent; }
                 }
                 @keyframes shimmer {
                     0% { transform: translateX(-100%); }
@@ -362,25 +362,24 @@ export class CreatorModal extends Component {
                     animation: pulse-blue 2s infinite;
                 }
             </style>
-            <div class="loading-icon-pulse" style="font-size: 3rem; margin-bottom: 2rem; background: #eff6ff; padding: 20px; border-radius: 50%;">🤖</div>
-            <h2 style="margin: 0; color: #1e293b; font-weight: 600;">${t('creator.analyzing')}</h2>
-            <p id="overlay-status-text" style="color: #64748b; font-size: 1.1em; margin-top: 12px; min-height: 1.4em; font-weight: 500;">AI 正在准备...</p>
+            <div class="loading-icon-pulse" style="font-size: 3rem; margin-bottom: 2rem; background: var(--md-sys-color-primary-container); padding: 20px; border-radius: 50%; color: var(--md-sys-color-primary);"><i class="ri-robot-line"></i></div>
+            <h2 style="margin: 0; color: var(--md-sys-color-on-surface); font-weight: 600;">${t('creator.analyzing')}</h2>
+            <p id="overlay-status-text" style="color: var(--md-sys-color-on-surface-variant); font-size: 1.1em; margin-top: 12px; min-height: 1.4em; font-weight: 500;">AI 正在准备...</p>
             
-            <div class="progress-bar-container" style="width: 300px; height: 10px; background: #e2e8f0; border-radius: 5px; margin-top: 30px; overflow: hidden; position: relative;">
+            <div class="progress-bar-container" style="width: 300px; height: 10px; background: var(--md-sys-color-surface-variant); border-radius: 5px; margin-top: 30px; overflow: hidden; position: relative;">
                 <div class="progress-bar-active" style="position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent); animation: shimmer 1.5s infinite;"></div>
-                <div class="progress-bar-fill" style="width: 5%; height: 100%; background: #3b82f6; transition: width 0.3s ease; border-radius: 5px;"></div>
+                <div class="progress-bar-fill" style="width: 5%; height: 100%; background: var(--md-sys-color-primary); transition: width 0.3s ease; border-radius: 5px;"></div>
             </div>
             
-            <button id="cancel-overlay-btn" style="margin-top: 40px; border: 1px solid #cbd5e1; background: white; color: #64748b; padding: 8px 24px; border-radius: 20px; cursor: pointer; transition: all 0.2s;">
-                ${t('common.cancel') || '最小化后台运行'}
+            <button id="cancel-overlay-btn" style="margin-top: 40px; border: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface-variant); padding: 8px 24px; border-radius: var(--md-sys-radius-pill); cursor: pointer; transition: all 0.2s;">
+                ${t('creator.minimize') || t('common.cancel')}
             </button>
         `;
 
         // Cancel/Minimize action
         overlay.querySelector('#cancel-overlay-btn').onclick = () => {
             overlay.remove();
-            // Note: Process continues in background
-            notificationService.toast('已转入后台运行');
+            notificationService.toast(t('creator.bgProcess.toast'));
         };
 
         // Dynamic Messaging

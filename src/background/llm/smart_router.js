@@ -50,41 +50,57 @@ export class SmartRouter {
                 detail: "仅需拆分句子并翻译。每个句子必须准确、自然地翻译成简体中文。"
             },
             2: {
-                schema: '{ "sentences": [ { "original_text": "", "translation": "", "segments": [["phrase", "POS", "lemma"]], "explanation": "" } ] }',
+                schema: '{ "sentences": [ { "original_text": "", "translation": "", "segments": [["phrase", "POS", "lemma"]], "phrasal_verbs": [{"text": "set ... up", "indices": [0, 2], "lemma": "set up", "translation": ""}], "explanation": "" } ] }',
                 detail: "简要说明关键语法点或习语，简单句 explanation 返回空字符串。"
             },
             3: {
-                schema: '{ "sentences": [ { "original_text": "", "translation": "", "segments": [["phrase", "POS", "lemma"]], "explanation": "" } ] }',
+                schema: '{ "sentences": [ { "original_text": "", "translation": "", "segments": [["phrase", "POS", "lemma"]], "phrasal_verbs": [{"text": "set ... up", "indices": [0, 2], "lemma": "set up", "translation": ""}], "explanation": "" } ] }',
                 detail: "深度解析句法结构（时态、从句）、核心词汇用法及语境。Explanation 字段必须使用简体中文。"
             }
         }[mode] || {
             // Default
-            schema: '{ "sentences": [ { "original_text": "", "translation": "", "segments": [["phrase", "POS", "lemma"]], "explanation": "" } ] }',
+            schema: '{ "sentences": [ { "original_text": "", "translation": "", "segments": [["phrase", "POS", "lemma"]], "phrasal_verbs": [], "explanation": "" } ] }',
             detail: "简要说明关键语法点或习语。"
         };
 
         // 3. 关键规则：分词逻辑 (Few-shot 引导) - 仅非翻译模式
         const segmentationRules = mode !== 1 ? `
-## 分词规则
-1. 颗粒度：优先识别“固定短语” (Phrasal Verbs / Collocations) 而非单纯拆分单词。
-2. 标点符号：**务必包含**。句号、逗号等必须作为单独的 [".", "PUNCT", "."] 片段。
-3. Lemma 规则：动词提供原形，名词提供单数。Phrasal Verb 的 Lemma 应该是基础形式 (如 "look forward to")。` : "";
+## 分词与短语索引规则 (Critical)
+1. 物理序：\`segments\` 数组必须严格按照原文中的单词出现顺序排列，严禁移动或重组单词。
+2. 离散短语 (Discontiguous Phrasal Verbs)：如果短语被其他词分隔（如 "set it up"），不要在 segments 中强行合并。
+3. 索引协议：在 \`phrasal_verbs\` 字段中记录离散或紧凑短语的成员：
+   - \`indices\`: 记录该短语成员在当前句子 \`segments\` 数组中的 0 基索引位置。
+   - \`text\`: 短语在原文中的片段组合（如 "set ... up"）。
+   - \`lemma\`: 短语的标准原形。
+4. 标点符号：必须作为独立的 ["...", "PUNCT", "..."] 片段。` : "";
 
-        // 4. One-Shot 示例 (仅在非翻译模式开启，显著提升稳定性)
+        // 4. One-Shot 示例
         const example = mode !== 1 ? `
 ## 示例 (Example)
-Input: "He gave up smoking."
+Input: "He broke it all up last night."
 Output: {
   "sentences": [{
-    "original_text": "He gave up smoking.",
-    "translation": "他戒烟了。",
+    "original_text": "He broke it all up last night.",
+    "translation": "他昨晚把那一切都搞砸了。",
     "segments": [
       ["He", "PRON", "he"],
-      ["gave up", "VERB", "give up"],
-      ["smoking", "NOUN", "smoke"],
+      ["broke", "VERB", "break"],
+      ["it", "PRON", "it"],
+      ["all", "DET", "all"],
+      ["up", "PART", "up"],
+      ["last", "ADJ", "last"],
+      ["night", "NOUN", "night"],
       [".", "PUNCT", "."]
     ],
-    "explanation": "gave up 是 give up 的过去式，表示放弃或戒掉某习惯。"
+    "phrasal_verbs": [
+      {
+        "text": "broke ... up",
+        "indices": [1, 4],
+        "lemma": "break up",
+        "translation": "弄碎/终结/搞砸"
+      }
+    ],
+    "explanation": "broke ... up 是 break up 的离散用法，中间插入了受词 it all。"
   }]
 }` : "";
 

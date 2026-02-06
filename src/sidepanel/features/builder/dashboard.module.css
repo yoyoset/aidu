@@ -4,31 +4,83 @@
 }
 
 .dashboardHeader {
-    background: #FFFFFF;
-    border-bottom: 1px solid #E2E8F0;
-    padding: 12px 16px 0 16px;
+    background: var(--md-sys-color-surface);
+    border-bottom: 1px solid var(--md-sys-color-outline);
+    padding: 12px 16px 8px 16px;
     display: flex;
     flex-direction: column;
     gap: 8px;
     flex-shrink: 0;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    z-index: 5;
 }
 
 .iconBtn {
     background: transparent;
     border: none;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: var(--radius-sm);
-    transition: background 0.2s;
-    color: #64748B;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--md-sys-color-on-surface-variant);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
 }
 
 .iconBtn:hover {
-    background: #F1F5F9;
-    color: #334155;
+    background: var(--md-sys-state-hover);
+    color: var(--md-sys-color-on-surface);
 }
+
+.iconBtn:active {
+    background: var(--md-sys-state-pressed);
+    transform: scale(0.92);
+}
+
+.donateBtn {
+    color: #ff3366 !important;
+}
+
+.donateBtn i {
+    color: #ff3366 !important;
+    animation: heartBeat 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+}
+
+#sync-status-btn {
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+#sync-status-btn:hover {
+    background: var(--md-sys-state-hover);
+    color: var(--md-sys-color-primary);
+}
+
+@keyframes heartBeat {
+    0% {
+        transform: scale(1);
+    }
+
+    15% {
+        transform: scale(1.15);
+    }
+
+    30% {
+        transform: scale(1);
+    }
+
+    45% {
+        transform: scale(1.1);
+    }
+
+    60% {
+        transform: scale(1);
+    }
+}
+
 
 .headerTop {
     display: flex;
@@ -59,54 +111,58 @@
 
 .filterTabs {
     display: flex;
-    gap: 4px;
-    /* Tighter tabs */
+    gap: 8px;
+    padding: 0 4px;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
 }
 
 .filterTab {
-    padding: 6px 12px;
-    font-size: 0.85rem;
-    border-bottom: 2px solid transparent;
-    color: #64748B;
+    padding: 10px 16px;
+    font-size: 0.875rem;
+    color: var(--md-sys-color-on-surface-variant);
     background: transparent;
-    border-radius: 4px 4px 0 0;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 500;
 }
 
 .filterTab:hover {
-    background: #F1F5F9;
+    color: var(--md-sys-color-on-surface);
 }
 
 .filterTab.active {
-    color: #2563EB;
-    border-bottom-color: #2563EB;
-    background: #EFF6FF;
+    color: var(--md-sys-color-primary);
+    border-bottom-color: var(--md-sys-color-primary);
+    font-weight: 700;
 }
 
 .draftList {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: 12px;
+    padding: 12px 0;
+    /* Gap for first item */
 }
 
 /* Draft Item Container */
+/* Draft Item Container - Compact */
 .draftItem {
-    background: var(--surface-1);
-    border: 1px solid var(--border-medium);
-    border-radius: 8px;
-    padding: 12px;
-    transition: all 0.2s ease;
+    background: var(--md-sys-color-surface);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-radius-md);
+    padding: 10px 12px;
+    transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
-    /* Flex container for Checkbox + Content */
     gap: 12px;
     position: relative;
-    overflow: visible;
-    /* Allow controls to pop if needed */
+    overflow: hidden;
 }
 
 .draftItem:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border-color: var(--brand-primary);
+    background: var(--md-sys-color-surface-container-low);
+    box-shadow: var(--md-sys-elevation-1);
 }
 
 /* Checkbox Column */
@@ -114,8 +170,7 @@
     width: 18px;
     height: 18px;
     margin-top: 4px;
-    /* Align with Title */
-    accent-color: var(--brand-primary);
+    accent-color: var(--md-sys-color-primary);
     cursor: pointer;
     flex-shrink: 0;
 }
@@ -130,201 +185,102 @@
     gap: 6px;
 }
 
-/* Header: Title + Controls */
-.draftHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
-}
-
-.draftTitle {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: var(--text-primary);
-    line-height: 1.4;
-
-    /* Ellipsis */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Controls (Right aligned) */
-.draftControls {
-    display: flex;
-    gap: 4px;
-    opacity: 0.6;
-    /* Dim by default */
-    transition: opacity 0.2s;
-}
-
-.draftItem:hover .draftControls {
-    opacity: 1;
-}
-
-/* Preview Text */
-.draftPreview {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    line-height: 1.5;
-
-    /* Multiline Clamp */
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    /* Standard */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-/* Meta Footer */
-.draftMeta {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 2px;
-    font-size: 0.75rem;
-    color: var(--text-tertiary);
-}
-
+/* Standard Date Display */
 .dateText {
     font-variant-numeric: tabular-nums;
 }
 
-/* Badge Styles */
-.badge {
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    background: var(--surface-2);
-    color: var(--text-secondary);
-}
-
-.statusProcessing .badge {
-    background: #E0F2FE;
-    /* Sky 100 */
-    color: #0284C7;
-    /* Sky 600 */
-}
-
-.statusReady .badge {
-    background: #DCFCE7;
-    /* Green 100 */
-    color: #16A34A;
-    /* Green 600 */
-}
-
-.filterTabs {
+/* Vertical Action Bar on Right */
+.draftActions {
     display: flex;
-    gap: 20px;
-}
-
-.filterTab {
-    background: transparent;
-    border: none;
-    padding: 10px 4px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: #64748B;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-}
-
-.filterTab:hover {
-    color: #334155;
-}
-
-.filterTab.active {
-    color: #2563EB;
-    border-bottom-color: #2563EB;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 4px;
+    flex-shrink: 0;
 }
 
 .draftHeader {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: 4px;
 }
 
 .draftTitle {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-text-main);
-    line-height: 1.4;
-    margin-bottom: 4px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--md-sys-color-on-surface);
+    line-height: 1.3;
+    margin-bottom: 2px;
+    padding-right: 8px;
 
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
-}
-
-.draftTime {
-    font-size: 0.75rem;
-    color: var(--color-text-tertiary);
+    text-overflow: ellipsis;
 }
 
 .draftMeta {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
+    gap: 8px;
+    margin-bottom: 2px;
+    /* Tighter */
 }
 
 .badge {
     display: inline-flex;
     align-items: center;
     padding: 2px 8px;
-    border-radius: 99px;
-    font-size: 0.7rem;
-    font-weight: 600;
+    border-radius: var(--md-sys-radius-xs);
+    font-size: 0.65rem;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.025em;
-    background: var(--color-bg-body);
-    color: var(--color-text-secondary);
+    letter-spacing: 0.05em;
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
 }
 
 .statusReady .badge {
-    background: var(--color-brand-light);
-    color: var(--color-brand-primary);
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
 }
 
 .progressText {
     font-size: 0.75rem;
-    color: var(--color-text-secondary);
+    color: var(--md-sys-color-on-surface-variant);
     font-variant-numeric: tabular-nums;
 }
 
 .actionArea {
     display: flex;
     justify-content: flex-end;
-    border-top: 1px solid var(--color-bg-body);
-    padding-top: var(--spacing-sm);
-    margin-top: var(--spacing-sm);
+    margin-top: 2px;
 }
 
 .btnPrimary {
-    background: var(--color-brand-primary);
-    color: white;
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
     border: none;
-    border-radius: var(--radius-sm);
-    padding: 8px 16px;
+    border-radius: var(--md-sys-radius-pill);
+    /* Standard M3 button */
+    padding: 6px 16px;
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
     display: inline-flex;
     align-items: center;
     gap: 6px;
 }
 
 .btnPrimary:hover {
-    background: hsl(var(--primary-hue), var(--primary-sat), 30%);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: var(--md-sys-color-primary);
+    filter: brightness(1.15);
+    /* Distinct hover without gray blending */
+    box-shadow: var(--md-sys-elevation-2);
 }
 
 .emptyState {
@@ -416,7 +372,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.98);
+    background: var(--md-sys-color-surface);
     z-index: 1000;
     display: flex;
     align-items: center;
@@ -439,7 +395,7 @@
     border: none;
     font-size: 2rem;
     cursor: pointer;
-    color: #64748B;
+    color: var(--md-sys-color-on-surface-variant);
 }
 
 /* Flashcard 3D Flip */
@@ -463,10 +419,10 @@
     width: 100%;
     height: 100%;
     backface-visibility: hidden;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e8f0;
+    background: var(--md-sys-color-surface);
+    border-radius: var(--md-sys-radius-lg);
+    box-shadow: var(--md-sys-elevation-3);
+    border: 1px solid var(--md-sys-color-outline-variant);
     padding: 30px;
     display: flex;
     flex-direction: column;
@@ -483,13 +439,13 @@
 .cardWord {
     font-size: 2.5rem;
     font-weight: 800;
-    color: #1e293b;
+    color: var(--md-sys-color-on-surface);
     margin-bottom: 8px;
 }
 
 .cardPhonetic {
     font-family: monospace;
-    color: #64748b;
+    color: var(--md-sys-color-on-surface-variant);
     font-size: 1.2rem;
 }
 
@@ -504,7 +460,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
     padding-bottom: 12px;
     margin-bottom: 20px;
 }
@@ -512,30 +468,31 @@
 .cardWordSmall {
     font-weight: 700;
     font-size: 1.2rem;
+    color: var(--md-sys-color-on-surface);
 }
 
 .cardPos {
-    background: #f1f5f9;
+    background: var(--md-sys-color-surface-variant);
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: var(--md-sys-radius-xs);
     font-size: 0.8rem;
-    color: #64748b;
+    color: var(--md-sys-color-on-surface-variant);
 }
 
 .cardMeaning {
     font-size: 1.1rem;
     line-height: 1.5;
-    color: #334155;
+    color: var(--md-sys-color-on-surface);
     margin-bottom: 20px;
 }
 
 .cardContext {
     font-style: italic;
-    color: #64748b;
+    color: var(--md-sys-color-on-surface-variant);
     font-size: 0.95rem;
-    background: #f8fafc;
+    background: var(--md-sys-color-surface-container-low);
     padding: 12px;
-    border-radius: 8px;
+    border-radius: var(--md-sys-radius-md);
     width: 100%;
     margin-bottom: auto;
 }
@@ -563,8 +520,8 @@
 }
 
 .srsFail {
-    background: #fee2e2;
-    color: #dc2626;
+    background: var(--md-sys-color-error);
+    color: var(--md-sys-color-on-error, white);
 }
 
 .srsHard {
@@ -623,17 +580,17 @@
 }
 
 .processingIndicator:hover {
-    color: #2563EB;
+    color: var(--md-sys-color-primary);
     text-decoration: underline;
 }
 
 /* New Action Buttons */
 .btnGhost {
     background: transparent;
-    border: 1px solid #e2e8f0;
-    color: #64748b;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    color: var(--md-sys-color-on-surface-variant);
     padding: 6px 12px;
-    border-radius: 6px;
+    border-radius: var(--md-sys-radius-sm);
     font-size: 0.8rem;
     cursor: pointer;
     transition: all 0.2s;
@@ -644,17 +601,17 @@
 }
 
 .btnGhost:hover {
-    background: #f1f5f9;
-    color: #334155;
-    border-color: #cbd5e1;
+    background: var(--md-sys-state-hover);
+    color: var(--md-sys-color-on-surface);
+    border-color: var(--md-sys-color-outline);
 }
 
 .btnGhostDestructive {
     background: transparent;
-    border: 1px solid #fee2e2;
-    color: #ef4444;
+    border: 1px solid var(--md-sys-color-error);
+    color: var(--md-sys-color-error);
     padding: 6px 12px;
-    border-radius: 6px;
+    border-radius: var(--md-sys-radius-sm);
     font-size: 0.8rem;
     cursor: pointer;
     transition: all 0.2s;
@@ -665,47 +622,54 @@
 }
 
 .btnGhostDestructive:hover {
-    background: #fef2f2;
-    border-color: #fecaca;
+    background: var(--md-sys-color-error);
+    color: var(--md-sys-color-on-error);
+    border-color: var(--md-sys-color-error);
 }
 
-/* Reading Time Tracker */
+/* Reading Time Tracker (Unified with Reader View Capsule) */
 .readingTimeContainer {
     display: flex;
     align-items: center;
     gap: 6px;
-    background: #F8FAFC;
-    padding: 2px 8px;
-    border-radius: 12px;
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    padding: 4px 10px;
+    border-radius: 20px;
     font-size: 0.75rem;
-    color: #64748B;
-    border: 1px solid #E2E8F0;
-    height: 20px;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    height: auto;
+    font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.readingTimeContainer:hover {
+    background: var(--md-sys-state-hover);
+    border-color: var(--md-sys-color-outline);
 }
 
 .readingTimeText {
     font-variant-numeric: tabular-nums;
     font-weight: 600;
-    font-size: 0.7rem;
 }
 
 .readingProgressBar {
-    width: 30px;
-    height: 4px;
-    background: #E2E8F0;
+    width: 24px;
+    height: 3px;
+    background: var(--md-sys-color-surface-variant);
     border-radius: 2px;
     overflow: hidden;
 }
 
 .readingProgressFill {
     height: 100%;
-    background: #22C55E;
-    /* Green */
+    background: var(--md-sys-color-primary);
     border-radius: 2px;
     transition: width 0.3s ease;
 }
 
 .readingProgressFill.capped {
-    background: #F59E0B;
+    background: var(--md-sys-color-error);
     /* Amber for >60m */
 }

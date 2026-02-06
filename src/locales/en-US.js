@@ -34,12 +34,12 @@ export default {
     'settings.analysis': 'Analysis Strategy',
     'settings.realtime': 'Real-time (Selection)',
     'settings.builder': 'Builder (Draft)',
-    'settings.mode.translation': 'Translation',
+    'settings.mode.translation': 'Translation Only',
     'settings.mode.translation.sub': 'Fast',
-    'settings.mode.standard': 'Standard',
+    'settings.mode.standard': 'Simple Analysis',
     'settings.mode.standard.sub': 'Lemma+POS',
-    'settings.mode.deep': 'Deep',
-    'settings.mode.deep.sub': 'Full Context',
+    'settings.mode.deep': 'Deep Analysis',
+    'settings.mode.deep.sub': 'Detailed Context',
     'settings.mode.core': 'Core Analysis',
     'settings.mode.detailed': 'Detailed',
 
@@ -147,10 +147,11 @@ export default {
 
     'creator.save': 'Save Draft',
     'creator.saveChanges': 'Save Changes',
-    'creator.bgProcess': 'BG Process',
-    'creator.bgProcess.hint': 'Run in Background (Channel B)',
+    'creator.bgProcess.hint': 'Run in background (Silent)',
     'creator.bgProcess.toast': 'Analysis minimized to background.',
-    'creator.analyze': 'Analyze Now',
+    'creator.analyze': 'Start Analysis',
+    'creator.analyze.simple': 'Simple Analysis',
+    'creator.analyze.deep': 'Deep Analysis',
 
     'creator.manualAi.title': 'Manual AI Workflow',
     'creator.manualAi.steps': '1. Copy Prompt & Text -> 2. Paste to External AI -> 3. Paste Result Here',
@@ -159,9 +160,7 @@ export default {
     'creator.manualAi.import': 'Import & Render',
     'creator.manualAi.placeholder': '{"sentences": [...]}',
 
-    'creator.analyzing': 'Analyzing...',
-    'creator.analyzing.hint': 'Please wait while AI processes your text.',
-
+    'creator.error.general': 'Analysis failed to start. Check network or AI config.',
     'creator.error.noContent': 'Please input content.',
     'creator.error.noJson': 'Paste JSON.',
     'creator.error.invalidSchema': 'Invalid Schema: {error}',

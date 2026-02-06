@@ -111,12 +111,6 @@ export class SettingsModal extends Component {
                         </select>
                     </div>
 
-                    <!-- AI Proxy URL (Global) -->
-                    <div class="${styles.formGroup}">
-                        <label class="${styles.label}" for="proxy-url-input">🔐 安全代理 (Cloudflare Worker)</label>
-                        <input type="text" id="proxy-url-input" class="${styles.input}" 
-                            value="${this.settings.proxyUrl || ''}" placeholder="https://aidu-proxy.<you>.workers.dev">
-                    </div>
 
                     <div class="${styles.formGroup}" id="base-url-group">
                         <label class="${styles.label}" for="base-url-input">${t('settings.baseUrl')}</label>
@@ -779,7 +773,6 @@ export class SettingsModal extends Component {
         };
 
         // 2. Global Data
-        this.settings.proxyUrl = this.overlay.querySelector('#proxy-url-input').value.trim();
         const teachingStyle = this.overlay.querySelector('#teaching-style').value;
         this.settings.teachingStyle = teachingStyle;
 

@@ -143,31 +143,32 @@ export class CreatorModal extends Component {
         const queueBtn = document.createElement('button');
         queueBtn.id = 'queue-btn';
         queueBtn.className = `${styles.btnSecondary} ${styles.btnLeft}`;
-        if (isEdit) {
-            queueBtn.innerHTML = `<i class="ri-save-line" style="margin-right:6px;"></i> ${t('creator.saveChanges')}`;
-        } else {
-            queueBtn.innerHTML = `<i class="ri-download-cloud-line" style="margin-right:6px;"></i> ${t('creator.save')}`;
-        }
+        queueBtn.innerHTML = `<i class="ri-save-line" style="margin-right:6px;"></i> ${t('creator.save')}`;
         queueBtn.onclick = () => this.handleTextAction(false);
 
-        // 2. Background Process (Middle) - NEW
-        const processBtn = document.createElement('button');
-        processBtn.id = 'process-btn';
-        processBtn.className = `${styles.btnSecondary} ${styles.btnMiddle}`;
-        processBtn.innerHTML = `<i class="ri-time-line" style="margin-right:6px;"></i> ${t('creator.bgProcess')}`;
-        processBtn.title = t('creator.bgProcess.hint');
-        processBtn.onclick = () => this.handleTextAction(true, 'background');
+        // 2. Simple Analysis (Middle)
+        const simpleBtn = document.createElement('button');
+        simpleBtn.id = 'simple-analyze-btn';
+        simpleBtn.className = `${styles.btnPrimary} ${styles.btnMiddle}`;
+        simpleBtn.innerHTML = `<i class="ri-flashlight-line" style="margin-right:6px;"></i> ${t('creator.analyze.simple')}`;
+        simpleBtn.onclick = () => {
+            // Force Mode 2 for Simple
+            this.handleTextActionWithMode(true, 'realtime', '2');
+        };
 
-        // 3. Analyze Now (Right)
-        const analyzeBtn = document.createElement('button');
-        analyzeBtn.id = 'analyze-btn';
-        analyzeBtn.className = `${styles.btnPrimary} ${styles.btnRight}`;
-        analyzeBtn.innerHTML = `<i class="ri-flashlight-line" style="margin-right:6px;"></i> ${t('creator.analyze')}`;
-        analyzeBtn.onclick = () => this.handleTextAction(true, 'realtime');
+        // 3. Deep Analysis (Right)
+        const deepBtn = document.createElement('button');
+        deepBtn.id = 'deep-analyze-btn';
+        deepBtn.className = `${styles.btnPrimary} ${styles.btnRight}`;
+        deepBtn.innerHTML = `<i class="ri-magic-line" style="margin-right:6px;"></i> ${t('creator.analyze.deep')}`;
+        deepBtn.onclick = () => {
+            // Force Mode 3 for Deep
+            this.handleTextActionWithMode(true, 'realtime', '3');
+        };
 
         footer.appendChild(queueBtn);
-        footer.appendChild(processBtn);
-        footer.appendChild(analyzeBtn);
+        footer.appendChild(simpleBtn);
+        footer.appendChild(deepBtn);
         container.appendChild(footer);
 
         return container;
@@ -218,18 +219,25 @@ export class CreatorModal extends Component {
     }
 
     async handleTextAction(autoStart, mode = 'realtime') {
-        const title = this.overlay.querySelector('#draft-title').value.trim() || t('dashboard.draft.untitled');
-        const text = this.overlay.querySelector('#draft-content').value.trim();
+        const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS);
+        const activeProfile = settings?.profiles?.[settings?.activeProfileId] || {};
+        const defaultMode = activeProfile.builderMode || '3';
+        return this.handleTextActionWithMode(autoStart, mode, defaultMode);
+    }
+
+    async handleTextActionWithMode(autoStart, mode, analysisMode) {
+        const titleInput = this.overlay.querySelector('#draft-title');
+        const contentInput = this.overlay.querySelector('#draft-content');
+
+        const title = titleInput?.value.trim() || t('dashboard.draft.untitled');
+        const text = contentInput?.value.trim();
 
         if (!text) return notificationService.alert(t('creator.error.noContent'));
 
-        // Status: 'draft' if queue, 'processing' (trigger) if analyze
         const status = autoStart ? 'processing' : 'draft';
-
         const draft = await this.createDraftObject(title, text, status);
+        draft.analysisMode = analysisMode; // Use specific mode
 
-        // Pass 'mode' to callback so Dashboard knows whether to Overlay (Realtime) or Sync (Background)
-        // If mode === 'background', autoStart is true but we DON'T show overlay.
         this.callbacks.onDraftCreated(draft, autoStart, mode);
         this.close();
     }
@@ -328,84 +336,46 @@ export class CreatorModal extends Component {
     }
 
     showRealtimeOverlay(draftId, onComplete) {
-        // Remove logic: Check for existing global overlay
         let overlay = document.querySelector('.aidu-realtime-overlay');
         if (overlay) overlay.remove();
 
         overlay = document.createElement('div');
         overlay.className = 'aidu-realtime-overlay';
-        overlay.style.position = 'fixed'; // Fixed to viewport
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100vw';
-        overlay.style.height = '100vh';
-        overlay.style.backgroundColor = 'var(--md-sys-color-surface)';
-        overlay.style.display = 'flex';
-        overlay.style.flexDirection = 'column';
-        overlay.style.alignItems = 'center';
-        overlay.style.justifyContent = 'center';
-        overlay.style.zIndex = '99999'; // Topmost
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--md-sys-color-surface); display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
+            z-index: 99999; backdrop-filter: blur(10px);
+        `;
 
         overlay.innerHTML = `
-            <style>
-                @keyframes pulse-blue {
-                    0% { box-shadow: 0 0 0 0 var(--md-sys-color-primary-fixed-dim); }
-                    70% { box-shadow: 0 0 0 15px transparent; }
-                    100% { box-shadow: 0 0 0 0 transparent; }
-                }
-                @keyframes shimmer {
-                    0% { transform: translateX(-100%); }
-                    100% { transform: translateX(100%); }
-                }
-                .loading-icon-pulse {
-                    border-radius: 50%;
-                    animation: pulse-blue 2s infinite;
-                }
-            </style>
-            <div class="loading-icon-pulse" style="font-size: 3rem; margin-bottom: 2rem; background: var(--md-sys-color-primary-container); padding: 20px; border-radius: 50%; color: var(--md-sys-color-primary);"><i class="ri-robot-line"></i></div>
-            <h2 style="margin: 0; color: var(--md-sys-color-on-surface); font-weight: 600;">${t('creator.analyzing')}</h2>
-            <p id="overlay-status-text" style="color: var(--md-sys-color-on-surface-variant); font-size: 1.1em; margin-top: 12px; min-height: 1.4em; font-weight: 500;">AI 正在准备...</p>
+            <div style="font-size: 2.5rem; color: var(--md-sys-color-primary); margin-bottom: 20px;">
+                <i class="ri-loader-4-line ri-spin"></i>
+            </div>
+            <h2 style="margin: 0; color: var(--md-sys-color-on-surface); font-weight: 600;">处理中...</h2>
             
-            <div class="progress-bar-container" style="width: 300px; height: 10px; background: var(--md-sys-color-surface-variant); border-radius: 5px; margin-top: 30px; overflow: hidden; position: relative;">
-                <div class="progress-bar-active" style="position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent); animation: shimmer 1.5s infinite;"></div>
-                <div class="progress-bar-fill" style="width: 5%; height: 100%; background: var(--md-sys-color-primary); transition: width 0.3s ease; border-radius: 5px;"></div>
+            <div style="width: 300px; height: 6px; background: var(--md-sys-color-surface-variant); border-radius: 3px; margin-top: 30px; overflow: hidden;">
+                <div class="progress-bar-fill" style="width: 5%; height: 100%; background: var(--md-sys-color-primary); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
             </div>
             
-            <button id="cancel-overlay-btn" style="margin-top: 40px; border: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface-variant); padding: 8px 24px; border-radius: var(--md-sys-radius-pill); cursor: pointer; transition: all 0.2s;">
-                ${t('creator.minimize') || t('common.cancel')}
+            <button id="cancel-overlay-btn" style="margin-top: 40px; border: 1px solid var(--md-sys-color-outline-variant); background: transparent; color: var(--md-sys-color-on-surface-variant); padding: 8px 24px; border-radius: 20px; cursor: pointer;">
+                ${t('common.close')}
             </button>
         `;
 
-        // Cancel/Minimize action
         overlay.querySelector('#cancel-overlay-btn').onclick = () => {
             overlay.remove();
             notificationService.toast(t('creator.bgProcess.toast'));
         };
 
-        // Dynamic Messaging
-        const messages = [
-            "正在建立安全连接...",
-            "正在解析文本结构...",
-            "正在识别关键生词...",
-            "AI 正在生成深度解读...",
-            "正在优化阅读排版..."
-        ];
-        let msgIdx = 0;
-        const statusText = overlay.querySelector('#overlay-status-text');
-        const msgInterval = setInterval(() => {
-            if (document.body.contains(overlay) && msgIdx < messages.length) {
-                statusText.textContent = messages[msgIdx++];
-            } else {
-                clearInterval(msgInterval);
-            }
-        }, 1500);
-
-        document.body.appendChild(overlay);
+        const target = this.modalContent || document.body;
+        target.appendChild(overlay);
 
         const onProgress = (changes, area) => {
             if (area === 'local' && changes[StorageKeys.BUILDER_DRAFTS]) {
                 StorageHelper.get(StorageKeys.BUILDER_DRAFTS).then(drafts => {
-                    const draft = Object.values(drafts || {}).find(d => d.id === draftId);
+                    const draftList = Object.values(drafts || {});
+                    const draft = draftList.find(d => d.id === draftId);
                     if (draft && draft.progress) {
                         const pct = draft.progress.percentage || 0;
                         const fill = overlay.querySelector('.progress-bar-fill');
@@ -414,11 +384,7 @@ export class CreatorModal extends Component {
                         if (draft.status === 'ready' || draft.status === 'error') {
                             chrome.storage.onChanged.removeListener(onProgress);
                             if (draft.status === 'ready' && onComplete) {
-                                // Short delay to show 100%
-                                setTimeout(() => {
-                                    overlay.remove();
-                                    onComplete();
-                                }, 500);
+                                setTimeout(() => { overlay.remove(); onComplete(); }, 500);
                             } else {
                                 overlay.remove();
                                 if (draft.status === 'error') notificationService.alert(t('creator.error.general'));

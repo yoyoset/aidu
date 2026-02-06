@@ -521,22 +521,24 @@ export class PreparationDashboard extends Component {
             btn.textContent = t('dashboard.draft.readNow');
             btn.onclick = () => this.handleAction(draft);
             actionArea.appendChild(btn);
-        } else if (draft.status === 'draft') {
-            const btn = document.createElement('button');
-            btn.className = styles.btnPrimary;
-            btn.innerHTML = t('dashboard.draft.startAnalysis');
-            btn.onclick = () => this.handleAction(draft);
-            actionArea.appendChild(btn);
-        } else if (draft.status === 'error') {
-            const retryBtn = document.createElement('button');
-            retryBtn.className = styles.btnDestructive;
-            retryBtn.innerHTML = t('dashboard.draft.resume');
-            retryBtn.onclick = () => this.handleAction(draft, 'retry');
-            actionArea.appendChild(retryBtn);
+        } else if (draft.status === 'draft' || draft.status === 'error') {
+            const simpleBtn = document.createElement('button');
+            simpleBtn.className = styles.btnPrimary;
+            simpleBtn.innerHTML = `<i class="ri-flashlight-line"></i> ${t('settings.mode.standard')}`;
+            simpleBtn.onclick = () => this.handleAction(draft, 'realtime', '2');
+            actionArea.appendChild(simpleBtn);
 
-            if (hasData) {
+            const deepBtn = document.createElement('button');
+            deepBtn.className = styles.btnPrimary;
+            deepBtn.style.marginLeft = '8px';
+            deepBtn.innerHTML = `<i class="ri-magic-line"></i> ${t('settings.mode.deep')}`;
+            deepBtn.onclick = () => this.handleAction(draft, 'realtime', '3');
+            actionArea.appendChild(deepBtn);
+
+            if (draft.status === 'error' && hasData) {
                 const readBtn = document.createElement('button');
                 readBtn.className = styles.btnSecondary;
+                readBtn.style.marginLeft = '8px';
                 readBtn.innerHTML = t('dashboard.draft.readPartial');
                 readBtn.onclick = () => this.handleAction(draft, 'read_partial');
                 actionArea.appendChild(readBtn);
@@ -687,7 +689,7 @@ export class PreparationDashboard extends Component {
         this.render();
     }
 
-    async handleAction(draft, mode = 'realtime') {
+    async handleAction(draft, mode = 'realtime', analysisMode = null) {
         if (mode === 'read_partial' || (draft.status === 'ready' && mode !== 'retry')) {
             if (this.readerView) {
                 this.element.style.display = 'none';
@@ -701,6 +703,12 @@ export class PreparationDashboard extends Component {
             const valid = await this.checkApiKey();
             if (!valid) return;
 
+            // If analysisMode provided, update it
+            if (analysisMode) {
+                draft.analysisMode = analysisMode;
+                await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.drafts);
+            }
+
             if (mode === 'background' || mode === 'retry') {
                 draft.status = 'processing';
                 if (mode !== 'retry') {
@@ -708,46 +716,6 @@ export class PreparationDashboard extends Component {
                 }
                 this.handleNewDraft(draft, true, 'background');
             } else {
-                this.creatorModal.show({
-                    title: draft.title || '',
-                    rawText: draft.rawText,
-                    mode: 'edit', // Hack: Show modal so overlay has a place to live, or use standalone?
-                    // Actually CreatorModal expects to be OPEN for showRealtimeOverlay to append.
-                    // If we are calling handleAction from Dashboard list, the modal is CLOSED.
-                    // We need to OPEN it or use a global overlay.
-                    // Looking at `showRealtimeOverlay`: "if (this.modalContent) this.modalContent.appendChild(overlay);"
-                    // So we must open the modal first?
-                    // No, `handleAction` (Retry or Draft) might not open modal.
-                    // Let's check if CreatorModal supports standalone overlay.
-                    // It uses `this.element` which is body. But it appends to `this.modalContent` which is created in `render`.
-                    // So yes, we need to show the modal or change where overlay appends.
-                    // BUT, `handleAction` logic in `preparation_dashboard.js` line 628 just calls `showRealtimeOverlay`.
-                    // If modal isn't open, content is null.
-                    // Fix: We'll modify CreatorModal to append to `this.element` (body) if modalContent is missing?
-                    // Or just ensure we pass the callback. The existing code assumes it works.
-                });
-                // Wait, the original code had:
-                // this.creatorModal.showRealtimeOverlay(draft.id);
-                // If this worked before, it means the modal state was handled or I missed something.
-                // Ah, line 628 is inside `handleAction`.
-                // If I click "Start Analysis" from the list... the modal IS NOT open.
-                // So `this.modalContent` would be null.
-                // Does `showRealtimeOverlay` handle this? It checks `if (this.modalContent)`.
-                // If null, it does nothing? That seems like a bug in existing code or my understanding.
-                // Let's look at `creator_modal.js` again.
-                // `if (this.modalContent) this.modalContent.appendChild(overlay);`
-                // Yes, if modal is closed, it shows NOTHING.
-                // So "Start Analysis" from list might be broken visually or relies on something else?
-                // The user complained about "Window popping up and disappearing".
-                // This implies it DOES show up.
-                // Maybe `handleAction` opens it? No.
-                // Wait, maybe `viewer` opens it?
-                // Actually, if I look at `handleNewDraft`, it calls `showRealtimeOverlay` AFTER `handleNewDraft` which follows `creatorModal.show` and `close`.
-                // If `close` is called, `overlay` is removed.
-
-                // Let's fix the logic to be safe: Append to `document.body` if modal is closed.
-                // I will apply the fix in `creator_modal.js` instead.
-
                 this.creatorModal.showRealtimeOverlay(draft.id, async () => {
                     await this.loadDrafts();
                     const updated = this.drafts.find(d => d.id === draft.id);

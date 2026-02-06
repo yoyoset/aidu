@@ -39,7 +39,7 @@ export class ApiClient {
                 provider: 'glm-free',
                 apiKey: 'proxy-managed', // Real key is in CF Secrets
                 model: 'glm-4-flash',
-                proxyUrl: settings.proxyUrl || 'https://aidu-proxy.yoyoset1.workers.dev'
+                proxyUrl: 'https://aidu-proxy.yoyoset1.workers.dev'
             };
             this._configCache = config;
             this._configCacheTime = Date.now();
@@ -56,7 +56,7 @@ export class ApiClient {
             apiKey: apiKey,
             model: providerConfig?.model,
             baseUrl: providerConfig?.baseUrl,
-            proxyUrl: settings.proxyUrl || providerConfig?.proxyUrl
+            proxyUrl: 'https://aidu-proxy.yoyoset1.workers.dev'
         };
 
         // Cache the result

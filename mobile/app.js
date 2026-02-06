@@ -111,14 +111,7 @@ window.App = {
         if (settings.token) document.getElementById('setting-token').value = settings.token;
 
         // Populate Profile Dropdown
-        const profileSelect = document.getElementById('setting-profile-select');
-        const profiles = settings.availableProfiles || ['default'];
-        // Ensure default is there if empty
-        if (profiles.length === 0) profiles.push('default');
-
-        profileSelect.innerHTML = profiles.map(p =>
-            `<option value="${p}" ${p === this.currentProfile ? 'selected' : ''}>${p}</option>`
-        ).join('');
+        this.renderProfileSelect(settings.availableProfiles, this.currentProfile);
 
         // Also fill hidden compatibility input
         document.getElementById('setting-profile').value = this.currentProfile;
@@ -160,6 +153,16 @@ window.App = {
     switchView(viewId) {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
         document.getElementById(viewId).classList.add('active');
+    },
+
+    renderProfileSelect(availableProfiles, currentProfile) {
+        const profileSelect = document.getElementById('setting-profile-select');
+        const profiles = availableProfiles || ['default'];
+        if (profiles.length === 0) profiles.push('default');
+
+        profileSelect.innerHTML = profiles.map(p =>
+            `<option value="${p}" ${p === currentProfile ? 'selected' : ''}>${p}</option>`
+        ).join('');
     },
 
     toast(msg) {
@@ -366,6 +369,8 @@ window.App = {
             outgoing = Object.keys(this.data).length; // Rough metric
 
             this.renderStats();
+            // Important: update the dropdown UI as well if profiles changed
+            this.renderProfileSelect(settings.availableProfiles, this.currentProfile);
             this.toast(`Synced! ↓${incoming} ↑Saved`);
 
         } catch (e) {
@@ -385,6 +390,7 @@ window.App = {
                         const currentSettings = Store.getSettings();
                         currentSettings.availableProfiles = meta.profiles || [];
                         Store.saveSettings(currentSettings);
+                        this.renderProfileSelect(currentSettings.availableProfiles, this.currentProfile);
                         console.log("Synced Profiles:", currentSettings.availableProfiles);
                     }
                 }

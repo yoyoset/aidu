@@ -38,6 +38,42 @@ export class VocabService {
             await StorageHelper.remove(legacyKey);
             console.log('VocabService: Migration complete.');
         }
+
+        // 2. Check for even older 'user_data' (Common in legacy versions)
+        const ultraLegacyKey = 'user_data';
+        const ultraLegacyData = await StorageHelper.get(ultraLegacyKey);
+        if (ultraLegacyData) {
+            console.log('VocabService: Found ultra-legacy user_data. Migrating...');
+            const targetKey = 'vocab_default';
+            let formattedData = {};
+
+            // Handle Array vs Object
+            if (Array.isArray(ultraLegacyData)) {
+                ultraLegacyData.forEach(item => {
+                    if (item && (item.word || item.text)) {
+                        const key = (item.word || item.text).toLowerCase();
+                        formattedData[key] = {
+                            word: item.word || item.text,
+                            meaning: item.meaning || item.def || '',
+                            context: item.context || item.ctx || '',
+                            addedAt: item.date || Date.now(),
+                            stage: 'new',
+                            ...item
+                        };
+                    }
+                });
+            } else if (typeof ultraLegacyData === 'object') {
+                formattedData = ultraLegacyData;
+            }
+
+            if (Object.keys(formattedData).length > 0) {
+                const existingDefault = await StorageHelper.get(targetKey) || {};
+                const merged = { ...formattedData, ...existingDefault }; // Keep existing newer
+                await StorageHelper.set(targetKey, merged);
+                // await StorageHelper.remove(ultraLegacyKey); // Keep explicitly for safety until verified
+                console.log(`VocabService: Migrated ${Object.keys(formattedData).length} items from user_data.`);
+            }
+        }
     }
 
     // --- Core: Read with Cache ---
@@ -177,6 +213,26 @@ export class VocabService {
     async getSavedSet() {
         const vocab = await this.getAll();
         return new Set(Object.keys(vocab));
+    }
+
+    /**
+     * Bulk Import / Overwrite (Atomic)
+     * Used by SyncManager
+     * @param {Object} data - Full vocabulary object
+     */
+    async importData(data) {
+        return this.queue = this.queue.then(async () => {
+            if (!data) return false;
+            // Validate basic structure
+            const validData = {};
+            Object.entries(data).forEach(([k, v]) => {
+                if (v && (v.word || v.lemma)) validData[k] = v;
+            });
+
+            await this._save(validData);
+            console.log(`VocabService: Imported ${Object.keys(validData).length} items.`);
+            return true;
+        });
     }
 }
 

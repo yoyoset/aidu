@@ -7,6 +7,8 @@ export default {
     'app.description': 'Adaptive Immersive Deep English (AIDE) - Structured Semantic Analysis for deep reading.',
     'app.sidepanel.title': 'AIDU Sidepanel',
     'app.sidepanel.open': 'Open AIDU Sidepanel',
+    'context.save': 'Save Selection to AIDU',
+    'context.open': 'Open AIDU Dashboard',
 
     // === Navigation ===
     'nav.library': 'My Library',
@@ -15,7 +17,7 @@ export default {
 
     // === Settings Modal ===
     'settings.title': 'Configuration',
-    'settings.createProfile': '+ Create New Profile...',
+    'settings.createProfile': 'Create New Profile...',
     'settings.general': 'General Settings',
     'settings.displayName': 'Display Name',
     'settings.displayName.placeholder': 'Enter Profile Name',
@@ -88,6 +90,8 @@ export default {
     'settings.backup.restoreConfirm': 'Restore data from "{filename}"?\nThis will OVERWRITE current vocabulary, drafts, and settings!',
     'settings.backup.restoreSuccess': 'Data restored successfully! The page will reload.',
     'settings.backup.restoreFailed': 'Restore failed: Invalid JSON file.',
+    'settings.logger.clearTitle': 'Clear Logs',
+    'settings.logger.clearConfirm': 'Are you sure you want to clear all log records?',
 
     'settings.deleteProfile': 'Delete Profile',
     'settings.deleteProfile.confirm': 'Are you sure you want to delete this profile?',
@@ -97,7 +101,7 @@ export default {
     // === Dashboard ===
     'dashboard.merge': 'Merge',
     'dashboard.mergeSelected': 'Merge Selected',
-    'dashboard.new': '+ New',
+    'dashboard.new': 'New',
     'dashboard.addArticle': 'Add Article',
     'dashboard.cloudSync': 'Cloud Sync',
     'dashboard.settings': 'Settings',
@@ -115,14 +119,15 @@ export default {
     'dashboard.draft.readNow': 'Read Now →',
     'dashboard.draft.startAnalysis': 'Start Analysis',
     'dashboard.draft.resume': '↻ Resume',
-    'dashboard.draft.readPartial': 'Read (Partial)',
-    'dashboard.draft.readLive': 'Read (Live)',
     'dashboard.draft.resetStuck': 'Reset Stuck',
     'dashboard.draft.chunk': 'Chunk {index}: {status}',
 
     'dashboard.delete.title': 'Delete Article?',
     'dashboard.delete.message': 'Are you sure you want to delete "{title}"? This cannot be undone.',
     'dashboard.delete.confirm': 'Delete',
+
+    'dashboard.reset.title': 'Reset Article',
+    'dashboard.reset.message': 'Are you sure you want to reset this article and clear all analyzed data?',
 
     'dashboard.sync.recommend': 'Cloud Sync Recommendation',
     'dashboard.sync.now': 'Sync Now',
@@ -149,6 +154,7 @@ export default {
     'creator.saveChanges': 'Save Changes',
     'creator.bgProcess.hint': 'Process silently in background',
     'creator.bgProcess.toast': 'Analysis started. View progress below.',
+    'creator.contentChanged.toast': 'Content modified. Old analysis cleared. Please re-analyze.',
     'creator.analyze': 'Start Analysis',
     'creator.analyze.simple': 'Simple Analysis',
     'creator.analyze.deep': 'Deep Analysis',
@@ -172,6 +178,10 @@ export default {
     'vocab.filter.all': 'All',
     'vocab.filter.today': 'Today',
     'vocab.filter.week': 'This Week',
+    'vocab.filter.forgot': 'Forgot',
+    'vocab.filter.hard': 'Hard',
+    'vocab.filter.recognized': 'Recognized',
+    'vocab.filter.easy': 'Easy',
     'vocab.filter.mastered': 'Mastered',
     'vocab.review': 'Review',
     'vocab.review.title': 'Review all {count} non-mastered words',
@@ -208,6 +218,7 @@ export default {
     'vocab.export.empty': 'No words to export.',
 
     'vocab.deepDive.generating': 'Generating deep analysis...',
+    'vocab.deepDive.queued': 'Added to analysis queue',
     'vocab.deepDive.failed': 'Deep analysis failed',
 
     'vocab.action.delete': 'Delete',
@@ -264,17 +275,21 @@ export default {
     'reader.settings.voice': 'Voice',
     'reader.settings.speed': 'Speed',
     'reader.settings.size': 'Size',
+    'reader.settings.lineHeight': 'Line Spacing',
     'reader.settings.font': 'Font',
     'reader.settings.bold': 'Bold',
     'reader.font.serif': 'Serif',
     'reader.font.sans': 'Sans-serif',
     'reader.font.mono': 'Monospace',
+    'reader.bookmark': 'Bookmark',
+    'reader.bookmark.set': 'Bookmarked',
+    'reader.bookmark.hint': 'Mark as current progress',
 
     // === Dictionary ===
     'dict.loading': 'Loading...',
     'dict.saved': '✓ Saved (Undo)',
     'dict.savedHint': 'Click to remove from vocabulary',
-    'dict.add': '+ Add to Vocab',
+    'dict.add': 'Add to Vocab',
     'dict.addHint': 'Add to vocabulary',
     'dict.expand': 'Full Deep Dive',
     'dict.mastered': 'Mastered',
@@ -308,6 +323,7 @@ export default {
     // === Common ===
     'common.cancel': 'Cancel',
     'common.confirm': 'Confirm',
+    'common.confirmTitle': 'Confirm Action',
     'common.delete': 'Delete',
     'common.save': 'Save',
     'common.close': 'Close',
@@ -315,6 +331,16 @@ export default {
     'common.error': 'Error',
     'common.success': 'Success',
     'common.gotIt': 'Got it!',
+
+    // === Error Messages ===
+    'error.llm.general': 'LLM Request Failed',
+    'error.llm.unauthorized': 'API Key verification failed, please check settings',
+    'error.llm.quota': 'Model quota exhausted, try switching models or recharging',
+    'error.llm.rate_limit': 'Rate limited due to too many requests, please try again later',
+    'error.llm.server_error': 'Provider internal error, please retry later',
+    'error.llm.safety_blocked': 'Content triggered safety filters, please adjust input',
+    'error.llm.model_error': 'Model configuration error or model is offline',
+    'error.llm.proxy_error': 'Proxy node failure, please retry later',
 
     // === Donate ===
     'donate.title': 'Support the Author',

@@ -1,5 +1,6 @@
 import { Component } from '../../components/component.js';
-import styles from '../builder/dashboard.module.css';
+import navStyles from '../builder/styles/dashboard_nav.module.css';
+import reviewStyles from '../builder/components/review_overlay.module.css';
 import { vocabService } from '../../../services/vocab_service.js';
 import { SRSAlgorithm } from '../../../services/srs_algorithm.js';
 import { t } from '../../../locales/index.js';
@@ -26,13 +27,13 @@ export class VocabReview extends Component {
         // Create container if not exists, preventing body class overwrite
         if (!this.container) {
             this.container = document.createElement('div');
-            this.container.className = styles.reviewOverlay;
+            this.container.className = reviewStyles.reviewOverlay;
             document.body.appendChild(this.container);
         }
 
         this.container.innerHTML = '';
         const wrapper = document.createElement('div');
-        wrapper.className = styles.reviewContainer;
+        wrapper.className = reviewStyles.reviewContainer;
 
         // Close Button
         const header = document.createElement('div');
@@ -51,7 +52,7 @@ export class VocabReview extends Component {
         counter.textContent = t('vocab.card', { current, total: this.totalCount });
 
         const closeBtn = document.createElement('button');
-        closeBtn.className = styles.closeReviewBtn;
+        closeBtn.className = reviewStyles.closeReviewBtn;
         closeBtn.innerHTML = '<i class="ri-close-line"></i>';
         closeBtn.onclick = () => this.finish();
 
@@ -78,7 +79,7 @@ export class VocabReview extends Component {
                     <p>${t('review.summary', { reviewed: this.stats.reviewed })}</p>
                     <p>${t('review.stats', { mastered: this.stats.mastered, forgotten: this.stats.forgotten })}</p>
                 </div>
-                <button class="${styles.btnPrimary}" id="close-review" style="padding: 10px 24px; font-size: 1.2em;">${t('common.close')}</button>
+                <button class="${navStyles.btnPrimary}" id="close-review" style="padding: 10px 24px; font-size: 1.2em;">${t('common.close')}</button>
             </div>
         `;
         container.querySelector('#close-review').onclick = () => this.finish();
@@ -89,39 +90,39 @@ export class VocabReview extends Component {
         this.isFlipped = false;
 
         const card = document.createElement('div');
-        card.className = `${styles.flashcard}`;
+        card.className = `${reviewStyles.flashcard}`;
         // Add animation class if needed for transition
 
         // Front (Question)
         const front = document.createElement('div');
-        front.className = styles.cardFront;
+        front.className = reviewStyles.cardFront;
         front.innerHTML = `
-            <div class="${styles.cardWord}">${word.word}</div>
-            <div class="${styles.cardPhonetic}">${word.phonetic || ''}</div>
-            <div class="${styles.cardContext}" style="margin-top:20px; font-size:1.1em; color:var(--md-sys-color-on-surface-variant);">
+            <div class="${reviewStyles.cardWord}">${word.word}</div>
+            <div class="${reviewStyles.cardPhonetic}">${word.phonetic || ''}</div>
+            <div class="${reviewStyles.cardContext}" style="margin-top:20px; font-size:1.1em; color:var(--md-sys-color-on-surface-variant);">
                 ${this.createCloze(word.context, word.word)}
             </div>
-            <div class="${styles.cardHint}">${t('review.flip')}</div>
+            <div class="${reviewStyles.cardHint}">${t('review.flip')}</div>
         `;
 
         // Back (Answer)
         const back = document.createElement('div');
-        back.className = styles.cardBack;
+        back.className = reviewStyles.cardBack;
         back.innerHTML = `
-            <div class="${styles.cardHeader}">
-                <span class="${styles.cardWordSmall}">${word.word}</span>
-                <span class="${styles.cardPos}">${word.pos}</span>
-                <button class="${styles.iconBtn}" id="edit-btn" title="${t('dashboard.draft.edit')}"><i class="ri-edit-line"></i></button>
+            <div class="${reviewStyles.cardHeader}">
+                <span class="${reviewStyles.cardWordSmall}">${word.word}</span>
+                <span class="${reviewStyles.cardPos}">${word.pos}</span>
+                <button class="${navStyles.iconBtn}" id="edit-btn" title="${t('dashboard.draft.edit')}"><i class="ri-edit-line"></i></button>
             </div>
-            <div class="${styles.cardMeaning}">${word.meaning}</div>
-            <div class="${styles.cardContext}">"${word.context}"</div>
-            <div class="${styles.cardActions}">
-                <button class="${styles.srsBtn} ${styles.srsFail}" data-grade="0">${t('review.forgot')}</button>
-                <button class="${styles.srsBtn} ${styles.srsHard}" data-grade="1">${t('review.hard')}</button>
-                <button class="${styles.srsBtn} ${styles.srsGood}" data-grade="2">${t('review.good')}</button>
-                <button class="${styles.srsBtn} ${styles.srsEasy}" data-grade="3">${t('review.easy')}</button>
+            <div class="${reviewStyles.cardMeaning}">${word.meaning}</div>
+            <div class="${reviewStyles.cardContext}">"${word.context}"</div>
+            <div class="${reviewStyles.cardActions}">
+                <button class="${reviewStyles.srsBtn} ${reviewStyles.srsFail}" data-grade="0">${t('review.forgot')}</button>
+                <button class="${reviewStyles.srsBtn} ${reviewStyles.srsHard}" data-grade="1">${t('review.hard')}</button>
+                <button class="${reviewStyles.srsBtn} ${reviewStyles.srsGood}" data-grade="2">${t('review.good')}</button>
+                <button class="${reviewStyles.srsBtn} ${reviewStyles.srsEasy}" data-grade="3">${t('review.easy')}</button>
             </div>
-            <button class="${styles.btnDestructive} ${styles.masterBtn}" id="master-btn">${t('review.masterRemove')}</button>
+            <button class="${navStyles.btnDestructive || reviewStyles.masterBtn} ${reviewStyles.masterBtn}" id="master-btn">${t('review.masterRemove')}</button>
         `;
 
         card.appendChild(front);
@@ -132,7 +133,7 @@ export class VocabReview extends Component {
             if (e.target.tagName === 'BUTTON') return;
             if (!this.isFlipped) {
                 this.isFlipped = true;
-                card.classList.add(styles.flipped);
+                card.classList.add(reviewStyles.flipped);
             }
         };
 
@@ -197,7 +198,8 @@ export class VocabReview extends Component {
         await vocabService.updateEntry(item.lemma || item.word, {
             ...result,
             reviews: (item.reviews || 0) + 1,
-            lastReview: Date.now()
+            lastReview: Date.now(),
+            lastGrade: quality
         });
 
         this.nextCard();

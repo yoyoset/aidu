@@ -6,24 +6,43 @@ import { StorageHelper, StorageKeys } from './storage.js';
 class Logger {
     constructor() {
         this.enabled = false;
-        this.maxLogs = 500; // 调优：减少日志常驻内存压力
+        this.maxLogs = 1000; // Increased for better debugging
+        this.queue = Promise.resolve();
         this.initPromise = this.loadSettings();
-        this.queue = Promise.resolve(); // 串行队列
     }
 
     async loadSettings() {
-        const settings = await StorageHelper.get(StorageKeys.LOGGER_SETTINGS) || { enabled: false };
-        this.enabled = settings.enabled;
+        try {
+            const settings = await StorageHelper.get(StorageKeys.LOGGER_SETTINGS);
+            this.enabled = settings?.enabled || false;
+            return this.enabled;
+        } catch (e) {
+            console.error('Logger: Failed to load settings', e);
+            return false;
+        }
     }
 
-    async log(level, message, detail = null) {
-        // 快速退出
-        if (!this.enabled && level !== 'error') return;
+    /**
+     * @param {string} level - 'info'|'warn'|'error'|'debug'|'critical'
+     * @param {string} message 
+     * @param {any} detail 
+     * @param {boolean} force - If true, log even if disabled
+     */
+    async log(level, message, detail = null, force = false) {
+        // Safety: If chrome.runtime is not available (e.g. extension reloaded/SW dead)
+        if (!chrome.runtime || !chrome.runtime.sendMessage) {
+            console.warn(`Logger: SW unavailable, dropping ${level} log: ${message}`);
+            return;
+        }
+
+        // Force errors and criticals to always log
+        const shouldLog = force || this.enabled || level === 'error' || level === 'critical';
+        if (!shouldLog) return;
 
         // Security: Mask sensitive info (API Keys etc)
         const mask = (str) => {
             if (typeof str !== 'string') return str;
-            return str.replace(/(sk-[a-zA-Z0-9]{20,})|([a-zA-Z0-9]{30,}\.[a-zA-Z0-9]{6,}\.[a-zA-Z0-9-_]{6,})/g, '***MASKED***');
+            return str.replace(/(sk-[a-zA-Z0-9]{15,})|([a-zA-Z0-9]{25,}\.[a-zA-Z0-9]{6,}\.[a-zA-Z0-9-_]{6,})/g, '***MASKED***');
         };
 
         const safeMessage = mask(message);
@@ -37,7 +56,7 @@ class Logger {
             }
         }
 
-        // 将任务推入队列，确保写入顺序
+        // Serialized queue to prevent write races
         this.queue = this.queue.then(async () => {
             const logEntry = {
                 id: Date.now() + Math.random().toString(36).substr(2, 5),
@@ -50,11 +69,7 @@ class Logger {
             try {
                 const logs = await StorageHelper.get(StorageKeys.LOGS) || [];
                 logs.unshift(logEntry);
-
-                if (logs.length > this.maxLogs) {
-                    logs.length = this.maxLogs;
-                }
-
+                if (logs.length > this.maxLogs) logs.length = this.maxLogs;
                 await StorageHelper.set(StorageKeys.LOGS, logs);
             } catch (e) {
                 console.error('Failed to save log', e);
@@ -64,10 +79,11 @@ class Logger {
         return this.queue;
     }
 
-    info(msg, detail) { this.log('info', msg, detail); }
-    warn(msg, detail) { this.log('warn', msg, detail); }
-    error(msg, detail) { this.log('error', msg, detail); }
-    debug(msg, detail) { this.log('debug', msg, detail); }
+    info(msg, detail, force = false) { this.log('info', msg, detail, force); }
+    warn(msg, detail, force = false) { this.log('warn', msg, detail, force); }
+    error(msg, detail, force = true) { this.log('error', msg, detail, force); }
+    debug(msg, detail, force = false) { this.log('debug', msg, detail, force); }
+    critical(msg, detail, force = true) { this.log('critical', msg, detail, force); }
 
     async setEnabled(enabled) {
         this.enabled = enabled;

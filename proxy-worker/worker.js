@@ -58,12 +58,35 @@ export default {
                 return handleZhipu(payload, env.ZHIPU_API_KEY, corsHeaders);
             }
 
-            return new Response("Unsupported Provider", { status: 400, headers: corsHeaders });
+            if (provider === "gemini") {
+                return handleGemini(payload, env.GEMINI_API_KEY, corsHeaders);
+            }
+
+            return new Response("Unsupported Provider: " + provider, { status: 400, headers: corsHeaders });
         } catch (err) {
             return new Response(err.message, { status: 500, headers: corsHeaders });
         }
     }
 };
+
+async function handleGemini(payload, apiKey, corsHeaders) {
+    const model = payload.model || "gemini-1.5-flash";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+    return new Response(JSON.stringify(data), {
+        headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json"
+        }
+    });
+}
 
 async function handleZhipu(payload, apiKey, corsHeaders) {
     const url = "https://open.bigmodel.cn/api/paas/v4/chat/completions";

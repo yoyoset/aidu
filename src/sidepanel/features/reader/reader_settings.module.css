@@ -1,0 +1,60 @@
+/* Settings Panel */
+.settingsPanel {
+    padding: 12px 16px;
+    background: var(--md-sys-color-surface-container-low);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    display: flex;
+    gap: 20px;
+    font-size: 0.9em;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.settingGroup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settingGroup button {
+    border: 1px solid var(--md-sys-color-outline-variant);
+    background: var(--md-sys-color-surface);
+    border-radius: var(--md-sys-radius-xs);
+    padding: 2px 8px;
+    cursor: pointer;
+}
+
+.settingGroup select {
+    padding: 2px 4px;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-radius-xs);
+}
+
+.iconBtnInline {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1em;
+    padding: 4px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.iconBtnInline:hover {
+    background: var(--md-sys-state-hover);
+    color: var(--md-sys-color-primary);
+}

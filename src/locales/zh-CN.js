@@ -7,6 +7,8 @@ export default {
     'app.description': '自适应沉浸式深度英语 (AIDE) - 结构化语义分析阅读工具',
     'app.sidepanel.title': 'AIDU 侧边栏',
     'app.sidepanel.open': '打开 AIDU 侧边栏',
+    'context.save': '保存选中文本到 AIDU',
+    'context.open': '打开 AIDU 控制台',
 
     // === 导航 ===
     'nav.library': '我的文库',
@@ -15,7 +17,7 @@ export default {
 
     // === 设置弹窗 ===
     'settings.title': '配置',
-    'settings.createProfile': '+ 新建配置档...',
+    'settings.createProfile': '新建配置档...',
     'settings.general': '通用设置',
     'settings.displayName': '显示名称',
     'settings.displayName.placeholder': '输入配置档名称',
@@ -88,6 +90,8 @@ export default {
     'settings.backup.restoreConfirm': '从 "{filename}" 恢复数据？\n这将覆盖当前的词汇、文章和设置！',
     'settings.backup.restoreSuccess': '数据恢复成功！页面将刷新。',
     'settings.backup.restoreFailed': '恢复失败：无效的 JSON 文件。',
+    'settings.logger.clearTitle': '清空日志',
+    'settings.logger.clearConfirm': '确定要清空所有日志记录吗？',
 
     'settings.deleteProfile': '删除配置档',
     'settings.deleteProfile.confirm': '确定要删除此配置档吗？',
@@ -97,12 +101,16 @@ export default {
     // === 仪表盘 ===
     'dashboard.merge': '合并',
     'dashboard.mergeSelected': '合并选中项',
-    'dashboard.new': '+ 新建',
+    'dashboard.new': '新建',
     'dashboard.addArticle': '添加文章',
     'dashboard.cloudSync': '云同步',
     'dashboard.settings': '设置',
 
     'dashboard.filter.library': '文库',
+    'dashboard.filter.all': '全部',
+    'dashboard.filter.draft': '草稿',
+    'dashboard.filter.ready': '已完成',
+    'dashboard.filter.error': '错误',
     'dashboard.filter.processing': '处理中',
     'dashboard.filter.completed': '已完成',
     'dashboard.empty': '暂无内容',
@@ -112,17 +120,20 @@ export default {
     'dashboard.draft.manualAi': '手动 AI',
     'dashboard.draft.bgProcess': '后台处理',
     'dashboard.draft.delete': '删除',
-    'dashboard.draft.readNow': '开始阅读 →',
+    'dashboard.draft.readNow': '开始阅读',
     'dashboard.draft.startAnalysis': '开始分析',
     'dashboard.draft.resume': '↻ 继续',
-    'dashboard.draft.readPartial': '阅读（部分）',
-    'dashboard.draft.readLive': '实时阅读',
     'dashboard.draft.resetStuck': '重置卡住',
     'dashboard.draft.chunk': '分块 {index}: {status}',
 
     'dashboard.delete.title': '删除文章？',
     'dashboard.delete.message': '确定要删除「{title}」吗？此操作无法撤销。',
     'dashboard.delete.confirm': '删除',
+    'dashboard.delete.success': '已删除',
+
+    'dashboard.reset.title': '重置文章',
+    'dashboard.reset.message': '确定要重置此文章的处理状态并清空已解析的数据吗？',
+    'dashboard.reset.success': '已重置，可重新分析',
 
     'dashboard.sync.recommend': '建议同步',
     'dashboard.sync.now': '立即同步',
@@ -149,6 +160,7 @@ export default {
     'creator.saveChanges': '保存更改',
     'creator.bgProcess.hint': '后台静默处理',
     'creator.bgProcess.toast': '分析已启动，请在下表中查看进度',
+    'creator.contentChanged.toast': '内容已修改。旧分析数据已清理，请重新进行分析。',
     'creator.analyze': '开始分析',
     'creator.analyze.simple': '简单分析',
     'creator.analyze.deep': '深度分析',
@@ -172,7 +184,11 @@ export default {
     'vocab.filter.all': '全部',
     'vocab.filter.today': '今日',
     'vocab.filter.week': '本周',
-    'vocab.filter.mastered': '已掌握',
+    'vocab.filter.forgot': '忘词 (Forgot)',
+    'vocab.filter.hard': '模糊 (Hard)',
+    'vocab.filter.recognized': '认识 (Good)',
+    'vocab.filter.easy': '秒杀 (Easy)',
+    'vocab.filter.mastered': '已掌握 (Mastered)',
     'vocab.review': '复习',
     'vocab.review.title': '复习所有 {count} 个未掌握单词',
     'vocab.review.syncPrompt': '复习完成！是否同步进度到云端？',
@@ -208,7 +224,12 @@ export default {
     'vocab.export.empty': '暂无单词可导出',
 
     'vocab.deepDive.generating': '正在生成深度解析...',
+    'vocab.deepDive.queued': '已加入深度解析队列',
     'vocab.deepDive.failed': '深度解析失败',
+    'vocab.relookup.success': '已更新释义',
+    'vocab.regenerate.success': '已更新例句',
+    'vocab.master.success': '已标记为掌握',
+    'vocab.delete.success': '已删除',
 
     'vocab.help.title': '词汇本状态图解',
     'vocab.help.step1': '1. 捕获 (Capture)',
@@ -254,17 +275,23 @@ export default {
     'reader.settings.voice': '朗读声音',
     'reader.settings.speed': '语速',
     'reader.settings.size': '字号',
+    'reader.settings.lineHeight': '行间距',
     'reader.settings.font': '字体',
     'reader.settings.bold': '加粗',
     'reader.font.serif': '衬线体',
     'reader.font.sans': '无衬线',
     'reader.font.mono': '等宽',
+    'reader.bookmarks': '我的书签',
+    'reader.bookmarks.empty': '暂无书签，双击句子即可收藏',
+    'reader.bookmarks.removed': '已移除书签',
+    'reader.bookmark.set': '已添加书签',
+    'reader.bookmark.hint': '标记为当前进度',
 
     // === 词典弹窗 ===
     'dict.loading': '加载中...',
     'dict.saved': '✓ 已保存（撤销）',
     'dict.savedHint': '点击从词汇本移除',
-    'dict.add': '+ 添加到词汇本',
+    'dict.add': '添加到词汇本',
     'dict.addHint': '添加到词汇本',
     'dict.expand': '深度展开',
     'dict.mastered': '已掌握',
@@ -279,7 +306,7 @@ export default {
     // === 深度分析 ===
     'deep.sentence': '句子',
     'deep.word': '单词',
-    'deep.analysis': '深度分析',
+    'deep.analysis': '深度解析详情',
     'deep.analyzeBtn': '分析',
     'deep.loading': '分析中...',
     'deep.noData': '暂无深度数据',
@@ -289,6 +316,8 @@ export default {
     'deep.antonyms': '反义词 (Antonyms)',
     'deep.register': '语域 (Register)',
     'deep.commonMistakes': '常见错误 (Common Mistakes)',
+    'deep.details': '详情',
+    'deep.retrace': '点击跳转原文',
     'deep.cultural': '文化/语用 (Cultural)',
 
     // === 网络状态 ===
@@ -297,7 +326,8 @@ export default {
 
     // === 通用 ===
     'common.cancel': '取消',
-    'common.confirm': '确认',
+    'common.confirm': '确定',
+    'common.confirmTitle': '确认操作',
     'common.delete': '删除',
     'common.save': '保存',
     'common.close': '关闭',
@@ -305,6 +335,16 @@ export default {
     'common.error': '错误',
     'common.success': '成功',
     'common.gotIt': '知道了',
+
+    // === 错误提示 ===
+    'error.llm.general': 'LLM 请求失败',
+    'error.llm.unauthorized': 'API Key 校验失败，请检查配置',
+    'error.llm.quota': '模型额度已耗尽，请尝试更换模型或充值',
+    'error.llm.rate_limit': '请求过于频繁，已被临时限流，请稍后再试',
+    'error.llm.server_error': '服务商内部错误，请稍后重试',
+    'error.llm.safety_blocked': '内容触发安全过滤，请调整输入',
+    'error.llm.model_error': '模型配置错误或模型已下线',
+    'error.llm.proxy_error': '代理节点故障，请稍后再试',
 
     // === 捐助页面 ===
     'donate.title': '支持作者',

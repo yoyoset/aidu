@@ -1,5 +1,5 @@
 import { Component } from '../../components/component.js';
-import styles from './reader.module.css';
+import styles from './reader_tray.module.css';
 import { t } from '../../../locales/index.js';
 import { analysisQueue } from '../../../services/analysis_queue_manager.js';
 import { showDeepDiveModal } from '../../components/deep_dive_modal.js';
@@ -13,7 +13,6 @@ export class AnalysisTray extends Component {
     }
 
     async render() {
-        this.element.innerHTML = '';
 
         // 1. Tray Panel Container (Absolute positioned)
         const tray = document.createElement('div');

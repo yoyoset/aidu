@@ -65,21 +65,18 @@ export class DictionaryService {
 
     async fetchDefinition(word, context) {
         return withRetry(async () => {
-            const systemPrompt = `You are a vocabulary API. Output ONLY valid JSON.
-Format: {
-    "m": "中文释义 (完整，不限字数)",
-    "p": "IPA phonetic",
-    "l": "CEFR Level (A1-C2)",
-    "collocations": ["常见搭配1", "搭配2", "搭配3"]
-}
-Rules:
-- "m": 核心含义，可包含多义项用分号分隔
-- "collocations": 3-5个常见词组搭配
-- Keep response concise for speed
-- No markdown, no examples`;
+            const expertPrompts = await StorageHelper.get(StorageKeys.EXPERT_PROMPTS) || {};
+            const systemPrompt = expertPrompts.dict_lookup || `Role: Balanced Dictionary API | Output: JSON ONLY
+Constraints:
+- Meaning: Provide 1-2 precise primary meanings in Simplified Chinese. If the word has multiple distinct common meanings, include up to 3, separated by semicolons.
+- Context: Prioritize the meaning that fits the provided context, but don't omit other common senses if they are important.
+- Schema: {"m":"","p":"","l":"","collocations":[]}
 
-            const userPrompt = `Word: "${word}"
-Context: "${context}"`;
+Example:
+Input: "snail" | Context: "Slow"
+Output: {"m":"蜗牛","p":"sneɪl","l":"A2","collocations":["garden snail"]}`;
+
+            const userPrompt = `Word: "${word}"\nContext: "${context}"\n\n{"m":"`;
 
             const jsonStr = await this.apiClient.streamCompletion(userPrompt, systemPrompt);
             return JSON.parse(jsonStr);
@@ -93,16 +90,17 @@ Context: "${context}"`;
      */
     async generateExample(word) {
         return withRetry(async () => {
-            const systemPrompt = `You are a helpful language tutor for a young student. 
+            const expertPrompts = await StorageHelper.get(StorageKeys.EXPERT_PROMPTS) || {};
+            const systemPrompt = expertPrompts.example_gen || `You are a helpful language tutor for a young student. 
         Generate ONE English sentence using the word "${word}".
-        Constraints:
-        1. Structure: Interesting and varied (not just Subject-Verb-Object).
-        2. Vocabulary: Simple and easy to understand (CEFR A2 level).
+                Constraints:
+            1. Structure: Interesting and varied(not just Subject - Verb - Object).
+        2. Vocabulary: Simple and easy to understand(CEFR A2 level).
         3. Content: Engaging for a child or young learner.
-        4. Output: ONLY the sentence. No quotes.`;
+        4. Output: ONLY the sentence.No quotes.`;
 
             // Add random seed to user prompt to ensure variety
-            const userPrompt = `Word: "${word}" (Random Seed: ${Date.now()})`;
+            const userPrompt = `Word: "${word}"(Random Seed: ${Date.now()})`;
 
             const sentence = await this.apiClient.streamCompletion(userPrompt, systemPrompt, {
                 responseFormat: 'text',
@@ -120,27 +118,12 @@ Context: "${context}"`;
      */
     async fetchTier2(word, context = '') {
         return withRetry(async () => {
-            const systemPrompt = `You are a linguistics expert. Output ONLY valid JSON.
-Format: {
-    "etymology": "词源故事 (中文，简洁)",
-    "wordFamily": ["变形1", "变形2"],
-    "synonyms": [
-        { "word": "同义词", "diff": "区别说明" }
-    ],
-    "antonyms": ["反义词1", "反义词2"],
-    "register": "formal/informal/academic/neutral",
-    "commonMistakes": [
-        { "wrong": "错误用法", "correct": "正确用法", "note": "说明" }
-    ],
-    "culturalNotes": "语用/文化提示 (可选)"
-}
-Rules:
-- All explanations in Chinese
-- Focus on practical usage for Chinese learners
-- No markdown`;
+            const expertPrompts = await StorageHelper.get(StorageKeys.EXPERT_PROMPTS) || {};
+            const systemPrompt = expertPrompts.deep_analysis || `Role: Linguistics Expert | Output: JSON ONLY
+Schema: {"etymology":"","wordFamily":[],"synonyms":[{"word":"","diff":""}],"antonyms":["string"],"register":"","commonMistakes":[{"wrong":"","correct":"","note":""}],"culturalNotes":""}
+Constraints: All explanations in Simplified Chinese. Concise & Practical.`;
 
-            const userPrompt = `Word: "${word}"
-Context: "${context}"`;
+            const userPrompt = `Word: "${word}"\nContext: "${context}"\n\n{"etymology":"`;
 
             const jsonStr = await this.apiClient.streamCompletion(userPrompt, systemPrompt);
             return JSON.parse(jsonStr);

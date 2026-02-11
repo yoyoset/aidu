@@ -1,6 +1,7 @@
 import { ConfirmationModal } from '../sidepanel/components/confirmation_modal.js';
 import { Toast } from '../sidepanel/components/toast.js';
 import { logger } from './logger.js';
+import { t } from '../locales/index.js';
 
 /**
  * NotificationService - 统一交互服务
@@ -19,7 +20,7 @@ class NotificationService {
     /**
      * 弹出警告框 (替换 alert)
      */
-    alert(message, title = '提示') {
+    alert(message, title = t('common.alert') || '提示') {
         this.init();
         logger.info(`Alert shown: ${message}`);
         return new Promise(resolve => {
@@ -27,7 +28,7 @@ class NotificationService {
                 type: 'alert',
                 title,
                 message,
-                confirmText: '确定',
+                confirmText: t('common.confirm') || '确定',
                 onConfirm: () => resolve(true)
             });
         });
@@ -36,7 +37,7 @@ class NotificationService {
     /**
      * 确认框 (替换 confirm)
      */
-    confirm(message, title = '请确认') {
+    confirm(message, title = t('common.confirmTitle') || '请确认') {
         this.init();
         logger.info(`Confirm shown: ${message}`);
         return new Promise(resolve => {
@@ -44,6 +45,8 @@ class NotificationService {
                 type: 'confirm',
                 title,
                 message,
+                confirmText: t('common.confirm') || '确定',
+                cancelText: t('common.cancel') || '取消',
                 onConfirm: () => resolve(true),
                 onCancel: () => resolve(false)
             });
@@ -74,6 +77,23 @@ class NotificationService {
     toast(message, type = 'info') {
         Toast.show(message, type);
         logger.debug(`Toast [${type}]: ${message}`);
+    }
+
+    /** Helper methods for cleaner API */
+    success(message) {
+        this.toast(message, 'success');
+    }
+
+    error(message) {
+        this.toast(message, 'error');
+    }
+
+    info(message) {
+        this.toast(message, 'info');
+    }
+
+    warning(message) {
+        this.toast(message, 'warning');
     }
 }
 

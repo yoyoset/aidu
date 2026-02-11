@@ -1,178 +1,114 @@
-# Aidu (AI-Driven Utility for Reading & Vocabulary)
+# AIDU: Adaptive Immersive Deep English (AIDE) Assistant
 
 <div align="center">
-  <img src="docs/icon_128.png" alt="Aidu Logo" width="100"/>
-  <br>
-  <em>Your All-in-One AI Reading Assistant & Vocabulary Builder</em>
-  <br>
-  <strong>Reading • Translation • Vocabulary • Spaced Repetition</strong>
-</div>
+  <img src="src/icons/icon128.png" alt="AIDU Logo" width="80"/>
+  <h3><b>AIDU</b> - Your Intelligent AI Reading Tutor</h3>
+  <p><i>Transform any web content into a structured, personalized language-learning experience.</i></p>
 
-<br>
+  <p>
+    <img src="https://img.shields.io/badge/version-4.15.5-blue.svg?style=flat-square" alt="Version" />
+    <img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License" />
+    <img src="https://img.shields.io/badge/Manifest-V3-orange.svg?style=flat-square" alt="Manifest V3" />
+    <img src="https://img.shields.io/badge/Engine-Vite%20%2B%20Vello-8A2BE2?style=flat-square" alt="Tech Stack" />
+  </p>
 
-<div align="center">
-
-[English](#english) | [中文 (Chinese)](#中文)
-
+  [English](#english) • [简体中文](#简体中文)
 </div>
 
 ---
-
-<br>
 
 ## English
 
-### 📖 Introduction
+### 🌟 Vision
 
-Aidu is a powerful Chrome Extension designed to bridge the gap between casual reading and serious language learning. By leveraging advanced LLMs (Gemini, DeepSeek, OpenAI), Aidu transforms any web article into an interactive learning resource.
+AIDU is not just a translator; it is a **Full-Lifecycle Reading Tutor**. Built for serious learners and young students alike, it focuses on **Context-Aware Mastery** rather than superficial dictionary definitions. AIDU bridges the gap between passive consumption and active retention.
 
-### ✨ Key Features (核心功能)
+### 🚀 Core Pillars
 
-#### 1. 🧠 Intelligent Reading Tutor (你的 AI 私教)
+#### 1. 🧠 Intelligent Context Analysis
 
-* **Context-Aware Explanations**: Unlike Google Translate, Aidu acts as a tutor. It explains the *nuance* of words in their specific context rather than just giving a dictionary definition.
-* **Interactive Learning**: Click any word while reading to get an instant, context-rich explanation.
-* **Simple Management**: Easily organize and "clean up" your reading list.
+- **Dynamic Persona**: AI adopts specific teaching styles (e.g., *Primary School*, *Humorous*) to explain nuances.
+- **Phrase Detection**: Automatically identifies and explains phrasal verbs that standard translators miss.
+- **Dual-Identity Engine**: Separates technical translation from educational pedagogy for superior explanation quality.
 
-#### 2. 🤖 Flexible AI Core
+#### 2. 📚 Retention-First Vocabulary
 
-* **Multi-Model Support**: Switch between Gemini, DeepSeek, or OpenAI to find the best "teacher" for you.
-* **Customizable Prompts**: You decide how the AI teaches—whether you want simple definitions for kids or detailed etymology for advanced learners.
+- **Sentence-First Capture**: Every word is saved with its original context—never in isolation.
+- **AI Magic Wand (🪄)**: Generate creative, contextually relevant example sentences for any word.
+- **FSRS Algorithm**: Powered by advanced spaced-repetition logic for long-term memory optimization.
 
-#### 3. 📚 Vocabulary & Context (生词本与语境)
+#### 3. 🛡️ Data & Privacy Sovereignty
 
-* **Sentence Capture**: Words are never saved alone. Aidu captures the *exact sentence* where you found the word, ensuring you learn it in context.
-* **Magic Wand (🪄)**: If a word is missing a sentence, the AI automatically generates a unique, creative example to help you understand it.
-* **Management Tools**: Batch delete, export, and manage your vocabulary list efficiently.
+- **Local-First Architecture**: Your reading history and vocabulary live in your browser, not our servers.
+- **Universal Cloud Sync**: Seamlessly sync across devices via **GitHub Gist** or high-speed **Cloudflare Workers**.
+- **Full Data Portability**: Import/Export everything as standardized JSON.
 
-#### 4. 👥 Multi-User Ready (多用户支持)
+### 🛠️ Quick Start
 
-* **Profile Isolation**: 这里的每一位用户（爸爸、妈妈、孩子）都拥有独立的生词本和学习进度，互不干扰。
-* **Auto-Switch**: 一键切换账号，无缝衔接。
+#### Install via Release (Recommended)
 
-#### 5. 📉 Memory Reinforcement (记忆强化)
+1. Download `dist.zip` from the [Releases](../../releases) page.
+2. Unzip the file to a local directory.
+3. Open `chrome://extensions/` in Chrome and enable **Developer Mode**.
+4. Click **Load unpacked** and select the unzipped folder.
 
-* **🧠 Adaptive SRS Memory**: Powered by FSRS algorithms, it schedules reviews based on your memory strength, ensuring efficient long-term retention.
-* **☁️ Cloud Sync (Home Server Mode)**:
-  * Supports **GitHub Gist** (Free & Private) for simple sync.
-  * Supports **Cloudflare Worker** (Self-Hosted) for high-speed, reliable synchronization in China.
-* **🛡️ Data Sovereignty**:
-  * Full **Import/Export** support (JSON).
-  * Local-first architecture; your data lives in your browser and your own cloud storage.
-* **📊 Visual Dashboard**: Track your vocabulary mastery, daily progress, and review queues in a beautiful, responsive UI.
-* **Mastery Tracking**: Mark words as "Mastered" to see your library grow.
+#### Build from Source
 
-#### 6. 🛡️ Enterprise-Grade Security
+```bash
+git clone https://github.com/yoyoset/aidu.git
+cd aidu
+npm install
+npm run build
+```
 
-* **Built-in Proxy**: Safe and secure API access for everyone. No local key storage needed for default providers.
-* **Usage Control**: Intelligent rate limiting protects shared resources.
+### 📖 Documentation Index
 
-#### 7. ⏱️ Progress Tracking
-
-* **Reading Timer**: Automatically track how long you've spent on each article.
-* **Visual Badges**: Glanceable progress bars (0-60m) in your library.
-
-### 🛠️ Installation (安装指南)
-
-**Method 1: Ready-to-Use (Recommended for Most Users)**
-
-1. Go to the [Releases](../../releases) page.
-2. Download the latest `dist.zip` file.
-3. Unzip it to a folder on your computer.
-4. Load into Chrome:
-    * Open `chrome://extensions/`
-    * Turn on **Developer mode** (top right switch).
-    * Click **Load unpacked** (top left).
-    * Select the folder you just unzipped.
-
-**Method 2: Developers (Build from Source)**
-For those who want to modify the code:
-
-1. Clone repo: `git clone ...`
-2. Install: `npm install`
-3. Build: `npm run build`
-
-### 🚀 Usage
-
-1. **Setup**: Click the extension icon -> Settings ⚙️ -> Enter your API Key.
-2. **Save**: Right-click any article page -> "Save to Aidu".
-3. **Learn**: Open the Side Panel to read, click words to learn, and review your vocabulary.
+- [System Architecture (Manifest)](doc/AI_SYSTEM_MANIFEST.md)
+- [Data Protocols & Schemas](doc/AI_DATA_PROTOCOLS.md)
+- [Cloudflare Sync Deployment](doc/sync_guide_cloudflare_zh.md)
+- [Privacy Policy (Bilingual)](doc/privacy_policy_zh.md)
 
 ---
 
-<br>
+## 简体中文
 
-## 中文
+### 🌟 愿景
 
-### 📖 项目背景 (Project Background)
+AIDU 不仅仅是一个翻译器，它是一个**全周期的阅读导师**。专为深度学习者和学生打造，强调**语境式掌握**而非死记硬背。AIDU 通过 AI 技术将碎片化的阅读转变为结构化的知识积累。
 
-本项目最初的开发初衷是**为小朋友打造一款"英语阅读私教"**。
+### 🚀 核心价值
 
-市面上的翻译插件多是"生硬的翻译"，对于处于语言学习关键期的孩子来说，我更希望有一个**"AI 陪伴者"**。它不只是把英文变成中文，而是像老师一样，**结合上下文**讲解单词的含义、用法和细微差别。
+#### 1. 🧠 深度语义分析 (AI 阅读助手)
 
-我自己也在日常使用这个工具，觉得对**英语学习者**非常有帮助，所以开源出来。希望能得到大家的建议，也欢迎更多朋友一起交流、完善它！
+- **多变讲解风格**: 支持“小学模式”、“幽默风”等多种教学身份，让复杂的文本变得亲切易懂。
+- **短语自动捕捉**: 自动识别标准翻译容易漏掉的动词短语与固定搭配。
+- **双引擎重构**: 独立处理“技术翻译”与“教学解说”，确保每个词的来源都有据可查。
 
-它不是简单的查词工具，而是一个完整的**阅读-积累-复习**闭环系统。
+#### 2. 📚 语境化词汇构建 (生词本)
 
-### ✨ 核心亮点
+- **拒绝孤立记忆**: 每个单词都紧跟阅读原句，记忆在鲜活的语境中发生。
+- **AI 魔法棒 (🪄)**: 即使查词时没有例句，AI 也能瞬间为您生成极具创意的专属例句。
+- **科学记忆排程**: 内置 FSRS 复习算法，根据您的记忆强度自动生成复习计划。
 
-#### 1. � 你的 AI 阅读私教
+#### 3. 🛡️ 数据主权与隐私
 
-* **语境解说**: 它不会扔给你一个冷冰冰的字典释义，而是结合当前文章的上下文，告诉你这个词在这里究竟是什么意思。
-* **交互式学习**: 阅读时遇到不懂的词，点一下即可获得 AI 的详细讲解。
+- **本地化架构**: 您的所有阅读数据和词汇量都在本地存储，我们不持有任何用户敏感信息。
+- **极速云同步**: 支持 **GitHub Gist** 或 **Cloudflare Workers** 自定义同步，速度由您做主。
+- **隐私合规**: 极简权限申请，完全支持 JSON 数据的一键导入/导出。
 
-#### 2. 📚 拒绝孤立背单词 (Vocabulary)
+### 🛠️ 快速安装
 
-* **原句记忆**: 所有的生词都会自动带上它所在的**原句**。你记忆的不是一个孤立的符号，而是一个鲜活的用法。
-* **魔法棒 (🪄)**: 如果单词没有例句，AI "魔法棒" 会自动生成一个富有创意、独一无二的例句，帮助你理解。
-* **高效管理**: 支持批量清理、导出，让生词本井井有条。
+#### 下载安装 (推荐)
 
-#### 3. 📉 科学复习 (SRS System)
-
-* **智能排程**: 内置间隔重复算法 (类似 Anki)，自动安排复习时间，抗遗忘。
-* **可视化进度**: 清晰展示"已掌握"的词汇量，让进步看得见。
-
-#### 4. 🤖 自由的 AI 内核
-
-* **多模型切换**: 支持 Gemini / DeepSeek / OpenAI。想用谁教你，你自己说了算。
-* **自定义提示词**: 你可以调整 AI 的"教学风格"，是适合儿童的简单解释，还是适合考研的深度解析，完全自定义。
-
-### 🛠️ 安装说明
-
-**方法 1: 直接下载 (推荐普通用户)**
-
-1. 前往本项目的 [Releases](../../releases) 页面。
-2. 下载最新的 `dist.zip` 压缩包。
-3. 解压到一个文件夹。
-4. 安装到 Chrome:
-    * 在浏览器地址栏输入 `chrome://extensions/` 并回车。
-    * 打开右上角的 **开发者模式 (Developer mode)** 开关。
-    * 点击左上角的 **加载已解压的扩展程序 (Load unpacked)**。
-    * 选择您刚才解压的文件夹。
-
-**方法 2: 开发者自行编译**
-如果您想修改代码：
-
-1. 克隆项目
-2. `npm install`
-3. `npm run build`
-4. 加载 `dist` 目录
-
----
-
-## ☁️ Cloud Sync & Data (数据与同步)
-
-Aidu 支持两种跨设备同步方案，确保您的数据安全。
-
-1. **GitHub Gist**: 简单、免费，适合大多数用户。
-2. **Cloudflare Worker (推荐/极速)**:
-    * **自托管 (Self-Hosted)**: 您完全掌控数据。
-    * **国内优化**: 相比 Gist，Worker 在国内访问速度极快且稳定。
-
-👉 **[查看 Cloudflare 同步部署教程](docs/sync_guide_cloudflare.md)**
+1. 前往 [Releases](../../releases) 页面下载最新的 `dist.zip`。
+2. 将压缩包解压到本地文件夹。
+3. 在 Chrome 中打开 `chrome://extensions/`，开启右上角的**开发者模式**。
+4. 点击左上角的**加载已解压的扩展程序**，选择刚才解压的文件夹。
 
 ---
 
 ## 📄 License
 
-MIT License © 2026 Aidu Project
+Released under the [MIT License](LICENSE).  
+© 2026 SquareUncle 方砖叔.  
+[squareuncle.com](https://squareuncle.com)

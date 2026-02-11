@@ -1,3 +1,7 @@
+// Enable global console logging first
+import { consoleInterceptor } from '../utils/console_interceptor.js';
+consoleInterceptor.enable();
+
 import './styles/main.css';
 import { initI18n, t } from '../locales/index.js';
 // PreparationDashboard imports its own styles now
@@ -10,7 +14,13 @@ let dashboard;
 const messageRouter = new MessageRouter();
 
 chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.type === 'SHOW_ERROR_TOAST') {
+    if (msg.type === 'SHOW_TOAST') {
+        const { message, type = 'info' } = msg.payload;
+        if (type === 'error') Toast.error(message);
+        else if (type === 'warn') Toast.warn(message);
+        else if (type === 'success') Toast.success(message);
+        else Toast.info(message);
+    } else if (msg.type === 'SHOW_ERROR_TOAST') {
         Toast.error(msg.payload.message);
     }
 });
@@ -31,7 +41,7 @@ function init() {
     const mainContent = document.getElementById('root');
 
     // Initialize Dashboard
-    dashboard = new PreparationDashboard(mainContent);
+    dashboard = new PreparationDashboard(mainContent, messageRouter);
 
     // Example: Listen for status updates
     messageRouter.on(MessageTypes.PIPELINE_STATUS_UPDATE, (payload) => {

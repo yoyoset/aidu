@@ -1,10 +1,13 @@
 import { dictionaryService } from '../../../services/dictionary_service.js';
 import { vocabService } from '../../../services/vocab_service.js';
-import { Toast } from '../../components/toast.js';
+import { notificationService } from '../../../utils/notification_service.js';
 import { showDeepDiveModal } from '../../components/deep_dive_modal.js';
-import styles from './reader.module.css';
+import popoverStyles from './reader_popover.module.css';
+import layoutStyles from './reader_layout.module.css';
 import { t } from '../../../locales/index.js';
 import { analysisQueue } from '../../../services/analysis_queue_manager.js';
+
+const styles = { ...popoverStyles, ...layoutStyles };
 
 export class ReaderDictionary {
     constructor(container) {
@@ -54,12 +57,13 @@ export class ReaderDictionary {
                     word, lemma, pos,
                     phonetic: def.p || '',
                     meaning: def.m || t('dict.noDef'),
-                    level: def.l
+                    level: def.l,
+                    collocations: def.collocations
                 }, onPlayAudio, contextText, onStatusChange);
             }
         } catch (e) {
             console.error("Dictionary Error:", e);
-            Toast.error(t('dict.error'));
+            notificationService.error(t('dict.error'));
             if (this.popover) {
                 this.updatePopover({
                     word, lemma, pos,
@@ -105,7 +109,7 @@ export class ReaderDictionary {
         popover.innerHTML = `
             <div class="${pHeader}">
                 <div style="display:flex; align-items:center;">
-                    <span class="${pWord}">${data.word}</span>
+                    <span class="${pWord}" style="text-transform: capitalize;">${data.lemma || data.word}</span>
                     <button class="${btnClass}" data-role="word-tts" title="${t('dict.pronounce')}" style="font-size:1.1em; margin-left:8px; color:#7c4dff;"><i class="ri-volume-up-line"></i></button>
                     <span class="${pPhonetic}">${data.phonetic ? `[${data.phonetic}]` : ''}</span>
                     ${data.level ? `<span style="font-size:0.75em; color:#64748b; background:#f1f5f9; padding:2px 6px; border-radius:4px; margin-left:8px; font-weight:600;">${data.level}</span>` : ''}
@@ -118,6 +122,11 @@ export class ReaderDictionary {
             <div class="${pMeaning}">
                 ${data.meaning}
             </div>
+            ${data.collocations && data.collocations.length ? `
+            <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">
+                ${data.collocations.map(c => `<span style="font-size:0.75em; color:var(--md-sys-color-primary); background:var(--md-sys-color-primary-container); padding:2px 8px; border-radius:12px;">${c}</span>`).join('')}
+            </div>
+            ` : ''}
             <div class="${pActions}">
                  <button class="${actionBtn} ${addBtnClass}" data-role="add-vocab">${t('dict.add')}</button>
                  <button class="${actionBtn} ${savedBtnClass}" data-role="deep-dive" style="margin-left:8px; display:flex; align-items:center; gap:4px; min-width:auto; padding:8px 16px;" title="${t('dict.deepDive')}"><i class="ri-search-line"></i> <span>${t('dict.expand') || '展开'}</span></button>
@@ -191,7 +200,7 @@ export class ReaderDictionary {
                         if (onStatusChange) onStatusChange(true);
                     } catch (err) {
                         console.error('Add failed', err);
-                        Toast.error(t('dict.saveFailed'));
+                        notificationService.error(t('dict.saveFailed'));
                         addBtn.textContent = t('dict.add');
                     };
                 }
@@ -214,7 +223,7 @@ export class ReaderDictionary {
                 if (deepData) {
                     showDeepDiveModal({ word: data.word }, deepData);
                 } else {
-                    Toast.info(t('vocab.deepDive.queued') || '已加入深度解析队列');
+                    notificationService.info(t('vocab.deepDive.queued') || '已加入深度解析队列');
                     this.close();
                 }
             };

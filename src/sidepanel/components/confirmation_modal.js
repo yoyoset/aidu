@@ -17,29 +17,33 @@ export class ConfirmationModal {
                 .confirm-overlay {
                     position: fixed;
                     top: 0; left: 0; right: 0; bottom: 0;
-                    background: var(--md-sys-color-scrim);
-                    opacity: 0;
+                    background: rgba(0, 0, 0, 0.4);
+                    backdrop-filter: blur(4px);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    z-index: 2000;
-                    transition: opacity 0.2s;
+                    z-index: 2147483647 !important; 
+                    transition: opacity 0.2s, visibility 0.2s;
                     visibility: hidden;
+                    opacity: 0;
                 }
                 .confirm-overlay.active {
-                    opacity: 0.45;
+                    opacity: 1;
                     visibility: visible;
                 }
                 .confirm-box {
-                    background: var(--md-sys-color-surface);
+                    background: #ffffff;
+                    color: #000000;
                     padding: 24px;
-                    border-radius: var(--md-sys-radius-xl);
-                    box-shadow: var(--md-sys-elevation-3);
+                    border-radius: 16px;
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
                     width: 90%;
                     max-width: 320px;
-                    transform: scale(0.95);
-                    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                    transform: scale(0.9);
+                    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
                     text-align: center;
+                    opacity: 0;
+                    margin: auto;
                 }
                 .confirm-overlay.active .confirm-box {
                     transform: scale(1);
@@ -113,8 +117,8 @@ export class ConfirmationModal {
      * @param {string} options.type - 'alert' | 'confirm' | 'prompt'
      */
     show({
-        title = t('confirm.defaultTitle'),
-        message = t('confirm.defaultMessage'),
+        title = t('confirm.defaultTitle') || 'Confirm Action',
+        message = t('confirm.defaultMessage') || 'Are you sure?',
         onConfirm,
         onCancel,
         confirmText = t('common.confirm'),

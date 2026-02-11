@@ -1,0 +1,71 @@
+/* Analysis Tray */
+.analysisTray {
+    position: fixed;
+    top: 0;
+    right: -320px;
+    width: 320px;
+    height: 100vh;
+    background: var(--md-sys-color-surface);
+    box-shadow: var(--md-sys-elevation-3);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    transition: transform 300ms cubic-bezier(0.2, 0, 0, 1.0);
+    border-left: 1px solid var(--md-sys-color-outline);
+}
+
+.analysisTray.open {
+    transform: translateX(-320px);
+}
+
+.trayHeader {
+    padding: 16px;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--md-sys-color-surface-container-low);
+}
+
+.trayContent {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+}
+
+.analysisCard {
+    background: var(--md-sys-color-surface);
+    border-radius: var(--md-sys-radius-md);
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.analysisCard:hover {
+    border-color: var(--md-sys-color-primary);
+    box-shadow: var(--md-sys-elevation-1);
+}
+
+.analysisCard .word {
+    font-weight: bold;
+    color: var(--md-sys-color-primary);
+    font-size: 1.1em;
+    margin-bottom: 4px;
+}
+
+.badge {
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+    font-size: 0.7rem;
+    padding: 1px 6px;
+    border-radius: 10px;
+    min-width: 14px;
+    text-align: center;
+    font-weight: 700;
+    display: inline-block;
+    line-height: 1.2;
+    box-shadow: var(--md-sys-elevation-1);
+    border: 1px solid var(--md-sys-color-surface);
+}

@@ -1,153 +1,202 @@
-import { Component } from '../../../components/component.js';
-import styles from '../dashboard.module.css';
 import { t } from '../../../../locales/index.js';
-// Reusing dashboard.module.css for now to avoid breaking styles, until we split CSS.
+import navStyles from '../styles/dashboard_nav.module.css';
+import itemStyles from '../styles/dashboard_items.module.css';
 
-export class DraftItem extends Component {
-    constructor(element, options = {}) {
-        // element is the PARENT container? No, usually Component takes its OWN element.
-        // But here we are creating many items.
-        // Pattern: new DraftItem(null, { draft, checkboxState, callbacks }).mount(parent)
-        // OR: static render(draft) -> HTMLElement?
-        // Let's stick to simple Component pattern, or just a render function/class.
-        // Since we need event binding, a Class is good.
-        // But `Component` base class expects `this.element` in constructor.
 
-        super(null); // We will create element
-        this.draft = options.draft;
-        this.isSelected = options.isSelected || false;
-        this.callbacks = options.callbacks || {};
+/**
+ * DraftItem
+ * Encapsulates the rendering and logic for a single draft card in the dashboard.
+ */
+export class DraftItem {
+    static create(draft, handlers) {
+        const {
+            onEdit,
+            onDelete,
+            onAction,
+            onManualAi,
+            onReset,
+            onToggleSelection,
+            isSelected
+        } = handlers;
 
-        // callbacks: { onSelect, onEdit, onDelete, onManual, onProcess, onAction }
-        this.render();
-    }
-
-    render() {
-        const draft = this.draft;
+        // Card Container Structure
         const item = document.createElement('div');
-        const statusClass = styles[`status${draft.status.charAt(0).toUpperCase() + draft.status.slice(1)}`] || '';
-        item.className = `${styles.draftItem} ${statusClass}`;
+        const statusClass = itemStyles[`status-${draft.status}`] || '';
+        item.className = `${itemStyles['draft-item']} ${statusClass}`;
         item.dataset.id = draft.id;
 
-        // 1. Checkbox
-        if (draft.status === 'draft') {
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.className = styles.draftCheckbox;
-            checkbox.checked = this.isSelected;
-            checkbox.onclick = (e) => {
-                e.stopPropagation();
-                if (this.callbacks.onSelect) this.callbacks.onSelect(draft.id, checkbox.checked);
-            };
-            item.appendChild(checkbox);
-        }
-
-        // 2. Content Column
         const contentCol = document.createElement('div');
-        contentCol.className = styles.draftContent;
+        contentCol.className = itemStyles['draft-content'];
 
-        // Header
+        // Slot 1: Header (Title)
         const header = document.createElement('div');
-        header.className = styles.draftHeader;
-
+        header.className = itemStyles['draft-header'];
         const titleDiv = document.createElement('div');
-        titleDiv.className = styles.draftTitle;
+        titleDiv.className = itemStyles['draft-title'];
         titleDiv.textContent = draft.title || t('dashboard.draft.untitled');
-        titleDiv.title = draft.title;
         header.appendChild(titleDiv);
-
-        const controls = document.createElement('div');
-        controls.className = styles.draftControls;
-
-        // Allow Edit/Manual/Process for Draft AND Error states
-        if (draft.status === 'draft' || draft.status === 'error') {
-            controls.appendChild(this.createIconBtn('<i class="ri-edit-line"></i>', 'Edit', (e) => this.callbacks.onEdit(draft)));
-            controls.appendChild(this.createIconBtn('<i class="ri-robot-line"></i>', 'Manual AI', (e) => this.callbacks.onManual(draft)));
-
-            // Only show BG Process if 'draft' (Error has Resume below, prevent duplicate visual clutter?)
-            // Actually user might want to BG Process from Error.
-            // But Resume button does 'retry'.
-            // Let's keep Process button for consistency? Or just let Resume handle it?
-            // User compliant "only resume visible, others disappear".
-            // So they WANT others.
-            controls.appendChild(this.createIconBtn('<i class="ri-time-line"></i>', 'BG Process', (e) => this.callbacks.onProcess(draft)));
-        }
-        controls.appendChild(this.createIconBtn('<i class="ri-delete-bin-line"></i>', 'Delete', (e) => this.callbacks.onDelete(draft)));
-
-        header.appendChild(controls);
         contentCol.appendChild(header);
 
-        // Preview
+        // Sidebar Actions (Float Top-Right)
+        const actionsCol = document.createElement('div');
+        actionsCol.className = itemStyles['draft-actions'];
+        if (['draft', 'error', 'processing', 'ready'].includes(draft.status)) {
+            actionsCol.appendChild(this._createIconBtn('<i class="ri-edit-line"></i>', t('dashboard.draft.edit'), (e) => {
+                e.stopPropagation(); onEdit(draft);
+            }));
+        }
+        if (['draft', 'error', 'processing'].includes(draft.status)) {
+            actionsCol.appendChild(this._createIconBtn('<i class="ri-robot-line"></i>', t('dashboard.draft.manualAi'), (e) => {
+                e.stopPropagation(); onManualAi(draft);
+            }));
+        }
+        actionsCol.appendChild(this._createIconBtn('<i class="ri-delete-bin-line"></i>', t('dashboard.draft.delete'), (e) => {
+            e.stopPropagation(); onDelete(draft);
+        }));
+        item.appendChild(actionsCol);
+
+        // Slot 2: Body (Preview)
         const preview = document.createElement('div');
-        preview.className = styles.draftPreview;
+        preview.className = itemStyles['draft-preview'];
         const raw = draft.rawText || '';
-        preview.textContent = raw.substring(0, 150) + (raw.length > 150 ? '...' : '');
+        preview.textContent = raw.substring(0, 120) + (raw.length > 120 ? '...' : '');
         contentCol.appendChild(preview);
 
-        // Meta
-        const meta = document.createElement('div');
-        meta.className = styles.draftMeta;
+        // Slot 3: Progress (Chunks)
+        const progressSlot = document.createElement('div');
+        const chunks = draft.data?.chunks || [];
+        if (chunks.length > 0) {
+            if (chunks.length <= 24) {
+                const chunkGrid = document.createElement('div');
+                chunkGrid.className = itemStyles['chunk-grid'];
+                chunks.forEach(chunk => {
+                    const block = document.createElement('div');
+                    block.className = `${itemStyles['chunk-block']} ${itemStyles[`chunk-${chunk.status}`] || itemStyles['chunk-pending']}`;
+                    chunkGrid.appendChild(block);
+                });
+                progressSlot.appendChild(chunkGrid);
+            } else {
+                // Overflow mode: Summary line
+                const summary = document.createElement('div');
+                summary.className = itemStyles['chunk-summary'];
+                const doneCount = chunks.filter(c => c.status === 'done').length;
+                summary.textContent = `Progress: ${doneCount}/${chunks.length} chunks analyzed`;
+                progressSlot.appendChild(summary);
+            }
+        } else {
+            // Draft mode: Ghost line to reserve height
+            const ghost = document.createElement('div');
+            ghost.className = itemStyles['chunk-grid'];
+            const line = document.createElement('div');
+            line.className = itemStyles['chunk-ghost-line'];
+            ghost.appendChild(line);
+            progressSlot.appendChild(ghost);
+        }
+        contentCol.appendChild(progressSlot);
 
+        // Slot 4: Standardized Footer (A | B | C)
+        const footer = document.createElement('div');
+        footer.className = itemStyles['draft-meta'];
+
+        // A: Left (Metadata)
+        const left = document.createElement('div');
+        left.className = itemStyles['meta-left'];
         const badge = document.createElement('span');
-        badge.className = styles.badge;
+        badge.className = itemStyles.badge;
         badge.textContent = draft.status.toUpperCase();
-        meta.appendChild(badge);
-
+        left.appendChild(badge);
         if (draft.createdAt) {
             const dateSpan = document.createElement('span');
-            dateSpan.className = styles.dateText;
+            dateSpan.className = itemStyles['date-text'];
             dateSpan.textContent = new Date(draft.createdAt).toLocaleDateString();
-            meta.appendChild(dateSpan);
+            left.appendChild(dateSpan);
         }
+        footer.appendChild(left);
 
+        // B: Center (Context/Processing)
+        const center = document.createElement('div');
+        center.className = itemStyles['meta-center'];
         if (draft.status === 'processing') {
-            const progress = document.createElement('span');
-            progress.textContent = `${draft.progress?.percentage || 0}%`;
-            meta.appendChild(progress);
-        }
-        contentCol.appendChild(meta);
-
-        // Action Area
-        const actionArea = document.createElement('div');
-        actionArea.className = styles.actionArea;
-        const hasData = draft.data?.sentences?.length > 0;
-        const isCorrupt = draft.status === 'ready' && !hasData;
-
-        if (draft.status === 'ready' && !isCorrupt) {
-            actionArea.appendChild(this.createBtn(styles.btnPrimary, t('dashboard.draft.readNow'), () => this.callbacks.onAction(draft)));
-        } else if (draft.status === 'draft') {
-            actionArea.appendChild(this.createBtn(styles.btnPrimary, t('dashboard.draft.startAnalysis'), () => this.callbacks.onAction(draft)));
+            center.innerHTML = `${draft.progress?.percentage || 0}% <span class="loading-dots"><i class="ri-more-line"></i></span>`;
         } else if (draft.status === 'error') {
-            actionArea.appendChild(this.createBtn(styles.btnDestructive, t('dashboard.draft.resume'), () => this.callbacks.onAction(draft, 'retry')));
-            if (hasData) {
-                actionArea.appendChild(this.createBtn(styles.btnSecondary, t('dashboard.draft.readPartial'), () => this.callbacks.onAction(draft, 'read_partial')));
-            }
-        } else if (draft.status === 'processing' && hasData) {
-            const btn = this.createBtn(styles.btnSecondary, t('dashboard.draft.readLive'), () => this.callbacks.onAction(draft, 'read_partial'));
-            btn.style.fontSize = '0.8em';
-            actionArea.appendChild(btn);
+            center.textContent = 'Failed';
+            center.style.color = 'var(--md-sys-color-error)';
         }
+        footer.appendChild(center);
 
-        if (actionArea.children.length > 0) contentCol.appendChild(actionArea);
+        // C: Right (Actions)
+        const right = document.createElement('div');
+        right.className = itemStyles['action-area'];
 
+        const hasData = draft.data?.sentences?.length > 0;
+        if (draft.status === 'ready' && hasData) {
+            // Ready Segment: Time + Read
+            const minutes = Math.floor((draft.readingTime || 0) / 60);
+            const percentage = Math.min(100, ((draft.readingTime || 0) / 3600) * 100);
+            const timeCapsule = this._createTimeCapsule(minutes, percentage);
+            right.appendChild(timeCapsule);
+
+            const btn = document.createElement('button');
+            btn.className = itemStyles['btn-read-now'];
+            btn.innerHTML = `<span>${t('dashboard.draft.readNow')}</span> <i class="ri-arrow-right-line"></i>`;
+            btn.onclick = (e) => { e.stopPropagation(); onAction(draft); };
+            right.appendChild(btn);
+        } else if (['draft', 'error'].includes(draft.status)) {
+            // Draft/Error Segment: Standard + Deep
+            const simpleBtn = document.createElement('button');
+            simpleBtn.className = navStyles['btn-primary'];
+            simpleBtn.innerHTML = `<i class="ri-flashlight-line"></i> ${t('settings.mode.standard')}`;
+            simpleBtn.onclick = (e) => { e.stopPropagation(); onAction(draft, 'standard'); };
+            right.appendChild(simpleBtn);
+
+            const deepBtn = document.createElement('button');
+            deepBtn.className = navStyles['btn-primary'];
+            deepBtn.innerHTML = `<i class="ri-magic-line"></i> ${t('settings.mode.deep')}`;
+            deepBtn.onclick = (e) => { e.stopPropagation(); onAction(draft, 'deep'); };
+            right.appendChild(deepBtn);
+        } else if (draft.status === 'processing') {
+            // Processing Segment: Reset Stuck
+            const resetBtn = document.createElement('button');
+            resetBtn.className = navStyles['btn-ghost-destructive'];
+            resetBtn.style.flex = "1";
+            resetBtn.innerHTML = `<span><i class="ri-restart-line"></i></span> ${t('dashboard.draft.resetStuck')}`;
+            resetBtn.onclick = () => onReset(draft);
+            right.appendChild(resetBtn);
+        }
+        footer.appendChild(right);
+
+        contentCol.appendChild(footer);
         item.appendChild(contentCol);
-        this.element = item;
+
         return item;
     }
 
-    createIconBtn(icon, title, onClick) {
-        const btn = document.createElement('button');
-        btn.className = styles.iconBtn;
-        btn.innerHTML = icon;
-        btn.title = title;
-        btn.onclick = (e) => { e.stopPropagation(); onClick(e); };
-        return btn;
+    static _createTimeCapsule(minutes, percentage) {
+        const timeContainer = document.createElement('div');
+        timeContainer.className = itemStyles['reading-time-container'];
+        timeContainer.style.flex = "1";
+
+        const bar = document.createElement('div');
+        bar.className = itemStyles['reading-progress-bar'];
+        const fill = document.createElement('div');
+        fill.className = itemStyles['reading-progress-fill'];
+        fill.style.width = `${percentage}%`;
+        bar.appendChild(fill);
+
+        const text = document.createElement('span');
+        text.className = itemStyles['reading-time-text'];
+        text.innerHTML = `<i class="ri-time-line ${itemStyles['time-icon']}"></i>${minutes}m`;
+
+        timeContainer.appendChild(bar);
+        timeContainer.appendChild(text);
+        return timeContainer;
     }
 
-    createBtn(className, html, onClick) {
+    static _createIconBtn(iconHtml, title, onClick) {
         const btn = document.createElement('button');
-        btn.className = className;
-        btn.innerHTML = html;
+        btn.className = navStyles['icon-btn'];
+        btn.innerHTML = iconHtml;
+        btn.title = title;
         btn.onclick = onClick;
         return btn;
     }

@@ -127,6 +127,14 @@ window.App = {
         document.getElementById('btn-start-review').onclick = () => this.startReview();
         document.getElementById('btn-sync').onclick = () => this.sync();
         document.getElementById('btn-save-settings').onclick = () => this.saveSettings();
+        document.getElementById('setting-voice-lang').onchange = () => this.updateVoiceNames();
+
+        // Voices initialization
+        if (window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = () => this.renderVoiceSettings();
+            // Initial call if voices already loaded
+            setTimeout(() => this.renderVoiceSettings(), 100);
+        }
 
         const card = document.querySelector('.flashcard');
         card.onclick = (e) => {
@@ -407,8 +415,17 @@ window.App = {
         const url = document.getElementById('setting-url').value.trim();
         const token = document.getElementById('setting-token').value.trim();
         const profile = document.getElementById('setting-profile-select').value || 'default';
+        const voiceLang = document.getElementById('setting-voice-lang').value;
+        const voiceName = document.getElementById('setting-voice-name').value;
+
         // Save as activeProfileId for consistency
-        Store.saveSettings({ url, token, activeProfileId: profile });
+        Store.saveSettings({
+            url,
+            token,
+            activeProfileId: profile,
+            voiceLang,
+            voiceName
+        });
 
         // Reload data if profile changed!
         if (profile !== this.currentProfile) {
@@ -420,6 +437,36 @@ window.App = {
             this.toast("Settings Saved");
         }
         this.switchView('view-home');
+    },
+
+    // --- Voice Management ---
+    renderVoiceSettings() {
+        const settings = Store.getSettings();
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length === 0) return;
+
+        // 1. Languages
+        const langs = [...new Set(voices.map(v => v.lang))].sort();
+        const langEl = document.getElementById('setting-voice-lang');
+        const currentLang = settings.voiceLang || 'en-US';
+
+        langEl.innerHTML = langs.map(l =>
+            `<option value="${l}" ${l === currentLang ? 'selected' : ''}>${l}</option>`
+        ).join('');
+
+        // 2. Voice Names
+        this.updateVoiceNames(settings.voiceName);
+    },
+
+    updateVoiceNames(preferredName) {
+        const lang = document.getElementById('setting-voice-lang').value;
+        const voices = window.speechSynthesis.getVoices().filter(v => v.lang === lang);
+        const nameEl = document.getElementById('setting-voice-name');
+
+        nameEl.innerHTML = `<option value="">Default System Voice</option>` +
+            voices.map(v =>
+                `<option value="${v.name}" ${v.name === preferredName ? 'selected' : ''}>${v.name}</option>`
+            ).join('');
     },
 
     // --- Review Loop ---
@@ -517,7 +564,19 @@ window.App = {
         if (!window.speechSynthesis) return;
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'en-US';
+
+        const settings = Store.getSettings();
+        const voiceLang = settings.voiceLang || 'en-US';
+        const voiceName = settings.voiceName || '';
+
+        u.lang = voiceLang;
+
+        if (voiceName) {
+            const voices = window.speechSynthesis.getVoices();
+            const voice = voices.find(v => v.name === voiceName);
+            if (voice) u.voice = voice;
+        }
+
         u.rate = 1.0;
         window.speechSynthesis.speak(u);
     },

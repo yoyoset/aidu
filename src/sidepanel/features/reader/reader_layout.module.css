@@ -282,7 +282,7 @@
 .deepReady {
     background-color: transparent !important;
     border-bottom: 2px dotted var(--md-sys-color-primary) !important;
-    cursor: zoom-in;
+    cursor: pointer;
     transition: background-color 200ms ease;
 }
 

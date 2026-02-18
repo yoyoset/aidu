@@ -166,7 +166,8 @@ export class SettingsModal extends Component {
         // 3. Map to Global Data
         const globalSettings = {
             teachingStyle: allData.teachingStyle,
-            sync: allData.sync
+            sync: allData.sync,
+            debugMode: allData.debugMode
         };
 
         // Delegate to Domain Service

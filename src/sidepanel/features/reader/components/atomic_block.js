@@ -101,7 +101,14 @@ export class AtomicBlock {
                         const seg = sentence.segments[idx];
                         if (!seg) return false;
                         const word = (Array.isArray(seg) ? seg[0] : (seg.word || seg.w || '')).toLowerCase();
-                        return word.startsWith(targetWord) || targetWord.startsWith(word) || word.includes(targetWord) || targetWord.includes(word);
+
+                        // Stricter matching:
+                        // 1. If either word is very short (<=2 chars), require exact match to avoid collisions like 'a' in 'back'
+                        if (word.length <= 2 || targetWord.length <= 2) {
+                            return word === targetWord;
+                        }
+                        // 2. Otherwise allow prefix matching (e.g. 'swimming' vs 'swim')
+                        return word.startsWith(targetWord) || targetWord.startsWith(word);
                     };
 
                     if (checkMatch(suggestion)) {

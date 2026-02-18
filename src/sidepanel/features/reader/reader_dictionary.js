@@ -129,7 +129,7 @@ export class ReaderDictionary {
             ` : ''}
             <div class="${pActions}">
                  <button class="${actionBtn} ${addBtnClass}" data-role="add-vocab">${t('dict.add')}</button>
-                 <button class="${actionBtn} ${savedBtnClass}" data-role="deep-dive" style="margin-left:8px; display:flex; align-items:center; gap:4px; min-width:auto; padding:8px 16px;" title="${t('dict.deepDive')}"><i class="ri-search-line"></i> <span>${t('dict.expand') || '展开'}</span></button>
+                 <button class="${actionBtn} ${savedBtnClass}" data-role="deep-dive" style="margin-left:8px; display:flex; align-items:center; gap:4px; min-width:auto; padding:8px 16px;" title="${t('dict.deepDive')}"><span>${t('dict.expand') || '展开'}</span></button>
             </div>
         `;
 

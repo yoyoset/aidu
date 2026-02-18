@@ -10,6 +10,7 @@ import { AnalysisTray } from './analysis_tray.js';
 import { ThemeModal } from '../settings/theme_modal.js';
 import { logger } from '../../../utils/logger.js';
 import { notificationService } from '../../../utils/notification_service.js';
+import { profileManager } from '../../../core/profile_manager.js';
 
 // Sections & Renderer
 import { ReaderHeader } from './sections/reader_header.js';
@@ -45,7 +46,7 @@ export class ReaderView extends Component {
         this.lineHeight = 2.0;
     }
 
-    show(draft) {
+    async show(draft) {
         try {
 
 
@@ -58,6 +59,7 @@ export class ReaderView extends Component {
 
             // Initialize State (Domain: Cleaning & Time Loading)
             const session = this.state.init(this.draft);
+            this.settings = await profileManager.load();
             this.sentences = session.sentences;
 
             if (this.sentences.length < (this.draft.data?.sentences || []).length) {

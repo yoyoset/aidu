@@ -2,7 +2,6 @@ import { Component } from '../../components/component.js';
 import { ThemeModal } from '../settings/theme_modal.js';
 import { StorageHelper, StorageKeys } from '../../../utils/storage.js';
 import layoutStyles from './styles/dashboard_layout.module.css';
-import itemStyles from './styles/dashboard_items.module.css';
 import { SettingsModal } from '../settings/settings_modal.js';
 import { MessageRouter, MessageTypes } from '../../../utils/message_router.js';
 import { CreatorModal } from './creator_modal.js';
@@ -66,7 +65,7 @@ export class PreparationDashboard extends Component {
 
         this.settingsModal = new SettingsModal(modalContainer);
         this.creatorModal = new CreatorModal(modalContainer, {
-            onDraftCreated: (draft, autoStart) => this.handlers.handleNewDraft(draft, autoStart)
+            onDraftCreated: (draft, autoStart, mode) => this.handlers.handleNewDraft(draft, autoStart, mode)
         });
         this.confirmationModal = new ConfirmationModal(modalContainer);
 
@@ -196,13 +195,17 @@ export class PreparationDashboard extends Component {
         this.headerComponent.render();
 
         // 3. Refresh Content Area
-        this.contentArea.innerHTML = '';
-
         if (this.activeTab === 'library') {
-            const listContainer = document.createElement('div');
-            this.contentArea.appendChild(listContainer);
+            if (!this.libraryContainer) {
+                this.libraryContainer = document.createElement('div');
+                this.listRenderer = new DraftListRenderer(this.libraryContainer);
+            }
 
-            this.listRenderer = new DraftListRenderer(listContainer);
+            if (this.contentArea.firstChild !== this.libraryContainer) {
+                this.contentArea.innerHTML = '';
+                this.contentArea.appendChild(this.libraryContainer);
+            }
+
             const filteredDrafts = this.getFilteredDrafts();
             const sortedDrafts = filteredDrafts.sort((a, b) => b.updatedAt - a.updatedAt);
 
@@ -231,9 +234,15 @@ export class PreparationDashboard extends Component {
                 }
             }, this.currentFilter);
         } else {
-            const vocabContainer = document.createElement('div');
-            this.contentArea.appendChild(vocabContainer);
-            this.vocabView = new VocabView(vocabContainer);
+            if (!this.vocabContainer) {
+                this.vocabContainer = document.createElement('div');
+                this.vocabView = new VocabView(this.vocabContainer);
+            }
+
+            if (this.contentArea.firstChild !== this.vocabContainer) {
+                this.contentArea.innerHTML = '';
+                this.contentArea.appendChild(this.vocabContainer);
+            }
             await this.vocabView.render();
         }
     }

@@ -1,5 +1,5 @@
 import { t } from '../../../../locales/index.js';
-import styles from '../settings.module.css';
+import styles from '../settings_shared.module.css';
 import { logger } from '../../../../utils/logger.js';
 import { notificationService } from '../../../../utils/notification_service.js';
 

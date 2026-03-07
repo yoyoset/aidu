@@ -1,5 +1,5 @@
 import { t } from '../../../../locales/index.js';
-import styles from '../settings.module.css';
+import styles from '../settings_shared.module.css';
 
 export class ProfileSection {
     constructor(parent) {

@@ -78,18 +78,41 @@ export class TextImporter {
         saveBtn.innerHTML = `<i class="ri-save-line" style="margin-right:6px;"></i> ${t('common.save')}`;
         saveBtn.onclick = () => this.handleAction(false);
 
+        const simpleBtn = document.createElement('button');
+        simpleBtn.className = navStyles['btn-secondary'];
+        simpleBtn.style.marginLeft = 'auto'; // Push analysis buttons right
+        simpleBtn.innerHTML = `<i class="ri-play-line"></i> ${t('creator.analyze.simple')}`;
+        simpleBtn.onclick = () => this.handleAction(true, 'simple');
+
+        const deepBtn = document.createElement('button');
+        deepBtn.className = navStyles['btn-primary'];
+        deepBtn.innerHTML = `<i class="ri-sparkling-fill"></i> ${t('creator.analyze.deep')}`;
+        deepBtn.onclick = () => this.handleAction(true, 'deep');
+
         footer.appendChild(cancelBtn);
         footer.appendChild(saveBtn);
+        footer.appendChild(simpleBtn);
+        footer.appendChild(deepBtn);
         container.appendChild(footer);
 
         return container;
     }
 
-    async handleAction(autoStart, mode = 'realtime') {
+    async handleAction(autoStart, mode = 'simple') {
         const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS);
         const activeProfile = settings?.profiles?.[settings?.activeProfileId] || {};
-        const defaultMode = activeProfile.builderMode || '3';
-        return this.handleActionWithMode(autoStart, mode, defaultMode);
+
+        // Mode mapping:
+        // simple -> realtimeMode
+        // deep -> builderMode
+        let analysisMode = 2;
+        if (mode === 'deep') {
+            analysisMode = parseInt(activeProfile.builderMode || '3');
+        } else {
+            analysisMode = parseInt(activeProfile.realtimeMode || '2');
+        }
+
+        return this.handleActionWithMode(autoStart, mode, analysisMode);
     }
 
     async handleActionWithMode(autoStart, mode, analysisMode) {

@@ -133,12 +133,29 @@ export class ReaderRenderer {
         if (oldActive) oldActive.classList.remove(styles.active || 'active');
 
         // Add new
-        if (index !== null) {
+        if (index !== null && index !== undefined && index >= 0) {
             const newBlock = this.contentArea.querySelector(`div[data-index="${index}"]`);
             if (newBlock) {
                 newBlock.classList.add(styles.active || 'active');
                 newBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
+        }
+    }
+
+    locateWordInText(lemma) {
+        if (!this.contentArea) return;
+
+        // Clear previous locate highlight if any (transient)
+        const selector = `span[data-lemma="${lemma.toLowerCase()}"]`;
+        const target = this.contentArea.querySelector(selector);
+
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.classList.add(styles.active || 'active');
+
+            setTimeout(() => {
+                target.classList.remove(styles.active || 'active');
+            }, 2000);
         }
     }
 }

@@ -1,7 +1,7 @@
 import { Component } from '../../components/component.js';
 import layoutStyles from '../builder/styles/dashboard_layout.module.css';
 import navStyles from '../builder/styles/dashboard_nav.module.css';
-import itemStyles from '../builder/styles/dashboard_items.module.css';
+import itemStyles from '../vocab/styles/vocab_dashboard_shared.module.css';
 import { vocabService } from '../../../services/vocab_service.js';
 import { HandwritingSheet } from './handwriting_sheet.js';
 import { VocabReview } from './vocab_review.js';

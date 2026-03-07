@@ -1,5 +1,7 @@
 import { t } from '../../../../locales/index.js';
-import styles from '../settings.module.css';
+import sharedStyles from '../settings_shared.module.css';
+import componentStyles from '../settings_components.module.css';
+const styles = { ...sharedStyles, ...componentStyles };
 
 export class ProviderSection {
     constructor(parent) {
@@ -45,7 +47,7 @@ export class ProviderSection {
                 <label class="${styles.sectionTitle}">${t('settings.analysis')}</label>
                 <div class="${styles.modeContainer}">
                     <div class="${styles.modeColumn}">
-                        <label class="${styles.label}">${t('settings.realtime')}</label>
+                        <label class="${styles.label}">${t('settings.mode.standard')}</label>
                         <div class="${styles.radioGroup}">
                             ${this.renderRadioOption('realtimeMode', '1', t('settings.mode.translation'), t('settings.mode.translation.sub'), activeProfile.realtimeMode)}
                             ${this.renderRadioOption('realtimeMode', '2', t('settings.mode.standard'), t('settings.mode.standard.sub'), activeProfile.realtimeMode)}
@@ -53,10 +55,10 @@ export class ProviderSection {
                         </div>
                     </div>
                     <div class="${styles.modeColumn}">
-                        <label class="${styles.label}">${t('settings.builder')}</label>
+                        <label class="${styles.label}">${t('settings.mode.deep')}</label>
                         <div class="${styles.radioGroup}">
-                            ${this.renderRadioOption('builderMode', '2', t('settings.mode.standard'), t('settings.mode.core'), activeProfile.builderMode)}
-                            ${this.renderRadioOption('builderMode', '3', t('settings.mode.deep'), t('settings.mode.detailed'), activeProfile.builderMode)}
+                            ${this.renderRadioOption('builderMode', '2', t('settings.mode.standard'), t('settings.mode.standard.sub'), activeProfile.builderMode)}
+                            ${this.renderRadioOption('builderMode', '3', t('settings.mode.deep'), t('settings.mode.deep.sub'), activeProfile.builderMode)}
                         </div>
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 import { t } from '../../../../locales/index.js';
 import navStyles from '../styles/dashboard_nav.module.css';
-import itemStyles from '../styles/dashboard_items.module.css';
+import itemStyles from '../styles/draft_item.module.css';
 
 
 /**
@@ -142,16 +142,16 @@ export class DraftItem {
             btn.onclick = (e) => { e.stopPropagation(); onAction(draft); };
             right.appendChild(btn);
         } else if (['draft', 'error'].includes(draft.status)) {
-            // Draft/Error Segment: Standard + Deep
+            // Draft/Error Segment: Simple + Deep
             const simpleBtn = document.createElement('button');
             simpleBtn.className = navStyles['btn-primary'];
-            simpleBtn.innerHTML = `<i class="ri-flashlight-line"></i> ${t('settings.mode.standard')}`;
-            simpleBtn.onclick = (e) => { e.stopPropagation(); onAction(draft, 'standard'); };
+            simpleBtn.innerHTML = `<i class="ri-play-line"></i> ${t('creator.analyze.simple')}`;
+            simpleBtn.onclick = (e) => { e.stopPropagation(); onAction(draft, 'simple'); };
             right.appendChild(simpleBtn);
 
             const deepBtn = document.createElement('button');
             deepBtn.className = navStyles['btn-primary'];
-            deepBtn.innerHTML = `<i class="ri-magic-line"></i> ${t('settings.mode.deep')}`;
+            deepBtn.innerHTML = `<i class="ri-sparkling-fill"></i> ${t('creator.analyze.deep')}`;
             deepBtn.onclick = (e) => { e.stopPropagation(); onAction(draft, 'deep'); };
             right.appendChild(deepBtn);
         } else if (draft.status === 'processing') {

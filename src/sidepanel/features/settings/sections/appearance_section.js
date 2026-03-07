@@ -1,5 +1,5 @@
 import { t, getSupportedLocales, getCurrentLocale, setLocale } from '../../../../locales/index.js';
-import styles from '../settings.module.css';
+import styles from '../settings_shared.module.css';
 import { PERSONA_OPTIONS } from '../../../../background/llm/persona.js';
 import { notificationService } from '../../../../utils/notification_service.js';
 

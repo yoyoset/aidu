@@ -12,38 +12,47 @@ class DraftStateManager {
      * Enforces the 50-draft limit.
      */
     async createDraft(text, title, url, chunkCount) {
-        // 1. Init State
-        const draft = DraftProcessor.createInitialState(text, title, url, chunkCount);
+        return this._saveQueue = this._saveQueue.then(async () => {
+            // 1. Init State
+            const draft = DraftProcessor.createInitialState(text, title, url, chunkCount);
 
-        // 2. Persistent Storage & Truncation (Expert Governance)
-        let drafts = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS) || [];
-        drafts.unshift(draft);
-        drafts = DraftProcessor.truncate(drafts, 50);
+            // 2. Persistent Storage & Truncation
+            let stored = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS);
+            let drafts = Array.isArray(stored) ? stored : (stored ? Object.values(stored) : []);
 
-        await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, drafts);
-        return draft;
+            drafts.unshift(draft);
+            drafts = DraftProcessor.truncate(drafts, 50);
+
+            await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, drafts);
+            return draft;
+        });
     }
 
     /**
      * Gets a draft by ID from storage.
      */
     async getDraft(draftId) {
-        const drafts = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS) || [];
-        return drafts.find(d => d.id === draftId);
+        let stored = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS);
+        let drafts = Array.isArray(stored) ? stored : (stored ? Object.values(stored) : []);
+        return drafts.find(d => String(d.id) === String(draftId));
     }
 
     /**
      * Updates specific fields of a draft.
      */
     async updateDraftStatus(draftId, status, extraData = {}) {
-        const drafts = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS) || [];
-        const index = drafts.findIndex(d => d.id === draftId);
-        if (index !== -1) {
-            drafts[index].status = status;
-            Object.assign(drafts[index], extraData);
-            drafts[index].updatedAt = Date.now();
-            await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, drafts);
-        }
+        return this._saveQueue = this._saveQueue.then(async () => {
+            const stored = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS);
+            let drafts = Array.isArray(stored) ? stored : (stored ? Object.values(stored) : []);
+
+            const index = drafts.findIndex(d => String(d.id) === String(draftId));
+            if (index !== -1) {
+                drafts[index].status = status;
+                Object.assign(drafts[index], extraData);
+                drafts[index].updatedAt = Date.now();
+                await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, drafts);
+            }
+        });
     }
 
     /**
@@ -54,7 +63,9 @@ class DraftStateManager {
             const id = String(draftId);
             logger.info(`DraftStateManager: Deleting draft ${id}...`);
 
-            let drafts = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS) || [];
+            let stored = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS);
+            let drafts = Array.isArray(stored) ? stored : (stored ? Object.values(stored) : []);
+
             const initialCount = drafts.length;
 
             drafts = drafts.filter(d => String(d.id) !== id);
@@ -77,8 +88,10 @@ class DraftStateManager {
      */
     async applyPartialUpdate(draftId, updates) {
         this._saveQueue = this._saveQueue.then(async () => {
-            const drafts = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS) || [];
-            const idx = drafts.findIndex(d => d.id === draftId);
+            let stored = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS);
+            let drafts = Array.isArray(stored) ? stored : (stored ? Object.values(stored) : []);
+
+            const idx = drafts.findIndex(d => String(d.id) === String(draftId));
             if (idx !== -1) {
                 drafts[idx] = { ...drafts[idx], ...updates, updatedAt: Date.now() };
                 await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, drafts);
@@ -94,8 +107,10 @@ class DraftStateManager {
      */
     async saveSafe(updatedDraft) {
         this._saveQueue = this._saveQueue.then(async () => {
-            const drafts = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS) || [];
-            const idx = drafts.findIndex(d => d.id === updatedDraft.id);
+            let stored = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS);
+            let drafts = Array.isArray(stored) ? stored : (stored ? Object.values(stored) : []);
+
+            const idx = drafts.findIndex(d => String(d.id) === String(updatedDraft.id));
             if (idx !== -1) {
                 const existing = drafts[idx];
 

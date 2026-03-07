@@ -1,0 +1,98 @@
+/* settings_components.module.css - Specialized Controls */
+
+/* Profile Selector */
+.profileSelectWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.profileSelect {
+    border: 1px solid var(--md-sys-color-outline);
+    background-color: var(--md-sys-color-surface-container-low);
+    border-radius: var(--md-sys-radius-sm);
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--md-sys-color-on-surface-variant);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 32px 6px 12px;
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23424940' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 8px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    transition: all 0.2s;
+    min-width: 140px;
+}
+
+.profileSelect:hover {
+    color: var(--md-sys-color-primary);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%231e6b3f' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* Mode Selection (Radio Cards) */
+.modeContainer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 500px) {
+    .modeContainer {
+        grid-template-columns: 1fr;
+    }
+}
+
+.radioGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.radioLabel {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-radius-sm);
+    cursor: pointer;
+    background: var(--md-sys-color-surface-container-low);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.radioLabel input {
+    margin-top: 3px;
+    margin-right: 12px;
+}
+
+.radioLabel:hover {
+    border-color: #94A3B8;
+    background: #FFFFFF;
+}
+
+.radioLabel:has(input:checked) {
+    background: var(--md-sys-color-primary-container);
+    border-color: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary-container);
+}
+
+.radioText {
+    display: flex;
+    flex-direction: column;
+}
+
+.radioText strong {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.radioText small {
+    font-size: 0.75rem;
+    color: #64748B;
+    margin-top: 2px;
+}

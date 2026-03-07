@@ -98,11 +98,11 @@ export class JsonImporter {
                 systemInstruction = "Role: Translator. Output strictly valid JSON. Fields: original_text, translation. NO segments, NO explanation.";
                 break;
             case '3':
-                systemInstruction = "Role: Literature Professor. Analyze text with depth. Required: translation, segments (pos, lemma), and explanation (cultural/rhetoric context). Mark Stop Words (be, is) as 'STOP' in pos.";
+                systemInstruction = "Role: Deep Analysis Specialist. Provide technical linguistic data (SG) and an insightful pedagogical explanation (EX) for a deep learner.";
                 break;
             case '2':
             default:
-                systemInstruction = "Role: Linguist. Analyze text. Required: translation, segments (pos, lemma). NO explanation.";
+                systemInstruction = "Role: Analysis Specialist. Provide technical linguistic data (SG). The explanation (EX) field should be concise or empty.";
                 break;
         }
 

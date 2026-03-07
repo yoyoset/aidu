@@ -98,6 +98,10 @@ export class DashboardHandlers {
 
             if (response && response.draft) {
                 draft = response.draft;
+                // Sync analysis mode from UI if provided
+                if (data.analysisMode) {
+                    draft.analysisMode = data.analysisMode;
+                }
                 // [Race Condition Fix] SW already saved to storage. 
                 // We should check if storage listener already updated this.dashboard.drafts
                 const exists = this.dashboard.drafts.some(d => d.id === draft.id);
@@ -130,18 +134,25 @@ export class DashboardHandlers {
         }
 
         if (draft && autoStart) {
-            // Analysis Request
-            if (mode === 'realtime' || mode === 'background') {
-                MessageRouter.sendMessage(MessageTypes.REQUEST_ANALYSIS, { draftId: draft.id });
-                notificationService.toast(t('creator.bgProcess.toast'));
+            // Persist analysis mode change for new draft if it was set
+            if (draft.analysisMode) {
+                const draftIdx = this.dashboard.drafts.findIndex(d => d.id === draft.id);
+                if (draftIdx !== -1) {
+                    this.dashboard.drafts[draftIdx] = draft;
+                    await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.dashboard.drafts);
+                }
             }
+
+            // Analysis Request
+            MessageRouter.sendMessage(MessageTypes.REQUEST_ANALYSIS, { draftId: draft.id });
+            notificationService.toast(t('creator.bgProcess.toast'));
         }
 
         // Final UI Refresh from Storage Truth
         await this.dashboard.loadDrafts();
     }
 
-    async handleAction(draft, mode = 'realtime', analysisMode = null) {
+    async handleAction(draft, mode = 'simple', analysisMode = null) {
         if (mode === 'review') return;
         if (mode === 'reset') return;
 
@@ -158,35 +169,43 @@ export class DashboardHandlers {
             const valid = await this.checkApiKey();
             if (!valid) return;
 
+            // Determine Analysis Mode based on Settings if not explicitly provided
+            if (!analysisMode) {
+                const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
+                const profile = settings.profiles?.[settings.activeProfileId] || {};
+
+                if (mode === 'simple') {
+                    analysisMode = parseInt(profile.realtimeMode || '2');
+                } else if (mode === 'deep') {
+                    analysisMode = parseInt(profile.builderMode || '3');
+                } else if (mode === 'retry') {
+                    analysisMode = draft.analysisMode || parseInt(profile.builderMode || '2');
+                }
+            }
+
             if (analysisMode) {
                 draft.analysisMode = analysisMode;
                 await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.dashboard.drafts);
             }
 
-            if (mode === 'background' || mode === 'retry') {
-                draft.status = 'processing';
-                if (mode !== 'retry') draft.progress = { current: 0, total: 0, percentage: 0 };
-                this.handleNewDraft(draft, true, 'background');
-            } else {
-                draft.status = 'processing';
-                draft.progress = { current: 0, total: 0, percentage: 1 };
-                draft.updatedAt = Date.now();
+            // Common processing state setup
+            draft.status = 'processing';
+            draft.progress = { current: 0, total: 0, percentage: 1 };
+            draft.updatedAt = Date.now();
 
-                if (!draft.data) draft.data = {};
-                const charCount = (draft.rawText || '').length;
-                const estimatedChunks = Math.max(1, Math.ceil(charCount / 2000));
-                draft.data.chunks = Array.from({ length: estimatedChunks }, (_, i) => ({
-                    index: i, status: i === 0 ? 'processing' : 'pending' // Immediately pulse the first chunk
-                }));
+            if (!draft.data) draft.data = {};
+            const charCount = (draft.rawText || '').length;
+            const estimatedChunks = Math.max(1, Math.ceil(charCount / 2000));
+            draft.data.chunks = Array.from({ length: estimatedChunks }, (_, i) => ({
+                index: i, status: i === 0 ? 'processing' : 'pending'
+            }));
 
-                const idx = this.dashboard.drafts.findIndex(d => d.id === draft.id);
-                if (idx !== -1) this.dashboard.drafts[idx] = draft;
-                await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.dashboard.drafts);
+            const idx = this.dashboard.drafts.findIndex(d => d.id === draft.id);
+            if (idx !== -1) this.dashboard.drafts[idx] = draft;
+            await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.dashboard.drafts);
 
-                // Trust storage listener to update UI
-                notificationService.toast(t('creator.bgProcess.toast'));
-                MessageRouter.sendMessage(MessageTypes.REQUEST_ANALYSIS, { draftId: draft.id });
-            }
+            notificationService.toast(t('creator.bgProcess.toast'));
+            MessageRouter.sendMessage(MessageTypes.REQUEST_ANALYSIS, { draftId: draft.id });
         }
     }
 

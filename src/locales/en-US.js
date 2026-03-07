@@ -33,9 +33,9 @@ export default {
     'settings.apiKey': 'API Key',
     'settings.apiKey.placeholder': 'sk-...',
 
-    'settings.analysis': 'Analysis Strategy',
-    'settings.realtime': 'Real-time (Selection)',
-    'settings.builder': 'Builder (Draft)',
+    'settings.analysis': 'Analysis Mode Configuration',
+    'settings.realtime': 'Simple Analysis Mode',
+    'settings.builder': 'Deep Analysis Mode',
     'settings.mode.translation': 'Translation Only',
     'settings.mode.translation.sub': 'Fast',
     'settings.mode.standard': 'Simple Analysis',
@@ -155,7 +155,7 @@ export default {
     'creator.bgProcess.hint': 'Process silently in background',
     'creator.bgProcess.toast': 'Analysis started. View progress below.',
     'creator.contentChanged.toast': 'Content modified. Old analysis cleared. Please re-analyze.',
-    'creator.analyze': 'Start Analysis',
+    'creator.analyze': 'Analyze Now',
     'creator.analyze.simple': 'Simple Analysis',
     'creator.analyze.deep': 'Deep Analysis',
 

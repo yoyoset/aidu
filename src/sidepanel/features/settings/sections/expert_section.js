@@ -1,5 +1,7 @@
 import { t } from '../../../../locales/index.js';
-import styles from '../settings.module.css';
+import sharedStyles from '../settings_shared.module.css';
+import expertStyles from '../settings_expert.module.css';
+const styles = { ...sharedStyles, ...expertStyles };
 
 export class ExpertSection {
     constructor(parent) {

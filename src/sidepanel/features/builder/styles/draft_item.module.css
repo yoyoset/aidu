@@ -1,30 +1,10 @@
-.draft-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 20px;
-    padding: 20px 0;
-}
+/* draft_item.module.css - Styles for Draft Card and visualizations */
 
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 20px;
-    text-align: center;
-    background: var(--md-sys-color-surface);
-    border-radius: var(--md-sys-radius-md);
-    border: 2px dashed var(--md-sys-color-outline-variant);
-    color: var(--md-sys-color-on-surface-variant);
-}
-
-/* === Draft Item Card === */
 .draft-item {
     background: var(--md-sys-color-surface);
     border-radius: 16px;
     border: 1px solid var(--md-sys-color-outline-variant);
     padding: 16px 20px;
-    /* Refined padding */
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -32,16 +12,12 @@
     position: relative;
     overflow: hidden;
     min-height: 180px;
-    /* Reduced min-height slightly */
 }
 
 .draft-item:hover {
-    transform: translateY(-2px);
     box-shadow: var(--md-sys-elevation-2);
     border-color: var(--md-sys-color-primary);
 }
-
-/* Removed .draft-checkbox as requested */
 
 .draft-content {
     flex: 1;
@@ -56,7 +32,6 @@
     justify-content: space-between;
     align-items: center;
     height: 24px;
-    /* Fixed height slot */
 }
 
 .draft-title {
@@ -73,7 +48,6 @@
     color: var(--md-sys-color-on-surface-variant);
     line-height: 1.5;
     height: 2.7rem;
-    /* Fixed height for 2 lines */
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
@@ -118,13 +92,12 @@
     border-left: 4px solid var(--md-sys-color-error);
 }
 
-/* Chunk Visualization Slot */
+/* Chunk Visualization */
 .chunk-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
     height: 32px;
-    /* Fixed height slot for 2 rows */
     align-content: flex-start;
     margin: 8px 0;
     overflow: hidden;
@@ -154,10 +127,6 @@
     background: var(--md-sys-color-surface-container-high);
 }
 
-.chunk-pending {
-    background: var(--md-sys-color-surface-container-high);
-}
-
 .chunk-processing {
     background: var(--md-sys-color-primary);
     animation: item-pulse 1.5s infinite;
@@ -165,7 +134,6 @@
 
 .chunk-done {
     background: #4caf50;
-    /* Changed to Green as requested */
 }
 
 .chunk-error {
@@ -186,7 +154,7 @@
     }
 }
 
-/* Meta Area Slot (Standarized Footer) */
+/* Meta Area & Footer */
 .draft-meta {
     display: flex;
     align-items: center;
@@ -227,7 +195,6 @@
     color: var(--md-sys-color-on-surface-variant);
     padding: 2px 6px;
     border-radius: 4px;
-    /* M3 style badge */
     font-weight: 700;
     font-size: 0.7rem;
     flex-shrink: 0;
@@ -239,11 +206,6 @@
     text-overflow: ellipsis;
     max-width: 100px;
     opacity: 0.7;
-}
-
-.processing-indicator {
-    color: var(--md-sys-color-primary);
-    font-weight: 600;
 }
 
 /* Reading Time */
@@ -261,7 +223,6 @@
 
 .reading-progress-bar {
     width: 30px;
-    /* Slightly narrower */
     height: 4px;
     background: rgba(0, 0, 0, 0.1);
     border-radius: 2px;
@@ -285,7 +246,7 @@
     font-size: 0.9rem;
 }
 
-/* Action Area (Responsive Segment) */
+/* Action Area */
 .action-area {
     flex-shrink: 0;
     display: flex;
@@ -302,172 +263,16 @@
     padding: 6px 16px !important;
     font-weight: 700 !important;
     border: none !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-    outline: none !important;
-    box-shadow: 0 4px 12px rgba(var(--md-sys-color-secondary-rgb), 0.3);
-    transition: all 0.2s ease;
-    flex: 1;
-    /* Stretch to occupy more space */
-    max-width: 200px;
-    /* But keep it reasonable */
+    cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 8px;
-    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(var(--md-sys-color-secondary-rgb), 0.3);
+    transition: all 0.2s ease;
 }
 
 .btn-read-now:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(var(--md-sys-color-secondary-rgb), 0.4);
     filter: brightness(1.1);
-}
-
-.ready-meta-container {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-}
-
-/* Vocab Item Card */
-.vocab-item-card {
-    padding: 16px 20px;
-    background: var(--md-sys-color-surface-container-low);
-    margin-bottom: 12px;
-    border-radius: var(--md-sys-radius-md);
-    border: 1px solid var(--md-sys-color-outline-variant);
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-    transition: all 300ms ease;
-}
-
-.vocab-item-card:hover {
-    background: var(--md-sys-color-surface-container-high);
-    border-color: var(--md-sys-color-primary);
-}
-
-/* Vocab Actions Unification */
-.vocab-actions-header {
-    padding: 10px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--md-sys-color-outline-variant);
-    margin-bottom: 10px;
-    gap: 10px;
-    background: var(--md-sys-color-surface);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.vocab-actions-left,
-.vocab-actions-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.vocab-filter-select {
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: 1px solid var(--md-sys-color-outline-variant);
-    background: var(--md-sys-color-surface);
-    color: var(--md-sys-color-on-surface);
-}
-
-.vocab-count-badge {
-    color: var(--md-sys-color-secondary);
-    font-size: 0.85em;
-}
-
-.vocab-selection-count {
-    font-weight: bold;
-    color: var(--md-sys-color-primary);
-    margin-right: 4px;
-}
-
-.vocab-select-all-label {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.9em;
-    color: var(--md-sys-color-on-surface-variant);
-    cursor: pointer;
-}
-
-.vocab-item-checkbox-container {
-    padding-top: 6px;
-    flex-shrink: 0;
-}
-
-.vocab-item-content {
-    flex-grow: 1;
-}
-
-.vocab-item-title-row {
-    font-weight: bold;
-    font-size: 1.1rem;
-    color: var(--md-sys-color-primary);
-    margin-bottom: 2px;
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-}
-
-.vocab-item-phonetic {
-    font-weight: normal;
-    font-size: 0.85em;
-    color: var(--md-sys-color-outline);
-    margin-left: 6px;
-    font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
-}
-
-.vocab-item-pos {
-    font-weight: normal;
-    font-size: 0.85em;
-    color: var(--md-sys-color-on-surface-variant);
-    margin-left: 6px;
-}
-
-.vocab-item-mastered-badge {
-    font-size: 0.75em;
-    background: var(--md-sys-color-secondary-container);
-    color: var(--md-sys-color-on-secondary-container);
-    padding: 1px 8px;
-    border-radius: 100px;
-    margin-left: 8px;
-    font-weight: 600;
-}
-
-.vocab-item-meaning {
-    font-size: 0.95em;
-    color: var(--md-sys-color-on-surface);
-    margin-bottom: 4px;
-}
-
-.vocab-item-context {
-    font-size: 0.85em;
-    color: var(--md-sys-color-on-surface-variant);
-    font-style: italic;
-    border-left: 3px solid var(--md-sys-color-primary-container);
-    padding-left: 8px;
-    margin-bottom: 4px;
-}
-
-.vocab-item-date {
-    font-size: 0.75em;
-    color: var(--md-sys-color-outline);
-    margin-top: 4px;
-}
-
-.vocab-item-actions-col {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex-shrink: 0;
 }

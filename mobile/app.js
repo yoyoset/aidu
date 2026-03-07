@@ -109,6 +109,7 @@ window.App = {
         // Fill Inputs
         if (settings.url) document.getElementById('setting-url').value = settings.url;
         if (settings.token) document.getElementById('setting-token').value = settings.token;
+        if (settings.audioOutput) document.getElementById('setting-audio-output').value = settings.audioOutput;
 
         // Populate Profile Dropdown
         this.renderProfileSelect(settings.availableProfiles, this.currentProfile);
@@ -127,6 +128,7 @@ window.App = {
         document.getElementById('btn-start-review').onclick = () => this.startReview();
         document.getElementById('btn-sync').onclick = () => this.sync();
         document.getElementById('btn-save-settings').onclick = () => this.saveSettings();
+        document.getElementById('btn-test-speaker').onclick = () => this.testSpeaker();
         document.getElementById('setting-voice-lang').onchange = () => this.updateVoiceNames();
 
         // Voices initialization
@@ -199,7 +201,7 @@ window.App = {
                 <button onclick="this.closest('.donate-overlay').remove()" style="background:none; border:none; color:white; font-size:1.5em; cursor:pointer;">&times;</button>
             </div>
             <div style="display:flex; align-items:center; gap:12px; padding:16px; border-bottom:1px solid #eee;">
-                <img src="../SUlogo.jpg" style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid #eee;">
+                <img src="SUlogo.jpg" style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid #eee;">
                 <div>
                     <div style="font-weight:bold; color:#333;">SquareUncle (方砖叔)</div>
                     <a href="https://squareuncle.com" target="_blank" style="color:#3b82f6; font-size:0.9em;">🔗 squareuncle.com</a>
@@ -217,9 +219,9 @@ window.App = {
         const tabs = modal.querySelector('#donate-tabs');
         const qrContainer = modal.querySelector('#donate-qr');
         const methods = [
-            { key: 'alipay', label: 'Alipay', img: '../donate_alipay.png' },
-            { key: 'wechat', label: 'WeChat', img: '../donate_wechat.png' },
-            { key: 'paypal', label: 'PayPal', img: '../donate_paypal.png' }
+            { key: 'alipay', label: 'Alipay', img: 'donate_alipay.png' },
+            { key: 'wechat', label: 'WeChat', img: 'donate_wechat.png' },
+            { key: 'paypal', label: 'PayPal', img: 'donate_paypal.png' }
         ];
         let activeTab = 'alipay';
 
@@ -417,6 +419,7 @@ window.App = {
         const profile = document.getElementById('setting-profile-select').value || 'default';
         const voiceLang = document.getElementById('setting-voice-lang').value;
         const voiceName = document.getElementById('setting-voice-name').value;
+        const audioOutput = document.getElementById('setting-audio-output').value;
 
         // Save as activeProfileId for consistency
         Store.saveSettings({
@@ -424,7 +427,8 @@ window.App = {
             token,
             activeProfileId: profile,
             voiceLang,
-            voiceName
+            voiceName,
+            audioOutput
         });
 
         // Reload data if profile changed!
@@ -568,6 +572,7 @@ window.App = {
         const settings = Store.getSettings();
         const voiceLang = settings.voiceLang || 'en-US';
         const voiceName = settings.voiceName || '';
+        const audioOutput = settings.audioOutput || 'auto';
 
         u.lang = voiceLang;
 
@@ -578,7 +583,41 @@ window.App = {
         }
 
         u.rate = 1.0;
+
+        // --- Audio Priming Workaround (Phase 2) ---
+        if (audioOutput === 'speaker') {
+            try {
+                if (!this._silentAudio) {
+                    // 1 second silent MP3
+                    this._silentAudio = new Audio('data:audio/mpeg;base64,SUQzBAAAAAABAFRYWFgAAAASAAADbWFqb3JfYnJhbmQAZGFzaABUWFhYAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhYAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzbzZtcDRhAFRTU0UAAAAPAAADYm9uZXNoYWtlcmEAMf/MUAAAAAAAAAAAAAAAAAAAAAAAAB9YaW5nAAAADwAAAAEAAAIAAAAAAAAABwgNDRITFBUVGBsdHR8jJCUmKSstLzIzNDU4Oz0/QkJFR0lMTE9RU1VWV1tcXV9hY2VmZ2lsbG9xc3V2eXp9f4GDhIaIjIyPkZOUlZYZGx0fIiMkJSYpKy0vMjM0NTh7PT9CQkVHSUxMT1FTVVZVXF1fYWNlZmRpaWxucXN1dnl6fX+BgoOGh4mMjI+Rk5SWlxkbHR8iIyQlJikrLS8yMzQ1Nzs9P0JCRUdJTE9RUlVWV1tcXV9hY2VmZ2lsbG9xc3V2eXp9f4GDhIaIiYyMj5GTlJaXGRsdHyIjJCUlJikrLS8yMzQ1Nzs9P0JCRUdJTE9RUlVWV1tcXV9hY2VmZ2lsbG9xc3V2eXp9f4GDhIaIiYyMj5GTlJaXGRsdHyIkJSYpKv/MUAAAAAAAAAAAAAAAAAAAAAAAADFkYXRhAAA=');
+                }
+                this._silentAudio.muted = false;
+                this._silentAudio.volume = 0.05; // Extremely low, but not zero/muted
+
+                // Play and wait for start before speaking
+                const playPromise = this._silentAudio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        window.speechSynthesis.speak(u);
+                    }).catch(e => {
+                        console.warn("Priming failed:", e);
+                        window.speechSynthesis.speak(u);
+                    });
+                } else {
+                    window.speechSynthesis.speak(u);
+                }
+                return;
+            } catch (e) {
+                console.error("Priming error:", e);
+            }
+        }
+
         window.speechSynthesis.speak(u);
+    },
+
+    testSpeaker() {
+        this.toast("Testing Speaker...");
+        this.speak("Testing audio output channel. One, two, three.");
     },
 
     async handleGrade(grade) {

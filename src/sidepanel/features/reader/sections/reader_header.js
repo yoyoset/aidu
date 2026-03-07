@@ -67,7 +67,7 @@ export class ReaderHeader {
         ttsBtn.className = styles.iconBtn || 'iconBtn';
         ttsBtn.id = 'tts-btn';
         ttsBtn.innerHTML = '<i class="ri-volume-up-line"></i>';
-        ttsBtn.onclick = () => this.parent.toggleTTS(ttsBtn);
+        ttsBtn.onclick = () => this.parent.audio.toggleTTS(this.parent.currentHighlightIndex || 0);
 
         // Settings Button
         const settingsBtn = document.createElement('button');

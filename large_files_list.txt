@@ -1,0 +1,12 @@
+ 13008  src\sidepanel\assets\remixicon\remixicon.css
+  1581  src\icons\donate\SUlogo.jpg
+   767  src\sidepanel\assets\remixicon\remixicon.woff2
+   535  src\icons\donate\donate_alipay.png
+   474  src\sidepanel\features\settings\settings.module.css
+   472  src\sidepanel\features\builder\styles\dashboard_items.module.css
+   435  src\sidepanel\features\reader\reader_view.js
+   359  src\locales\zh-CN.js
+   355  src\locales\en-US.js
+   322  src\sidepanel\features\vocab\vocab_view.js
+   320  src\sidepanel\features\reader\reader_layout.module.css
+   318  src\sidepanel\features\settings\expert_prompts_modal.js

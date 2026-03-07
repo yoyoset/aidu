@@ -2,7 +2,7 @@ import { Component } from '../../components/component.js';
 import { StorageHelper, StorageKeys } from '../../../utils/storage.js';
 import { t } from '../../../locales/index.js';
 import { notificationService } from '../../../utils/notification_service.js';
-import styles from './settings.module.css'; // Re-use settings styles for consistency
+import styles from './settings_shared.module.css'; // Use shared settings styles
 
 export class ThemeModal extends Component {
     constructor(element) {

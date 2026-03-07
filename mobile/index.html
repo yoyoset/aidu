@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <meta name="theme-color" content="#2563eb">
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="../src/icons/icon128.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="favicon.png">
 </head>
 
 <body>
@@ -81,6 +81,22 @@
                 <option value="">Default System Voice</option>
             </select>
             <div style="font-size:0.7em; color:#666; margin-top:4px">Select a specific accent/voice</div>
+        </div>
+
+        <div class="input-group">
+            <label>Audio Output (音频输出渠道)</label>
+            <div style="display:flex; gap:8px;">
+                <select id="setting-audio-output" class="input"
+                    style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px; font-size:16px;">
+                    <option value="auto">Auto (自动)</option>
+                    <option value="speaker">Speaker (扬声器/外放)</option>
+                    <option value="earpiece">Earpiece (听筒/通话模式)</option>
+                </select>
+                <button id="btn-test-speaker"
+                    style="width:auto; padding:8px 12px; margin:0; font-size:0.8em; background:#4b5563; color:white;">Test</button>
+            </div>
+            <div style="font-size:0.7em; color:#666; margin-top:4px">Select Speaker to fix earpiece issue
+                (选择扬声器尝试修复听筒出声问题)</div>
         </div>
 
         <div style="margin-top:auto">

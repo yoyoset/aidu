@@ -4,6 +4,19 @@ export class ReaderAudio {
         this.voice = null;
         this.rate = 1.0;
         this.isPlaying = false;
+
+        // Sequence Management
+        this.sentences = [];
+        this.currentIndex = -1;
+        this.isContinuous = false;
+        this.callbacks = null; // { onHighlight, onStatusChange }
+    }
+
+    // ... loadVoices and setRate ...
+
+    init(sentences, callbacks) {
+        this.sentences = sentences || [];
+        this.callbacks = callbacks || {};
     }
 
     loadVoices(selectElement) {
@@ -53,8 +66,74 @@ export class ReaderAudio {
         this.rate = parseFloat(rate);
     }
 
-    speak(text, onEnd, onError, onStart) {
-        this.cancel(); // Stop strict
+    toggleTTS(startIndex = 0) {
+        if (this.isPlaying) {
+            this.stopPlayback();
+        } else {
+            const index = this.currentIndex >= 0 ? this.currentIndex : startIndex;
+            this.playSequence(index, { continuous: true });
+        }
+    }
+
+    stopPlayback() {
+        this.cancel();
+        this.currentIndex = -1;
+        if (this.callbacks?.onStatusChange) {
+            this.callbacks.onStatusChange({ isPlaying: false, index: -1 });
+        }
+    }
+
+    playSequence(index, options = {}) {
+        const { isAuto = false, continuous = true } = options;
+
+        if (!isAuto && this.isPlaying && this.currentIndex === index) {
+            this.stopPlayback();
+            return;
+        }
+
+        if (index < 0 || index >= this.sentences.length) {
+            this.stopPlayback();
+            return;
+        }
+
+        this.currentIndex = index;
+        this.isContinuous = continuous;
+
+        if (this.callbacks?.onHighlight) {
+            this.callbacks.onHighlight(index, isAuto);
+        }
+
+        if (this.callbacks?.onStatusChange) {
+            this.callbacks.onStatusChange({ isPlaying: true, index });
+        }
+
+        const text = this.sentences[index].original_text;
+        this.cancel();
+
+        // Small delay to ensure synth reset
+        setTimeout(() => {
+            this.speak(text,
+                () => { // onEnd
+                    if (this.isPlaying && this.isContinuous) {
+                        this.playSequence(index + 1, { isAuto: true, continuous: true });
+                    } else if (this.isPlaying && !this.isContinuous) {
+                        // Keep currentHighlight but stop playback
+                        this.isPlaying = false;
+                        if (this.callbacks?.onStatusChange) {
+                            this.callbacks.onStatusChange({ isPlaying: false, index });
+                        }
+                    }
+                },
+                (e) => { // onError
+                    if (e.error !== 'interrupted' && e.error !== 'canceled') {
+                        console.error("ReaderAudio: Playback Error:", e);
+                    }
+                }
+            );
+        }, 50);
+    }
+
+    speak(text, onEnd, onError) {
         if (!text) return;
 
         this.isPlaying = true;
@@ -62,24 +141,16 @@ export class ReaderAudio {
         utt.rate = this.rate;
         if (this.voice) utt.voice = this.voice;
 
-        utt.onstart = () => {
-            if (onStart) onStart();
-        };
-
         utt.onend = () => {
-            // this.isPlaying = false; // logic handled by caller usually for sequences
             if (onEnd) onEnd();
         };
 
         utt.onerror = (e) => {
-            // Suppress expected errors
             if (e.error === 'interrupted' || e.error === 'canceled') {
                 this.isPlaying = false;
-                if (onError) onError(e); // Pass it up, but don't log error here
+                if (onError) onError(e);
                 return;
             }
-
-            console.error("TTS Error:", e.error, e);
             this.isPlaying = false;
             if (onError) onError(e);
         };

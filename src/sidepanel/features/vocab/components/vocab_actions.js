@@ -6,7 +6,7 @@ import { notificationService } from '../../../../utils/notification_service.js';
 import { HandwritingSheet } from '../handwriting_sheet.js';
 import { VocabReview } from '../vocab_review.js';
 import navStyles from '../../builder/styles/dashboard_nav.module.css';
-import itemStyles from '../../builder/styles/dashboard_items.module.css';
+import itemStyles from '../styles/vocab_dashboard_shared.module.css';
 
 export class VocabActions {
     constructor(parent) {

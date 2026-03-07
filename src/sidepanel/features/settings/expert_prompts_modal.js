@@ -2,7 +2,9 @@ import { PERSONAS } from '../../../background/llm/persona.js';
 import { SENTENCE_SCHEMA } from '../../../utils/schema_constants.js';
 import { StorageHelper, StorageKeys } from '../../../utils/storage.js';
 import { notificationService } from '../../../utils/notification_service.js';
-import styles from './settings.module.css';
+import sharedStyles from './settings_shared.module.css';
+import expertStyles from './settings_expert.module.css';
+const styles = { ...sharedStyles, ...expertStyles };
 
 const DEFAULT_PROMPTS = {
     // Analysis Modes

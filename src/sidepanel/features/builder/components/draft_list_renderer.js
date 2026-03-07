@@ -1,5 +1,6 @@
 import navStyles from '../styles/dashboard_nav.module.css';
-import itemStyles from '../styles/dashboard_items.module.css';
+import layoutStyles from '../styles/dashboard_layout.module.css';
+import itemStyles from '../styles/draft_item.module.css'; // For the list items themselves if needed, but renderer uses them via DraftItem class
 import { DraftItem } from './draft_item.js';
 import { t } from '../../../../locales/index.js';
 
@@ -37,19 +38,22 @@ export class DraftListRenderer {
             this.container.appendChild(this.filterContainer);
 
             this.listContainer = document.createElement('div');
-            this.listContainer.className = itemStyles['draft-list'];
+            this.listContainer.className = layoutStyles['draft-list'];
             this.container.appendChild(this.listContainer);
         }
 
-        // 2. Efficient List Update
-        this.listContainer.innerHTML = '';
+        // 2. Efficient List Update (Minimize layout shifts)
         if (drafts.length === 0) {
-            this.listContainer.innerHTML = `<div class="${itemStyles['empty-state']}"><h3>${t('dashboard.empty')}</h3></div>`;
+            this.listContainer.innerHTML = `<div class="${layoutStyles['empty-state']}"><h3>${t('dashboard.empty')}</h3></div>`;
         } else {
+            // Check if we need to rebuild (simple strategy: always rebuild but use a fragment to reduce flickering)
+            const fragment = document.createDocumentFragment();
             drafts.forEach(draft => {
                 const item = DraftItem.create(draft, handlers);
-                this.listContainer.appendChild(item);
+                fragment.appendChild(item);
             });
+            this.listContainer.innerHTML = '';
+            this.listContainer.appendChild(fragment);
         }
     }
 

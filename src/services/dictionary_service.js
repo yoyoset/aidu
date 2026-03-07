@@ -90,21 +90,26 @@ Output: {"m":"蜗牛","p":"sneɪl","l":"A2","collocations":["garden snail"]}`;
      */
     async generateExample(word) {
         return withRetry(async () => {
+            const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
+            const profile = settings.profiles?.[settings.activeProfileId] || {};
             const expertPrompts = await StorageHelper.get(StorageKeys.EXPERT_PROMPTS) || {};
-            const systemPrompt = expertPrompts.example_gen || `You are a helpful language tutor for a young student. 
-        Generate ONE English sentence using the word "${word}".
-                Constraints:
-            1. Structure: Interesting and varied(not just Subject - Verb - Object).
-        2. Vocabulary: Simple and easy to understand(CEFR A2 level).
-        3. Content: Engaging for a child or young learner.
-        4. Output: ONLY the sentence.No quotes.`;
 
-            // Add random seed to user prompt to ensure variety
-            const userPrompt = `Word: "${word}"(Random Seed: ${Date.now()})`;
+            const personaStyle = profile.teachingStyle || 'casual';
+            // Simple mapping for difficulty
+            const difficulty = personaStyle === 'primary_school' ? 'A2' : (personaStyle === 'academic' ? 'C1' : 'B1');
+
+            const systemPrompt = expertPrompts.example_gen || `Role: Supportive Language Tutor (${personaStyle})
+Generate ONE English sentence using "${word}" for a student at ${difficulty} level.
+    Constraints:
+    1. Tone: Match the style of a "${personaStyle}" persona.
+    2. Vocabulary: Strictly ${difficulty} level.
+    3. Output: ONLY the sentence. No quotes, no explanation.`;
+
+            const userPrompt = `Word: "${word}" (Style: ${personaStyle}, Level: ${difficulty}, Seed: ${Date.now()})`;
 
             const sentence = await this.apiClient.streamCompletion(userPrompt, systemPrompt, {
                 responseFormat: 'text',
-                temperature: 0.9 // High creativity
+                temperature: 0.9
             });
             return sentence.trim();
         }, { maxRetries: 2 });
@@ -118,10 +123,18 @@ Output: {"m":"蜗牛","p":"sneɪl","l":"A2","collocations":["garden snail"]}`;
      */
     async fetchTier2(word, context = '') {
         return withRetry(async () => {
+            const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
+            const profile = settings.profiles?.[settings.activeProfileId] || {};
             const expertPrompts = await StorageHelper.get(StorageKeys.EXPERT_PROMPTS) || {};
-            const systemPrompt = expertPrompts.deep_analysis || `Role: Linguistics Expert | Output: JSON ONLY
+
+            const personaStyle = profile.teachingStyle || 'casual';
+
+            const systemPrompt = expertPrompts.deep_analysis || `Role: Linguistics Expert (${personaStyle}) | Output: JSON ONLY
 Schema: {"etymology":"","wordFamily":[],"synonyms":[{"word":"","diff":""}],"antonyms":["string"],"register":"","commonMistakes":[{"wrong":"","correct":"","note":""}],"culturalNotes":""}
-Constraints: All explanations in Simplified Chinese. Concise & Practical.`;
+Constraints: 
+1. Language: Simplified Chinese.
+2. Style: Match the "${personaStyle}" teaching persona.
+3. Content: Concise & Practical.`;
 
             const userPrompt = `Word: "${word}"\nContext: "${context}"\n\n{"etymology":"`;
 

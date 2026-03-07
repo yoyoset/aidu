@@ -5,6 +5,7 @@
  */
 import { getPersonaPrompt } from './persona.js';
 import { getSystemPrompt } from './prompt_templates.js';
+import { StorageHelper, StorageKeys } from '../../utils/storage.js';
 
 export class SmartRouter {
     constructor() {
@@ -31,11 +32,18 @@ export class SmartRouter {
     async route(draft) {
         const strategyId = draft.analysisMode || 2;
 
-        // Removed Expert Overrides (SRP / Complexity Reduction)
-        // System now strictly follows internal templates.
+        // Fetch latest settings for every request to ensure Persona/Expert sync
+        const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
+        const profile = settings.profiles?.[settings.activeProfileId] || {};
+        const expertPrompts = await StorageHelper.get(StorageKeys.EXPERT_PROMPTS) || {};
 
-        const personaPrompt = getPersonaPrompt(this.teachingStyle);
-        const sysPrompt = getSystemPrompt(strategyId, personaPrompt);
+        const personaStyle = profile.teachingStyle || this.teachingStyle;
+        const personaPrompt = getPersonaPrompt(personaStyle);
+
+        // Expert override for this specific mode
+        const expertOverride = expertPrompts[`analysis_mode_${strategyId}`];
+
+        const sysPrompt = getSystemPrompt(strategyId, personaPrompt, expertOverride);
         const userPrompt = this.getUserPrompt(draft.rawText);
 
         return { system: sysPrompt, user: userPrompt };

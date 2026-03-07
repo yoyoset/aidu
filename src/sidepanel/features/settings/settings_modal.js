@@ -3,7 +3,9 @@ import { StorageHelper, StorageKeys } from '../../../utils/storage.js';
 import { profileManager } from '../../../core/profile_manager.js';
 import { t, getCurrentLocale, setLocale } from '../../../locales/index.js';
 import { notificationService } from '../../../utils/notification_service.js';
-import styles from './settings.module.css';
+import sharedStyles from './settings_shared.module.css';
+import componentStyles from './settings_components.module.css';
+const styles = { ...sharedStyles, ...componentStyles };
 
 // Sections
 import { ProfileSection } from './sections/profile_section.js';

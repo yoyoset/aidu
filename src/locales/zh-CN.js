@@ -33,9 +33,9 @@ export default {
     'settings.apiKey': 'API 密钥',
     'settings.apiKey.placeholder': 'sk-...',
 
-    'settings.analysis': '分析策略',
-    'settings.realtime': '实时分析（选词）',
-    'settings.builder': '文章分析',
+    'settings.analysis': '分析模式配置',
+    'settings.realtime': '简单分析模式',
+    'settings.builder': '深度分析模式',
     'settings.mode.translation': '仅翻译',
     'settings.mode.translation.sub': '无解析',
     'settings.mode.standard': '简单分析',

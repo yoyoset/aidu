@@ -1,5 +1,5 @@
 import { t } from '../../../../locales/index.js';
-import styles from '../settings.module.css';
+import styles from '../settings_shared.module.css';
 import { SyncService } from '../../../../services/sync_service.js';
 
 export class SyncSection {

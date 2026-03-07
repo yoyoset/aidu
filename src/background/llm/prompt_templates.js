@@ -69,22 +69,25 @@ Rules:
 - NO grammatical analysis or segments needed.
 - SPEED IS PRIORITY.`;
 
-export function getSystemPrompt(mode, personaPrompt) {
+export function getSystemPrompt(mode, personaPrompt, expertOverride = null) {
     if (mode === 1) return TRANSLATION_PROMPT;
 
     const config = MODE_CONFIGS[mode] || DEFAULT_CONFIG;
 
+    // Role B (Teaching Descriptor)
+    // Preference: Expert Override > Persona Style > Default Mode Detail
+    const pedagogicalInstruction = expertOverride || personaPrompt || config.detail;
+
     return `${BASE_PROTOCOL}
 
 ## 职责边界
-- 在撰写 \`${EX}\` 字段时，必须严格遵守下方的“风格偏好”约束。
-- 角色 A 的技术性不应干扰角色 B 的解说风格。
+- 在撰写 \`${EX}\` 字段时，你必须严格遵守下方的“教学指令”。
+- 角色 A 的技术性分词与索引逻辑不应受到角色 B 讲解风格的影响。
 
-${config.detail}
+## 教学指令 (由角色 B 执行)
+${pedagogicalInstruction}
+
 Output Schema: ${config.schema}
 ${SEGMENTATION_RULES}
-${EXAMPLES}
-
-## 风格偏好 (由角色 B 执行)
-${personaPrompt}`;
+${EXAMPLES}`;
 }

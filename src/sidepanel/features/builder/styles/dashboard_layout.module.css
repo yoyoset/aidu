@@ -3,7 +3,7 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background-color: var(--md-sys-color-surface);
+    background-color: var(--paper);
     overflow-y: scroll;
 }
 
@@ -20,8 +20,8 @@
 }
 
 .dashboard-header {
-    background: var(--md-sys-color-surface);
-    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
     height: 64px;
     flex-shrink: 0;
     width: 100%;
@@ -56,8 +56,8 @@
     justify-content: center;
     padding: 60px 20px;
     text-align: center;
-    background: var(--md-sys-color-surface);
-    border-radius: var(--md-sys-radius-md);
-    border: 2px dashed var(--md-sys-color-outline-variant);
-    color: var(--md-sys-color-on-surface-variant);
+    background: var(--paper);
+    border-radius: var(--r-md);
+    border: 2px dashed var(--line-strong);
+    color: var(--ink-2);
 }

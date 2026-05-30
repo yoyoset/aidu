@@ -1,71 +1,187 @@
 @layer base, tokens, components, utilities;
 
 @layer tokens {
+  /* ============================================================
+     AIDU "Quiet Study" Design System
+     Warm, paper-like, reading-first. Light + dark, swappable accent.
+     ============================================================ */
+
   :root {
-    /* --- Joyful Intelligence Palette (v5.0) --- */
-    --md-sys-color-primary: #34D399;
-    /* Minty Green */
+    /* --- Type --- */
+    --font-ui: "Hanken Grotesk", system-ui, sans-serif;
+    --font-read: "Literata", Georgia, serif;
+    --font-display: "Bricolage Grotesque", "Hanken Grotesk", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+    /* --- Radii (Editorial, not candy) --- */
+    --r-xs: 6px;
+    --r-sm: 9px;
+    --r-md: 13px;
+    --r-lg: 18px;
+    --r-xl: 24px;
+    --r-pill: 999px;
+
+    /* --- Density (default comfortable) --- */
+    --pad-screen: 18px;
+    --pad-card: 16px;
+    --gap-list: 12px;
+    --row-h: 46px;
+
+    /* --- Motion --- */
+    --ease: cubic-bezier(.32, .72, 0, 1);
+    --ease-spring: cubic-bezier(.34, 1.4, .5, 1);
+
+    /* --- Accent (default: clay) --- */
+    --primary: #BF5E38;
+    --primary-soft: #F2E0D3;
+    --primary-ink: #7C3618;
+  }
+
+  [data-density="compact"] {
+    --pad-screen: 14px;
+    --pad-card: 12px;
+    --gap-list: 8px;
+    --row-h: 40px;
+  }
+
+  /* --- Light Theme --- */
+  [data-theme="light"] {
+    --paper: #F4EFE6;
+    --surface: #FDFBF6;
+    --surface-2: #EFE8DB;
+    --surface-3: #E7DECF;
+    --ink: #211E18;
+    --ink-2: #5B554A;
+    --ink-3: #948B79;
+    --line: #E4DBCC;
+    --line-strong: #D4C9B6;
+    --shadow-rgb: 40, 33, 24;
+
+    --green: #5C8A69;
+    --red: #C0553E;
+    --blue: #3E5B74;
+    --blue-soft: #E3EAF1;
+    --blue-ink: #243A4C;
+    --amber: #D69A33;
+    --amber-wash: rgba(214, 154, 51, .22);
+
+    color-scheme: light;
+  }
+
+  /* --- Dark Theme --- */
+  [data-theme="dark"] {
+    --paper: #16130F;
+    --surface: #201C17;
+    --surface-2: #2A251E;
+    --surface-3: #332D24;
+    --ink: #ECE5D8;
+    --ink-2: #ADA493;
+    --ink-3: #7C7363;
+    --line: #312B22;
+    --line-strong: #443C30;
+    --shadow-rgb: 0, 0, 0;
+
+    --green: #7DAE89;
+    --red: #DA7A63;
+    --blue: #93B5CF;
+    --blue-soft: #20303C;
+    --blue-ink: #C5DAE9;
+    --amber: #E0B65E;
+    --amber-wash: rgba(224, 182, 94, .16);
+
+    color-scheme: dark;
+  }
+
+  /* --- Accent Variants (clay/teal/indigo/plum) --- */
+  [data-accent="clay"] {
+    --primary: #BF5E38;
+    --primary-soft: #F2E0D3;
+    --primary-ink: #7C3618;
+  }
+  [data-theme="dark"][data-accent="clay"] {
+    --primary: #DB8158;
+    --primary-soft: #3A2317;
+    --primary-ink: #F1C2A4;
+  }
+
+  [data-accent="teal"] {
+    --primary: #2F7D72;
+    --primary-soft: #D9ECE7;
+    --primary-ink: #11463F;
+  }
+  [data-theme="dark"][data-accent="teal"] {
+    --primary: #5BB5A6;
+    --primary-soft: #16322D;
+    --primary-ink: #AEE4DA;
+  }
+
+  [data-accent="indigo"] {
+    --primary: #4E5BB8;
+    --primary-soft: #E2E4F5;
+    --primary-ink: #292F73;
+  }
+  [data-theme="dark"][data-accent="indigo"] {
+    --primary: #8C95E0;
+    --primary-soft: #20243F;
+    --primary-ink: #C6CBF2;
+  }
+
+  [data-accent="plum"] {
+    --primary: #9B466F;
+    --primary-soft: #EDD8E6;
+    --primary-ink: #5B2D49;
+  }
+  [data-theme="dark"][data-accent="plum"] {
+    --primary: #D8A5C4;
+    --primary-soft: #3E1E35;
+    --primary-ink: #F2C8DF;
+  }
+
+  /* --- Shadow System --- */
+  :root {
+    --sh-1: 0px 1px 3px rgba(var(--shadow-rgb), .12);
+    --sh-2: 0px 4px 8px rgba(var(--shadow-rgb), .15);
+    --sh-3: 0px 12px 16px rgba(var(--shadow-rgb), .18);
+  }
+
+  /* --- Material Design Compatibility Layer (mapped to Quiet Study) --- */
+  :root {
+    --md-sys-color-surface: var(--surface);
+    --md-sys-color-on-surface: var(--ink);
+    --md-sys-color-primary: var(--primary);
     --md-sys-color-on-primary: #ffffff;
-    --md-sys-color-primary-container: #D1FAE5;
-    /* Soft Mint */
-    --md-sys-color-on-primary-container: #064E3B;
+    --md-sys-color-surface-variant: var(--surface-2);
+    --md-sys-color-on-surface-variant: var(--ink-2);
+    --md-sys-color-outline: var(--line);
+    --md-sys-color-outline-variant: var(--line);
+    --md-sys-color-error: var(--red);
+    --md-sys-color-scrim: var(--ink);
 
-    --md-sys-color-secondary: #60A5FA;
-    /* Skyly Blue */
-    --md-sys-color-on-secondary: #ffffff;
-    --md-sys-color-secondary-container: #DBEAFE;
-    --md-sys-color-on-secondary-container: #1E3A8A;
+    --md-sys-elevation-1: var(--sh-1);
+    --md-sys-elevation-2: var(--sh-2);
+    --md-sys-elevation-3: var(--sh-3);
 
-    --md-sys-color-accent: #FBBF24;
-    /* Sunlight Amber */
+    --md-sys-radius-xs: var(--r-xs);
+    --md-sys-radius-sm: var(--r-sm);
+    --md-sys-radius-md: var(--r-md);
+    --md-sys-radius-lg: var(--r-lg);
+    --md-sys-radius-xl: var(--r-xl);
+    --md-sys-radius-pill: var(--r-pill);
 
-    --md-sys-color-surface: #FFFDF9;
-    /* Warm Cream */
-    --md-sys-color-on-surface: #3E2723;
-    /* Cocoa Brown */
-    --md-sys-color-surface-variant: #F5F1EA;
-    --md-sys-color-on-surface-variant: #6D4C41;
+    --md-sys-font-sans: var(--font-ui);
+    --md-sys-font-serif: var(--font-read);
 
-    --md-sys-color-outline: #BCB0A1;
-    --md-sys-color-outline-variant: #E8E0D5;
-    --md-sys-color-error: #EF4444;
-    --md-sys-color-scrim: #3E2723;
-    --md-sys-color-surface-container-low: #FFF9F2;
-    --md-sys-color-surface-container-high: #F3EFE7;
-    --md-sys-color-primary-fixed-dim: #A7F3D0;
-
-    /* --- Elevation System (Soft Glows) --- */
-    --md-sys-elevation-0: none;
-    --md-sys-elevation-1: 0px 4px 12px rgba(62, 39, 35, 0.05);
-    --md-sys-elevation-2: 0px 8px 24px rgba(62, 39, 35, 0.08);
-    --md-sys-elevation-3: 0px 12px 32px rgba(62, 39, 35, 0.12);
-
-    /* --- State Layers --- */
-    --md-sys-state-hover: rgba(52, 211, 153, 0.08);
-    --md-sys-state-focus: rgba(52, 211, 153, 0.12);
-    --md-sys-state-pressed: rgba(52, 211, 153, 0.16);
-
-    /* --- Layout & Shape (Ultra Rounded) --- */
-    --md-sys-radius-xs: 6px;
-    --md-sys-radius-sm: 12px;
-    --md-sys-radius-md: 20px;
-    --md-sys-radius-lg: 24px;
-    --md-sys-radius-xl: 32px;
-    --md-sys-radius-pill: 9999px;
-
-    /* --- Typography --- */
-    --md-sys-font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
-    --md-sys-font-serif: 'Source Serif 4', Georgia, serif;
-
-    /* --- Legacy Compatibility --- */
-    --color-brand-primary: var(--md-sys-color-primary);
-    --color-bg-body: var(--md-sys-color-surface);
-    --color-text-main: var(--md-sys-color-on-surface);
-    --radius-md: var(--md-sys-radius-md);
+    --color-brand-primary: var(--primary);
+    --color-bg-body: var(--surface);
+    --color-text-main: var(--ink);
+    --radius-md: var(--r-md);
   }
 }
 
 @layer base {
+  /* --- Font Imports (Google Fonts fallback) --- */
+  @import url('https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,600;0,700;1,400&family=Hanken+Grotesk:wght@400;500;600;700&family=Bricolage+Grotesque:wght@700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
   * {
     box-sizing: border-box;
     margin: 0;
@@ -74,9 +190,9 @@
   }
 
   body {
-    font-family: var(--md-sys-font-sans);
-    background-color: var(--md-sys-color-surface);
-    color: var(--md-sys-color-on-surface);
+    font-family: var(--font-ui);
+    background-color: var(--paper);
+    color: var(--ink);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
@@ -97,9 +213,9 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--md-sys-color-outline);
+    background: var(--line);
     border-radius: 10px;
-    opacity: 0.5;
+    opacity: 0.6;
   }
 }
 

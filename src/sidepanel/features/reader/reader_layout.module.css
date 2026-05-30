@@ -1,115 +1,237 @@
-/* Reader Container */
+/* AIDU Reader — Quiet Study Design System */
+
+/* ===== Container & Header ===== */
 .readerContainer {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    background-color: var(--user-color-page-bg, var(--md-sys-color-surface));
-    font-family: var(--user-font-family, 'Inter', sans-serif);
+    background: var(--paper);
+    font-family: var(--font-ui);
 }
 
 .readerHeader {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    background: var(--md-sys-color-surface);
+    gap: 6px;
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     position: sticky;
     top: 0;
     z-index: 100;
-    backdrop-filter: blur(12px);
-    /* Modern depth */
 }
 
 .readerTitle {
-    font-size: 1.1em;
+    flex: 1;
+    min-width: 0;
     font-weight: 600;
-    margin-left: 10px;
-    margin-right: auto;
+    font-size: 0.92rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--ink);
+}
+
+.timerCapsule {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.76rem;
+    padding: 5px 10px;
+    border-radius: var(--r-pill);
+    background: var(--surface-2);
+    color: var(--ink-2);
+    border: 1px solid var(--line);
+}
+
+.timerCapsule i {
+    font-size: 0.85rem;
+    color: var(--primary);
 }
 
 .headerControls {
     display: flex;
-    gap: 8px;
+    gap: 6px;
 }
 
 .iconBtn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-sm);
     background: transparent;
     border: none;
     cursor: pointer;
-    font-size: 1.25rem;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-    line-height: 1;
+    font-size: 1.1rem;
+    color: var(--ink-2);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--md-sys-color-on-surface-variant);
-    position: relative;
-    overflow: hidden;
+    transition: all 0.2s var(--ease);
 }
 
 .iconBtn:hover {
-    background: var(--md-sys-state-hover);
-    color: var(--md-sys-color-primary);
+    color: var(--primary);
+    background: var(--primary-soft);
 }
 
 .iconBtn:active {
-    background: var(--md-sys-state-pressed);
-    transform: scale(0.92);
+    transform: scale(0.9);
+}
+
+/* ===== Progress & Content ===== */
+.readerProgress {
+    height: 3px;
+    background: var(--surface-2);
+    position: relative;
+    z-index: 19;
+}
+
+.readerProgress > div {
+    height: 100%;
+    background: var(--primary);
+    transition: width 0.3s var(--ease);
 }
 
 .readerContent {
+    flex: 1;
     overflow-y: auto;
-    padding: 24px 16px 300px;
+    padding: 22px 18px 160px;
     scroll-behavior: smooth;
-    transition: font-size 0.2s ease-in-out;
-    font-size: var(--user-font-size, 100%) !important;
 }
 
-/* Atomic Block (Soften) */
+.readerByline {
+    margin-bottom: 22px;
+}
+
+.readerByline h1 {
+    font-family: var(--font-read);
+    font-weight: 700;
+    font-size: 1.5rem;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    margin-bottom: 10px;
+    color: var(--ink);
+}
+
+.readerByline .meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.76rem;
+    color: var(--ink-3);
+    flex-wrap: wrap;
+}
+
+.readerByline .meta > span {
+    white-space: nowrap;
+}
+
+/* ===== Atomic Block (Sentence) ===== */
 .atomicBlock {
-    margin-bottom: 8px;
-    padding: 8px 16px;
-    border-radius: var(--md-sys-radius-lg);
-    transition: all 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
-    border: 1px solid transparent;
     position: relative;
+    padding: 10px 12px 10px 38px;
+    margin: 0 -10px 7px;
+    border-radius: var(--r-md);
+    border-left: 2.5px solid transparent;
+    transition: background 0.35s var(--ease), border-color 0.35s var(--ease);
+}
+
+.atomicBlock:hover {
+    background: color-mix(in srgb, var(--surface) 55%, transparent);
 }
 
 .atomicBlock.active {
-    background-color: var(--md-sys-color-surface-container-low);
-    border-color: var(--md-sys-color-outline-variant);
-    box-shadow: var(--md-sys-elevation-1);
-    transform: scale(1.01);
+    background: var(--surface);
+    border-left-color: var(--primary);
+    box-shadow: var(--sh-1);
 }
 
-/* Text Rows */
-.originalRow {
-    font-family: var(--user-font-family, var(--md-sys-font-serif));
-    font-weight: var(--user-font-weight, 400);
-    font-size: 1.1em;
-    line-height: var(--user-line-height, 2.0);
-    color: var(--md-sys-color-on-surface);
-    margin-bottom: 2px;
+.ablock-tools {
+    position: absolute;
+    left: 7px;
+    top: 9px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: all 0.25s var(--ease);
 }
 
-.translationRow {
-    font-size: 1.1em;
-    line-height: var(--user-line-height, 2.0);
-    color: var(--md-sys-color-on-surface-variant);
+.atomicBlock:hover .ablock-tools,
+.atomicBlock.active .ablock-tools {
+    opacity: 1;
+    transform: none;
+}
+
+.atool {
+    width: 26px;
+    height: 26px;
+    border-radius: var(--r-sm);
+    display: grid;
+    place-items: center;
+    color: var(--ink-3);
+    font-size: 0.95rem;
+    background: var(--surface-2);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s var(--ease);
+}
+
+.atool:hover {
+    color: var(--primary);
+    background: var(--primary-soft);
+}
+
+.atool.on {
+    color: var(--primary);
+}
+
+/* ===== Text Content ===== */
+.originalRow,
+.sentence {
+    font-family: var(--font-read);
+    font-size: 1.12rem;
+    line-height: 1.95;
+    color: var(--ink);
+    font-weight: 450;
     margin-bottom: 0;
-    transition: all 0.3s ease;
 }
 
-.explanationRow {
-    font-size: 1.1em;
-    line-height: var(--user-line-height, 2.0);
-    color: var(--md-sys-color-on-surface-variant);
-    margin-bottom: 0px;
-    transition: all 0.3s ease;
+.translationRow,
+.translation {
+    font-size: 0.96rem;
+    line-height: 1.7;
+    color: var(--blue);
+    margin-top: 7px;
+    margin-bottom: 0;
+}
+
+.explanationRow,
+.explanation {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: var(--ink-2);
+    margin-top: 8px;
+    padding: 9px 12px;
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    border-left: 2px solid var(--line-strong);
+}
+
+.explanation .tag {
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 0.78rem;
+    margin-right: 6px;
+}
+
+.collapsed {
+    display: none;
 }
 
 .obscured {
@@ -124,191 +246,110 @@
     filter: blur(4px);
 }
 
-/* Control Buttons */
-.controlRow {
-    display: flex;
-    align-items: baseline;
-    gap: 0;
-    position: relative;
-}
-
-.controlBtn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2em;
-    line-height: 1;
-    padding: 0;
-    margin-right: 12px;
-    opacity: 0.6;
-    transition: all 0.2s;
-    flex-shrink: 0;
-    width: 1.5em;
-    height: 1.5em;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    color: var(--md-sys-color-on-surface-variant);
-    position: relative;
-    top: 2px;
-}
-
-.controlBtn:hover {
-    opacity: 1;
-    background-color: var(--md-sys-color-primary-container);
-    color: var(--md-sys-color-primary);
-    transform: scale(1.15) rotate(5deg);
-}
-
-.playBtn:hover {
-    color: var(--md-sys-color-primary);
-}
-
-.transBtn:hover {
-    color: var(--md-sys-color-secondary);
-}
-
-/* Bubbles (Softened) */
-.bubble {
+/* ===== Word Bubbles ===== */
+.bubble,
+.w {
     display: inline;
-    padding: 1.5px 0;
-    margin: 0;
     border-radius: 4px;
-    cursor: default;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-sizing: border-box;
-    white-space: pre-wrap;
+    transition: background 0.15s var(--ease), color 0.15s var(--ease);
+    cursor: text;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
 }
 
-.interactive {
+.interactive,
+.w.int {
     cursor: pointer;
-    transition: all 0.15s ease;
 }
 
-.interactive:hover {
-    background-color: var(--user-color-hover-bg, var(--md-sys-color-secondary-container));
-    color: var(--user-color-hover-text, var(--md-sys-color-on-secondary-container));
-    transform: translateY(-1px);
+.interactive:hover,
+.w.int:hover {
+    background: var(--blue-soft);
+    color: var(--blue-ink);
 }
 
+.savedBubble,
+.w.saved {
+    background: var(--amber-wash);
+    box-shadow: inset 0 -2px 0 var(--amber);
+    border-radius: 3px;
+    padding: 0 1px;
+}
+
+.w.saved:hover {
+    background: color-mix(in srgb, var(--amber) 32%, transparent);
+}
+
+.w.phrasal {
+    box-shadow: inset 0 -2px 0 0 var(--primary);
+    border-radius: 0;
+}
+
+.w.phrasal.link-hi {
+    background: var(--primary-soft);
+    color: var(--primary-ink);
+}
+
+.phrasalMember,
+.phrasalSpace {
+    box-shadow: inset 0 -2px 0 0 var(--primary);
+    border-radius: 0;
+}
+
+.linkedHover {
+    background: var(--primary-soft) !important;
+    color: var(--primary-ink) !important;
+}
+
+.w.deep,
+.deepReady {
+    box-shadow: inset 0 -2px 0 0 color-mix(in srgb, var(--primary) 60%, transparent);
+}
+
+.deepReady {
+    cursor: pointer;
+}
+
+.deepReady:hover {
+    background: color-mix(in srgb, var(--primary) 8%, transparent) !important;
+}
+
+.w.active,
 .active {
-    background-color: var(--md-sys-color-primary-container);
-    color: var(--md-sys-color-on-primary-container);
-    box-shadow: 0 0 0 2px var(--md-sys-color-primary);
+    background: var(--primary-soft);
+    color: var(--primary-ink);
+    box-shadow: inset 0 0 0 1.5px var(--primary);
+    padding: 0 2px;
 }
 
 .active:hover {
-    background-color: var(--md-sys-color-primary-container);
+    background: var(--primary-soft);
     filter: brightness(0.95);
 }
 
 .stop {
-    color: #555;
+    color: var(--ink-3);
 }
 
-/* Phrasal Verb (DPV) Linking Styles */
-.phrasalMember {
-    border-bottom: 2px dashed var(--md-sys-color-primary);
-}
-
-/* Space segments between PV members */
-.phrasalSpace {
-    display: inline;
-    border-bottom: 2px dashed var(--md-sys-color-primary);
-    margin: 0;
-    padding: 0;
-}
-
-.linkedHover {
-    background-color: var(--user-color-hover-bg, #dcfce7) !important;
-    color: var(--user-color-hover-text, #14532d) !important;
-    transform: translateY(-1px);
-}
-
-.linkedHighlight {
-    background-color: var(--user-color-highlight-bg, #fff9c4) !important;
-    color: var(--user-color-highlight-text, inherit) !important;
-    box-shadow: 0 0 0 2px var(--md-sys-color-primary);
-}
-
-/* Timer Capsule (Modern & Soft) */
-.timerCapsule {
-    background: var(--md-sys-color-surface-container-high);
-    color: var(--md-sys-color-on-surface);
-    font-size: 0.85rem;
-    padding: 6px 14px;
-    border-radius: var(--md-sys-radius-pill);
-    font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
-    font-weight: 700;
-    margin-left: 12px;
-    border: 1px solid var(--md-sys-color-outline-variant);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.3s ease;
-}
-
-.timerCapsule:hover {
-    background: var(--md-sys-color-primary-container);
-    border-color: var(--md-sys-color-primary);
-}
-
-/* Saved Bubble (Soft Badge) */
-.savedBubble {
-    background-color: var(--md-sys-color-primary-container);
-    border-bottom: 2px solid var(--md-sys-color-primary);
-    border-radius: var(--md-sys-radius-xs);
-    opacity: 0.9;
-}
-
-.savedBubble:hover {
-    background-color: var(--md-sys-color-primary);
-    color: var(--md-sys-color-on-primary);
-    opacity: 1;
-}
-
-.savedBubble:hover {
-    background-color: var(--user-color-hover-bg, var(--md-sys-state-hover));
-    color: var(--user-color-hover-text, inherit);
-}
-
-.deep {
-    border-bottom: 2px dotted var(--md-sys-color-primary) !important;
-}
-
-.deepReady {
-    background-color: transparent !important;
-    border-bottom: 2px dotted var(--md-sys-color-primary) !important;
-    cursor: pointer;
-    transition: background-color 200ms ease;
-}
-
-.deepReady:hover {
-    background-color: var(--user-color-hover-bg, rgba(124, 77, 255, 0.05)) !important;
-    color: var(--user-color-hover-text, inherit) !important;
-}
-
-.savedBubble.deepReady {
-    background-color: rgba(30, 107, 63, 0.08) !important;
-    border-bottom: 2.5px dotted #7c4dff !important;
-}
-
+/* ===== Bookmark ===== */
 .bookmarkActive {
-    border-bottom: 2px solid var(--md-sys-color-primary) !important;
-    background: linear-gradient(180deg, transparent 60%, var(--md-sys-color-primary-container) 100%) !important;
+    background: linear-gradient(180deg, transparent 60%, var(--primary-soft) 100%) !important;
+    border-bottom: 2px solid var(--primary) !important;
     border-radius: 4px !important;
 }
 
 .bookmarkBtn {
     opacity: 0.3;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ink-3);
+    transition: all 0.2s var(--ease);
 }
 
 .bookmarkBtn.active {
     opacity: 1;
-    color: var(--md-sys-color-primary);
+    color: var(--primary);
 }
 
 .atomicBlock:hover .bookmarkBtn {

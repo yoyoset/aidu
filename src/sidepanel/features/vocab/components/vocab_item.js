@@ -98,103 +98,10 @@ export class VocabItem {
         // Relookup (Dictionary)
         const relookupBtn = this._createActionBtn('ri-book-open-line', t('vocab.actions.relookup'), 'primary');
         relookupBtn.onclick = async () => {
-            // ... existing logic ...
             const icon = relookupBtn.querySelector('i');
             icon.className = 'ri-loader-2-line ri-spin';
             try {
-                const def = await dictionaryService.lookup(v.lemma || v.word, v.context || '', true);
-                if (def) {
-                    await vocabService.updateEntry(v.lemma || v.word, {
-                        meaning: def.m, phonetic: def.p, level: def.l, pos: def.pos || v.pos
-                    });
-                    const updatedV = { ...v, meaning: def.m, phonetic: def.p, level: def.l, pos: def.pos || v.pos };
-                    item.replaceWith(this.render(updatedV));
-                    notificationService.success(t('vocab.relookup.success'));
-                }
-            } finally {
-                icon.className = 'ri-book-open-line';
-            }
-        };
-        container.appendChild(relookupBtn);
-
-        // Regenerate (AI Magic)
-        const ctxBtn = this._createActionBtn('ri-magic-line', t('vocab.actions.regenerate'), 'primary');
-        ctxBtn.onclick = async () => {
-            // ... existing logic ...
-            const icon = ctxBtn.querySelector('i');
-            icon.className = 'ri-loader-2-line ri-spin';
-            try {
-                const newContext = await dictionaryService.generateExample(v.word);
-                await vocabService.updateEntry(v.lemma || v.word, { context: newContext });
-                const updatedV = { ...v, context: newContext };
-                item.replaceWith(this.render(updatedV));
-                notificationService.success(t('vocab.regenerate.success'));
-            } finally {
-                icon.className = 'ri-magic-line';
-            }
-        };
-        container.appendChild(ctxBtn);
-
-        // Deep Dive (Analysis)
-        const deepBtn = this._createActionBtn('ri-search-eye-line', t('vocab.actions.deepDive'), 'primary');
-        deepBtn.onclick = async () => {
-            // ... existing logic ...
-            let deepData = v.deepData;
-            if (!deepData) {
-                notificationService.info(t('vocab.deepDive.generating'));
-                deepData = await dictionaryService.fetchTier2(v.lemma || v.word, v.context);
-                await vocabService.updateEntry(v.lemma || v.word, { deepData });
-                v.deepData = deepData;
-            }
-            showDeepDiveModal(v, deepData);
-        };
-        container.appendChild(deepBtn);
-
-        // Master (Graduation)
-        const isMastered = v.stage === 'mastered';
-        if (!isMastered) {
-            const masterBtn = this._createActionBtn('ri-graduation-cap-line', t('vocab.actions.master'), 'primary');
-            masterBtn.onclick = async () => {
-                this.parent.saveScroll();
-                await vocabService.updateEntry(v.lemma || v.word, { stage: 'mastered', nextReview: null });
-                this.parent.render();
-                notificationService.success(t('vocab.master.success'));
-            };
-            container.appendChild(masterBtn);
-        } else {
-            // Optional: Show mastered status or undo? 
-            // For now, consistent with design, maybe just a checkmark or nothing if badge handles it.
-            // Design says "Vertical Action Column -> Horizontal Float Bar".
-            // Let's add a muted checkmark.
-            const masterBtn = this._createActionBtn('ri-check-double-line', t('vocab.actions.alreadyMastered'), 'primary');
-            masterBtn.style.color = 'var(--md-sys-color-primary)';
-            masterBtn.style.cursor = 'default';
-            container.appendChild(masterBtn);
-        }
-
-        // Delete
-        const delBtn = this._createActionBtn('ri-delete-bin-line', t('vocab.actions.delete'), 'delete');
-        delBtn.onclick = async () => {
-            // ... existing logic ...
-            const ok = await notificationService.confirm(t('common.confirmDelete', { name: v.word }));
-            if (ok) {
-                this.parent.saveScroll();
-                await vocabService.remove(v.lemma || v.word);
-                this.parent.render();
-            }
-        };
-        container.appendChild(delBtn);
-        return item;
-    }
-
-    _addButtons(v, container, item) {
-        // Relookup (Dictionary)
-        const relookupBtn = this._createActionBtn('ri-book-open-line', t('vocab.actions.relookup'), 'primary');
-        relookupBtn.onclick = async () => {
-            const icon = relookupBtn.querySelector('i');
-            icon.className = 'ri-loader-2-line ri-spin';
-            try {
-                const def = await dictionaryService.lookup(v.lemma || v.word, v.context || '', true);
+                const def = await dictionaryService.lookup(v.lemma || v.word, v.pos || '', v.context || '', true);
                 if (def) {
                     await vocabService.updateEntry(v.lemma || v.word, {
                         meaning: def.m, phonetic: def.p, level: def.l, pos: def.pos || v.pos

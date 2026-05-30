@@ -48,7 +48,8 @@ export class DraftListRenderer {
         } else {
             // Check if we need to rebuild (simple strategy: always rebuild but use a fragment to reduce flickering)
             const fragment = document.createDocumentFragment();
-            drafts.forEach(draft => {
+            const validDrafts = drafts.filter(d => d !== null && d !== undefined);
+            validDrafts.forEach(draft => {
                 const item = DraftItem.create(draft, handlers);
                 fragment.appendChild(item);
             });

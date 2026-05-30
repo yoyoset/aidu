@@ -87,3 +87,20 @@
 .resetMiniBtn:hover {
     color: #ef4444;
 }
+
+.btnGhost {
+    background: rgba(239, 68, 68, 0.05);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #dc2626;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btnGhost:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #991b1b;
+    transform: translateY(-0.5px);
+}

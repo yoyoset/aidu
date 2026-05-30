@@ -154,9 +154,9 @@ export class PreparationDashboard extends Component {
     async loadDrafts() {
         const stored = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS);
         if (stored && !Array.isArray(stored)) {
-            this.drafts = Object.values(stored).filter(d => d !== null);
+            this.drafts = Object.values(stored).filter(d => d && d.id);
         } else {
-            this.drafts = (stored || []).filter(d => d !== null);
+            this.drafts = (stored || []).filter(d => d && d.id);
         }
         this.render();
     }
@@ -252,7 +252,7 @@ export class PreparationDashboard extends Component {
         const now = Date.now();
 
         return this.drafts.filter(d => {
-            if (!d) return false;
+            if (!d || !d.status) return false; // Hardening: Ignore null or status-less items
             if (this.currentFilter === 'all') return true;
             if (this.currentFilter === 'draft') {
                 return d.status === 'draft' || d.status === 'processing';

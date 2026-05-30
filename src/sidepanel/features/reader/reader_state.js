@@ -101,8 +101,8 @@ export class ReaderState {
             this.readingTime++;
             if (this.onTick) this.onTick(this.readingTime);
 
-            // 每 10 秒自动保存一次，防止长时间阅读数据丢失
-            if (this.readingTime % 10 === 0) {
+            // Save every 60 seconds to minimize background noise while preserving progress
+            if (this.readingTime % 60 === 0) {
                 this.save();
             }
         }, 1000);

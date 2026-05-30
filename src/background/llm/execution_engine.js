@@ -5,6 +5,7 @@ import { DraftProcessor } from './draft_processor.js';
 import { draftStateManager } from '../managers/draft_state_manager.js';
 import { logger } from '../../utils/logger.js';
 import { StorageHelper, StorageKeys } from '../../utils/storage.js';
+import { ResponseValidator } from './utils/response_validator.js';
 
 export class ExecutionEngine {
     constructor() {
@@ -59,6 +60,8 @@ export class ExecutionEngine {
 
         console.log(`[ExecutionEngine] Starting execution pool (Limit: ${CONCURRENCY_LIMIT})`);
 
+        const strategyId = draft.analysisMode || 2;
+
         // 6. Execution Pool
         const executing = [];
         for (let i = 0; i < rawChunks.length; i++) {
@@ -69,7 +72,7 @@ export class ExecutionEngine {
                 const MAX_RETRIES = 2;
                 for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
                     try {
-                        const result = await this.processChunk(chunkText, systemPrompt, i, rawChunks.length);
+                        const result = await this.processChunk(chunkText, systemPrompt, i, rawChunks.length, strategyId);
 
                         // Incremental Aggregation
                         DraftProcessor.applyChunkResult(draft, i, result);
@@ -101,15 +104,26 @@ export class ExecutionEngine {
         await this.finalizeDraft(draft, draftId);
     }
 
-    async processChunk(chunkText, systemPrompt, index, total) {
+    async processChunk(chunkText, systemPrompt, index, total, mode) {
         console.log(`[ExecutionEngine] Processing chunk ${index + 1}/${total}`);
-        const responseJson = await this.apiClient.streamCompletion(chunkText, systemPrompt);
+        const responseJson = await this.apiClient.streamCompletion(chunkText, systemPrompt, { mode });
 
-        const parsed = JSON.parse(responseJson);
-        if (!parsed.sentences || parsed.sentences.length === 0) {
-            console.warn(`[ExecutionEngine] Chunk ${index + 1} returned zero sentences!`);
+        try {
+            const parsed = JSON.parse(responseJson);
+            
+            // 核心改进：引入数据对齐验证层
+            const validated = ResponseValidator.validate(parsed, mode);
+            
+            if (!validated.sentences || validated.sentences.length === 0) {
+                console.warn(`[ExecutionEngine] Chunk ${index + 1} returned zero valid sentences!`);
+            }
+            
+            return validated;
+        } catch (err) {
+            console.error(`[ExecutionEngine] Failed to parse/validate JSON for chunk ${index + 1}:`, err);
+            console.error(`[ExecutionEngine] Raw response:`, responseJson);
+            throw err;
         }
-        return parsed;
     }
 
     async finalizeDraft(draft, draftId) {

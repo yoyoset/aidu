@@ -48,7 +48,7 @@ export class ReaderDictionary {
 
         try {
             // Fetch Data (Fast Path)
-            const def = await dictionaryService.lookup(lemma, contextText);
+            const def = await dictionaryService.lookup(lemma, pos, contextText);
             this.currentDef = def; // Cache for Add button
 
             // Update if still open and matching

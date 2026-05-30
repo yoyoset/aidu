@@ -26,7 +26,7 @@ export class DashboardHandlers {
                 });
                 this.dashboard.drafts = this.dashboard.drafts.filter(d => d && d.id !== draft.id);
                 this.dashboard.render();
-                notificationService.toast(t('dashboard.delete.success') || '已删除');
+                notificationService.toast(t('dashboard.delete.success'));
             }
         });
     }
@@ -53,7 +53,7 @@ export class DashboardHandlers {
                 });
                 draft.status = 'error';
                 this.dashboard.render();
-                notificationService.info(t('dashboard.reset.success') || '已重置为错误状态，可重新分析');
+                notificationService.info(t('dashboard.reset.success'));
             }
         });
     }
@@ -92,7 +92,12 @@ export class DashboardHandlers {
             const response = await new Promise(resolve => {
                 chrome.runtime.sendMessage({
                     type: MessageTypes.CREATE_DRAFT,
-                    payload: { text: data.text, title: data.title }
+                    payload: { 
+                        text: data.text, 
+                        title: data.title,
+                        data: data.data,
+                        status: data.status 
+                    }
                 }, resolve);
             });
 
@@ -108,14 +113,15 @@ export class DashboardHandlers {
                 if (!exists) {
                     this.dashboard.drafts.unshift(draft);
                 }
-                notificationService.toast(t('creator.saveSuccess.toast') || '草案已保存');
+                notificationService.toast(t('creator.saveSuccess.toast'));
             } else {
                 throw new Error('Failed to create draft');
             }
         } else {
-            // Edit Existing Flow
-            const index = this.dashboard.drafts.findIndex(d => d.id === data.id);
+            // Check if it's an existing draft or a pre-assigned ID new draft
+            const index = this.dashboard.drafts.findIndex(d => d && d.id === data.id);
             if (index !== -1) {
+                // Edit Existing Flow
                 draft = { ...this.dashboard.drafts[index] }; // Clone
                 const contentChanged = draft.rawText !== data.text || draft.title !== data.title;
                 draft.title = data.title;
@@ -128,12 +134,30 @@ export class DashboardHandlers {
                     draft.progress = { current: 0, total: 0, percentage: 0 };
                 }
                 this.dashboard.drafts[index] = draft;
-                // Persist the change
                 await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.dashboard.drafts);
+            } else {
+                // Pre-assigned ID New Draft (e.g. Merge Flow)
+                console.log('DashboardHandlers: Creating new draft with pre-assigned ID');
+                draft = {
+                    ...data,
+                    id: data.id,
+                    status: data.status || 'draft',
+                    updatedAt: Date.now(),
+                    createdAt: data.createdAt || Date.now()
+                };
+                this.dashboard.drafts.unshift(draft);
+                await StorageHelper.set(StorageKeys.BUILDER_DRAFTS, this.dashboard.drafts);
+                notificationService.toast(t('creator.saveSuccess.toast'));
             }
         }
 
         if (draft && autoStart) {
+            // Optimization: If the draft is already ready (e.g. Manual AI Import), open reader immediately
+            if (draft.status === 'ready') {
+                this.handleAction(draft);
+                return;
+            }
+
             // Persist analysis mode change for new draft if it was set
             if (draft.analysisMode) {
                 const draftIdx = this.dashboard.drafts.findIndex(d => d.id === draft.id);
@@ -153,6 +177,10 @@ export class DashboardHandlers {
     }
 
     async handleAction(draft, mode = 'simple', analysisMode = null) {
+        if (!draft || !draft.status) {
+            console.error('DashboardHandlers: Attempted action on null/invalid draft');
+            return;
+        }
         if (mode === 'review') return;
         if (mode === 'reset') return;
 

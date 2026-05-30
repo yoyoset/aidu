@@ -1,5 +1,6 @@
 import { StorageHelper, StorageKeys } from '../../utils/storage.js';
 import { SENTENCE_SCHEMA } from '../../utils/schema_constants.js';
+import { ResponseValidator } from './utils/response_validator.js';
 
 const CURRENT_SCHEMA_VERSION = 1;
 
@@ -13,39 +14,8 @@ export class DraftProcessor {
      * 确保数据在进入存储前就已符合标准 Schema
      */
     static normalizeSentence(s) {
-        if (!s) return null;
-
-        // 1. Alias Handling: Map inconsistent field names to standardized keys
-        // Support all known variations: standard, expert, legacy, and common LLM alternatives
-        const text = s[SENTENCE_SCHEMA.original_text] || s.original || s.text || s.q || s.sentence || s.english || s.en || s.input || s.source || '';
-        const trans = s[SENTENCE_SCHEMA.translation] || s.simplified_chinese || s.chinese || s.t || s.zh || s.cn || s.translation_zh || s['中文'] || '';
-        const exp = s[SENTENCE_SCHEMA.explanation] || s.grammar_notes || s.notes || s.e || s.analysis || s.grammar || s.comment || s.note || '';
-
-        // 2. Normalize segments (Handle POS vs segments, Array vs Object)
-        let segments = s[SENTENCE_SCHEMA.segments] || s.pos;
-        if (segments && Array.isArray(segments) && segments.length > 0) {
-            if (typeof segments[0] === 'string') {
-                segments = segments.map(item => [item, 'UNKNOWN', item.toLowerCase()]);
-            } else if (!Array.isArray(segments[0]) && typeof segments[0] === 'object') {
-                segments = segments.map(item => [
-                    item.word || item.w || item.text || '',
-                    item.pos || item.p || item.tag || 'UNKNOWN',
-                    (item.lemma || item.l || item.word || item.text || '').toLowerCase()
-                ]);
-            }
-        } else if (!segments && text) {
-            // Heuristic fallback if segments are missing
-            segments = [[text, 'SENTENCE', text.toLowerCase()]];
-        }
-
-        return {
-            ...s,
-            [SENTENCE_SCHEMA.original_text]: text,
-            [SENTENCE_SCHEMA.translation]: trans,
-            [SENTENCE_SCHEMA.explanation]: exp,
-            [SENTENCE_SCHEMA.segments]: segments || [],
-            [SENTENCE_SCHEMA.phrasal_verbs]: s[SENTENCE_SCHEMA.phrasal_verbs] || s.phrasal_verbs || []
-        };
+        // Delegate to the specialized validator
+        return ResponseValidator.normalizeSentence(s, 2); 
     }
 
     /**
@@ -74,11 +44,19 @@ export class DraftProcessor {
         if (!draft.data) draft.data = {};
         if (!draft.data.chunks) draft.data.chunks = {};
 
-        // [Phase 1] Normalize raw LLM output before storage
+        // [Phase 1] Normalize raw LLM output before storage if not already validated
+        let normalizedSentences;
         const rawSentences = Array.isArray(result.sentences) ? result.sentences : [];
-        const normalizedSentences = rawSentences
-            .map(s => this.normalizeSentence(s))
-            .filter(s => s && s[SENTENCE_SCHEMA.original_text]);
+
+        if (result._metadata && result._metadata.validatedAt) {
+            // Already validated by ResponseValidator at LLM layer, preserve as-is (keeps mode 1/3 intact)
+            normalizedSentences = rawSentences;
+        } else {
+            // Fallback for direct manual imports or legacy data
+            normalizedSentences = rawSentences
+                .map(s => this.normalizeSentence(s))
+                .filter(s => s && s[SENTENCE_SCHEMA.original_text]);
+        }
 
         console.log(`[DraftProcessor] Chunk ${chunkIndex} normalized count: ${normalizedSentences.length}/${rawSentences.length}`);
         if (normalizedSentences.length === 0 && rawSentences.length > 0) {

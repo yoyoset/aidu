@@ -40,19 +40,19 @@ export class LoggingSection {
 
         logEnabled.onchange = (e) => {
             logger.setEnabled(e.target.checked);
-            notificationService.toast(`日志已${e.target.checked ? '开启' : '关闭'}`);
+            notificationService.toast(e.target.checked ? t('settings.logger.on') : t('settings.logger.off'));
         };
 
         const debugMode = content.querySelector('#debug-mode');
         debugMode.onchange = (e) => {
             this.parent.settings.debugMode = e.target.checked;
-            notificationService.toast(`调试模式已${e.target.checked ? '开启' : '关闭'}`);
+            notificationService.toast(e.target.checked ? t('settings.debug.on') : t('settings.debug.off'));
         };
 
         viewLogsBtn.onclick = async () => {
             const logs = await logger.getAll();
             if (logs.length === 0) {
-                notificationService.toast('暂无日志记录');
+                notificationService.toast(t('settings.logger.empty'));
                 return;
             }
             const logStr = logs.map(l => `[${l.timestamp}] [${l.level.toUpperCase()}] ${l.message}`).join('\n');
@@ -68,7 +68,7 @@ export class LoggingSection {
             );
             if (ok) {
                 await logger.clear();
-                notificationService.toast('日志已清空');
+                notificationService.toast(t('settings.logger.cleared'));
             }
         };
     }

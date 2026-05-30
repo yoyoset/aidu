@@ -142,7 +142,12 @@ window.App = {
         card.onclick = (e) => {
             if (e.target.closest('.card-actions')) return;
             if (e.target.tagName === 'SPAN' && e.target.textContent.includes('🔊')) return;
-            this.flipCard();
+            this.isFlipped = !this.isFlipped;
+            card.classList.toggle('flipped', this.isFlipped);
+            if (this.isFlipped) {
+                const word = this.currentCard.word || this.currentCard.lemma || 'Unknown';
+                this.speak(word);
+            }
         };
 
         document.querySelectorAll('.btn-grade').forEach(btn => {
@@ -555,13 +560,15 @@ window.App = {
     },
 
     flipCard() {
-        if (this.isFlipped) return;
-        this.isFlipped = true;
-        document.querySelector('.flashcard').classList.add('flipped');
+        this.isFlipped = !this.isFlipped;
+        const card = document.querySelector('.flashcard');
+        card.classList.toggle('flipped', this.isFlipped);
 
-        // Auto-speak word on flip
-        const word = this.currentCard.word || this.currentCard.lemma || 'Unknown';
-        this.speak(word);
+        if (this.isFlipped) {
+            // Auto-speak word on flip to back
+            const word = this.currentCard.word || this.currentCard.lemma || 'Unknown';
+            this.speak(word);
+        }
     },
 
     speak(text) {

@@ -81,50 +81,14 @@ export class AtomicBlock {
         const textContainer = document.createElement('div');
         textContainer.style.flex = '1';
 
-        // Phrasal Verb Mapping
         const indexToPv = new Map();
-
         if (sentence.phrasal_verbs) {
             sentence.phrasal_verbs.forEach(pv => {
-                const targetWords = (pv.text || '').toLowerCase().split(/\s+/).filter(w => w && w !== '...' && w !== '..');
-                pv.correctedIndices = [];
-
-                pv.indices.forEach((suggestion, i) => {
-                    const targetWord = targetWords[i];
-                    if (!targetWord) {
-                        indexToPv.set(suggestion, pv);
-                        pv.correctedIndices.push(suggestion);
-                        return;
-                    }
-
-                    const checkMatch = (idx) => {
-                        const seg = sentence.segments[idx];
-                        if (!seg) return false;
-                        const word = (Array.isArray(seg) ? seg[0] : (seg.word || seg.w || '')).toLowerCase();
-
-                        // Stricter matching:
-                        // 1. If either word is very short (<=2 chars), require exact match to avoid collisions like 'a' in 'back'
-                        if (word.length <= 2 || targetWord.length <= 2) {
-                            return word === targetWord;
-                        }
-                        // 2. Otherwise allow prefix matching (e.g. 'swimming' vs 'swim')
-                        return word.startsWith(targetWord) || targetWord.startsWith(word);
-                    };
-
-                    if (checkMatch(suggestion)) {
-                        indexToPv.set(suggestion, pv);
-                        pv.correctedIndices.push(suggestion);
-                    } else {
-                        let bestIdx = -1;
-                        for (let offset = 1; offset <= 10; offset++) {
-                            if (checkMatch(suggestion + offset)) { bestIdx = suggestion + offset; break; }
-                            if (suggestion - offset >= 0 && checkMatch(suggestion - offset)) { bestIdx = suggestion - offset; break; }
-                        }
-                        const finalIdx = bestIdx !== -1 ? bestIdx : suggestion;
-                        indexToPv.set(finalIdx, pv);
-                        pv.correctedIndices.push(finalIdx);
-                    }
+                pv.indices.forEach(idx => {
+                    indexToPv.set(idx, pv);
                 });
+                // Ensure correctedIndices exists for UI highlighting consistency
+                pv.correctedIndices = pv.indices;
             });
         }
 

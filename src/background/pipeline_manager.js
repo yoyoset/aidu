@@ -19,20 +19,10 @@ class PipelineManager {
 
     // --- Public Facade (Delegates to State Manager) ---
 
-    async createDraft(text, title, url) {
-        // Just forward to manager
-        // We need to chunk first? 
-        // Original logic: initialized chunk count in createInitialState.
-        // ExecutionEngine uses textChunker internally.
-        // Let's instantiate a temporary chunker or helper to get count?
-        // Actually DraftStateManager imports DraftProcessor which doesn't know chunk count unless passed.
-        // Let's create a helper in ExecutionEngine or just use TextChunker here temporarily.
-        // Cleaner: Move chunking logic inside createDraft?
-        // For now, I'll replicate the lightweight chunk count check or just utilize the ExecutionEngine's chunker if exposed.
-        // ExecutionEngine.textChunker is exposed.
-
-        const chunks = this.executionEngine.textChunker.chunk(text);
-        return await draftStateManager.createDraft(text, title, url, chunks.length);
+    async createDraft(text, title, url, data = null, status = null) {
+        const chunks = this.executionEngine.textChunker.chunk(text || '');
+        const chunkCount = chunks.length;
+        return await draftStateManager.createDraft(text, title, url, chunkCount, data, status);
     }
 
     async applyPartialUpdate(draftId, updates) {

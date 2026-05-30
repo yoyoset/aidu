@@ -130,11 +130,9 @@ export class VocabReview extends Component {
 
         // Interaction
         card.onclick = (e) => {
-            if (e.target.tagName === 'BUTTON') return;
-            if (!this.isFlipped) {
-                this.isFlipped = true;
-                card.classList.add(reviewStyles.flipped);
-            }
+            if (e.target.closest('button')) return;
+            this.isFlipped = !this.isFlipped;
+            card.classList.toggle(reviewStyles.flipped, this.isFlipped);
         };
 
         // SRS Actions

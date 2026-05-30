@@ -74,11 +74,29 @@ export function getSystemPrompt(mode, personaPrompt, expertOverride = null) {
 
     const config = MODE_CONFIGS[mode] || DEFAULT_CONFIG;
 
-    // Role B (Teaching Descriptor)
-    // Preference: Expert Override > Persona Style > Default Mode Detail
-    const pedagogicalInstruction = expertOverride || personaPrompt || config.detail;
+    // 1. Extract Alignment Fixes from expertOverride if present
+    let alignmentFixes = '';
+    let cleanedOverride = expertOverride;
+    if (expertOverride) {
+        const matches = [...expertOverride.matchAll(/\/\* --- START ALIGNMENT FIX --- \*\/([\s\S]*?)\/\* --- END ALIGNMENT FIX --- \*\//g)];
+        if (matches.length > 0) {
+            alignmentFixes = matches.map(m => m[1].trim()).join('\n');
+            cleanedOverride = expertOverride.replace(/\/\* --- START ALIGNMENT FIX --- \*\/[\s\S]*?\/\* --- END ALIGNMENT FIX --- \*\//g, '').trim();
+        }
+    }
 
-    return `${BASE_PROTOCOL}
+    // 2. Determine Role B teaching instructions
+    // Preference: cleanedOverride > personaPrompt > config.detail
+    const pedagogicalInstruction = cleanedOverride || personaPrompt || config.detail;
+
+    // 3. Assemble the prompt cleanly with dedicated, prioritized alignment constraints
+    let finalPrompt = BASE_PROTOCOL;
+
+    if (alignmentFixes) {
+        finalPrompt += `\n\n## 强制对齐修正约束 (Role A & B 共同遵守，最高优先级)\n${alignmentFixes}`;
+    }
+
+    finalPrompt += `
 
 ## 职责边界
 - 在撰写 \`${EX}\` 字段时，你必须严格遵守下方的“教学指令”。
@@ -90,4 +108,6 @@ ${pedagogicalInstruction}
 Output Schema: ${config.schema}
 ${SEGMENTATION_RULES}
 ${EXAMPLES}`;
+
+    return finalPrompt;
 }

@@ -71,28 +71,18 @@ export class TextImporter {
         const cancelBtn = document.createElement('button');
         cancelBtn.className = navStyles['btn-secondary'];
         cancelBtn.textContent = t('common.cancel');
-        cancelBtn.onclick = () => this.parent.close();
+        cancelBtn.onclick = () => {
+            this.parent.isManualAction = true;
+            this.parent.close();
+        };
 
         const saveBtn = document.createElement('button');
         saveBtn.className = navStyles['btn-primary'];
         saveBtn.innerHTML = `<i class="ri-save-line" style="margin-right:6px;"></i> ${t('common.save')}`;
         saveBtn.onclick = () => this.handleAction(false);
 
-        const simpleBtn = document.createElement('button');
-        simpleBtn.className = navStyles['btn-secondary'];
-        simpleBtn.style.marginLeft = 'auto'; // Push analysis buttons right
-        simpleBtn.innerHTML = `<i class="ri-play-line"></i> ${t('creator.analyze.simple')}`;
-        simpleBtn.onclick = () => this.handleAction(true, 'simple');
-
-        const deepBtn = document.createElement('button');
-        deepBtn.className = navStyles['btn-primary'];
-        deepBtn.innerHTML = `<i class="ri-sparkling-fill"></i> ${t('creator.analyze.deep')}`;
-        deepBtn.onclick = () => this.handleAction(true, 'deep');
-
         footer.appendChild(cancelBtn);
         footer.appendChild(saveBtn);
-        footer.appendChild(simpleBtn);
-        footer.appendChild(deepBtn);
         container.appendChild(footer);
 
         return container;
@@ -132,11 +122,13 @@ export class TextImporter {
         };
 
         if (autoStart) {
+            this.parent.isManualAction = true;
             this.parent.animateShrink(() => {
                 this.parent.callbacks.onDraftCreated(data, autoStart, mode);
                 this.parent.close();
             });
         } else {
+            this.parent.isManualAction = true;
             this.parent.callbacks.onDraftCreated(data, autoStart, mode);
             this.parent.close();
         }

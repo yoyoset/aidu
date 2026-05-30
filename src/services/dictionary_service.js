@@ -23,26 +23,28 @@ export class DictionaryService {
     /**
      * Lookup a word. Checks memory/storage cache first, then API.
      * @param {string} word - The lemma/word to define
+     * @param {string} pos - Part of speech (optional)
      * @param {string} contextSentence - Optional context
      * @param {boolean} skipCache - Whether to bypass existing cache
      * @returns {Promise<Object>} { m: meaning, p: phonetic, l: level }
      */
-    async lookup(word, contextSentence = "", skipCache = false) {
+    async lookup(word, pos = "", contextSentence = "", skipCache = false) {
         if (!word) return null;
         await this.initPromise; // Ensure cache is loaded
 
         const lemma = word.toLowerCase();
+        const cacheKey = `${lemma}:${pos || ''}`;
 
         // 1. Check Cache
-        if (!skipCache && this.memCache[lemma]) return this.memCache[lemma];
+        if (!skipCache && this.memCache[cacheKey]) return this.memCache[cacheKey];
 
         // 2. Fetch from API (LLM)
         try {
-            const def = await this.fetchDefinition(lemma, contextSentence);
+            const def = await this.fetchDefinition(lemma, pos, contextSentence);
 
             // Validate Response
             if (def && (def.m || def.p)) {
-                this.memCache[lemma] = def;
+                this.memCache[cacheKey] = def;
                 // Async save to storage (don't await to block UI)
                 this.saveCache();
                 return def;
@@ -63,24 +65,69 @@ export class DictionaryService {
         }
     }
 
-    async fetchDefinition(word, context) {
+    async _getProfileScopedPrompts() {
+        const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
+        const activeProfileId = settings.activeProfileId || 'default';
+        const profile = settings.profiles?.[activeProfileId] || {};
+        const provider = profile.provider || 'gemini';
+        const model = profile.model || 'gemini-2.0-flash';
+        const modelKey = `${provider}:${model}`;
+
+        let allExpertPrompts = await StorageHelper.get(StorageKeys.EXPERT_PROMPTS);
+        if (!allExpertPrompts || typeof allExpertPrompts !== 'object' || Array.isArray(allExpertPrompts)) {
+            allExpertPrompts = {};
+        }
+        
+        // Detect if allExpertPrompts is flat (which is legacy)
+        const isFlat = Object.keys(allExpertPrompts).some(key => key.startsWith('analysis_mode_') || key.startsWith('dict_') || key.startsWith('persona_'));
+        
+        if (isFlat) {
+            return allExpertPrompts;
+        }
+        
+        // Return modelKey scoped prompts, falling back to activeProfileId scoped, then empty object
+        return allExpertPrompts[modelKey] || allExpertPrompts[activeProfileId] || {};
+    }
+
+    async fetchDefinition(word, pos, context) {
         return withRetry(async () => {
-            const expertPrompts = await StorageHelper.get(StorageKeys.EXPERT_PROMPTS) || {};
+            const expertPrompts = await this._getProfileScopedPrompts();
             const systemPrompt = expertPrompts.dict_lookup || `Role: Balanced Dictionary API | Output: JSON ONLY
 Constraints:
-- Meaning: Provide 1-2 precise primary meanings in Simplified Chinese. If the word has multiple distinct common meanings, include up to 3, separated by semicolons.
-- Context: Prioritize the meaning that fits the provided context, but don't omit other common senses if they are important.
+- Meaning (m): Provide precise meanings in Simplified Chinese. IMPORTANT: Lead with the meaning that matches the provided Part of Speech (POS) and Context.
+- Polysemy: If the word has multiple senses, include the primary contextual one first, then others separated by semicolons.
 - Schema: {"m":"","p":"","l":"","collocations":[]}
 
 Example:
-Input: "snail" | Context: "Slow"
-Output: {"m":"蜗牛","p":"sneɪl","l":"A2","collocations":["garden snail"]}`;
+Input: "lead" | POS: "NOUN" | Context: "The pipe is made of lead."
+Output: {"m":"铅; 领导; 领先","p":"led","l":"B2","collocations":["lead pipe"]}`;
 
-            const userPrompt = `Word: "${word}"\nContext: "${context}"\n\n{"m":"`;
+            const userPrompt = `Word: "${word}"\nPOS: "${pos || 'UNKNOWN'}"\nContext: "${context}"\n\n{"m":"`;
 
             const jsonStr = await this.apiClient.streamCompletion(userPrompt, systemPrompt);
             return JSON.parse(jsonStr);
         }, { maxRetries: 2, delayMs: 500 });
+    }
+
+    /**
+     * Cache Management
+     */
+    async getCacheStats() {
+        await this.initPromise;
+        const keys = Object.keys(this.memCache);
+        const json = JSON.stringify(this.memCache);
+        const sizeInBytes = new TextEncoder().encode(json).length;
+        
+        return {
+            count: keys.length,
+            size: (sizeInBytes / 1024).toFixed(1) + ' KB'
+        };
+    }
+
+    async clearCache() {
+        this.memCache = {};
+        await StorageHelper.remove(DICT_CACHE_KEY);
+        console.log('DictionaryService: Cache cleared.');
     }
 
     /**
@@ -92,7 +139,7 @@ Output: {"m":"蜗牛","p":"sneɪl","l":"A2","collocations":["garden snail"]}`;
         return withRetry(async () => {
             const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
             const profile = settings.profiles?.[settings.activeProfileId] || {};
-            const expertPrompts = await StorageHelper.get(StorageKeys.EXPERT_PROMPTS) || {};
+            const expertPrompts = await this._getProfileScopedPrompts();
 
             const personaStyle = profile.teachingStyle || 'casual';
             // Simple mapping for difficulty
@@ -125,7 +172,7 @@ Generate ONE English sentence using "${word}" for a student at ${difficulty} lev
         return withRetry(async () => {
             const settings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
             const profile = settings.profiles?.[settings.activeProfileId] || {};
-            const expertPrompts = await StorageHelper.get(StorageKeys.EXPERT_PROMPTS) || {};
+            const expertPrompts = await this._getProfileScopedPrompts();
 
             const personaStyle = profile.teachingStyle || 'casual';
 

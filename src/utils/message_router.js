@@ -31,14 +31,19 @@ export class MessageRouter {
     handleMessage(message, sender, sendResponse) {
         (async () => {
             const { type, payload } = message;
-            console.log(`[MessageRouter] Receiving: ${type}`, payload);
+            const isFrequent = type === MessageTypes.UPDATE_DRAFT || type === MessageTypes.PIPELINE_STATUS_UPDATE;
+            
+            if (!isFrequent) {
+                console.log(`[MessageRouter] Receiving: ${type}`, payload);
+            }
+
             if (this.listeners.has(type)) {
                 const callbacks = this.listeners.get(type);
                 for (const callback of callbacks) {
                     try {
                         const result = await callback(payload, sender);
                         if (result) {
-                            console.log(`[MessageRouter] Response sent for ${type}`, result);
+                            if (!isFrequent) console.log(`[MessageRouter] Response sent for ${type}`, result);
                             sendResponse(result);
                         }
                     } catch (err) {
@@ -46,7 +51,7 @@ export class MessageRouter {
                         sendResponse({ error: err.message });
                     }
                 }
-            } else {
+            } else if (!isFrequent) {
                 console.warn(`[MessageRouter] No listeners for: ${type}`);
             }
         })();
@@ -55,9 +60,12 @@ export class MessageRouter {
     }
 
     static sendMessage(type, payload) {
-        console.log(`[MessageRouter] Sending: ${type}`, payload);
+        const isFrequent = type === MessageTypes.UPDATE_DRAFT || type === MessageTypes.PIPELINE_STATUS_UPDATE;
+        if (!isFrequent) {
+            console.log(`[MessageRouter] Sending: ${type}`, payload);
+        }
         chrome.runtime.sendMessage({ type, payload }).catch((err) => {
-            console.warn(`[MessageRouter] Send failed for ${type}:`, err.message);
+            if (!isFrequent) console.warn(`[MessageRouter] Send failed for ${type}:`, err.message);
         });
     }
 }

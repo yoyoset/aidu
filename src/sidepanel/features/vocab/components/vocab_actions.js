@@ -106,7 +106,8 @@ export class VocabActions {
                 const keys = Array.from(this.parent.selectedSet);
                 for (let i = 0; i < keys.length; i++) {
                     selLabel.textContent = `${i + 1}/${keys.length}`;
-                    const def = await dictionaryService.lookup(keys[i], '', true);
+                    const entry = await vocabService.getEntry(keys[i]);
+                    const def = await dictionaryService.lookup(keys[i], entry?.pos || '', entry?.context || '', true);
                     if (def) await vocabService.updateEntry(keys[i], { meaning: def.m, phonetic: def.p, level: def.l });
                 }
                 this.parent.selectedSet.clear();
@@ -172,7 +173,7 @@ export class VocabActions {
     }
 
     async _handleSync(force = false) {
-        const loadingToast = notificationService.toast(t('dashboard.sync.start') || 'Syncing...', 'info');
+        const loadingToast = notificationService.toast(t('dashboard.sync.start'), 'info');
         try {
             await SyncService.push(force);
             notificationService.toast(t('dashboard.sync.success'), 'success');
@@ -183,7 +184,7 @@ export class VocabActions {
                 await this._showSyncConflictModal(e.decision);
             } else {
                 console.error("Sync Error:", e);
-                notificationService.alert(`${t('dashboard.sync.fail')}: ${e.message}`, 'Sync Error');
+                notificationService.alert(`${t('dashboard.sync.failed', { error: e.message })}`, t('common.error'));
             }
         }
     }
@@ -246,9 +247,9 @@ export class VocabActions {
         mergeBtn.onclick = async () => {
             modal.remove();
             try {
-                notificationService.toast("Merging...", "info");
+                notificationService.toast(t('settings.sync.syncing'), "info");
                 await SyncService.manager.resolveChoice('MERGE'); // Access manager directly
-                notificationService.success("Merge & Sync Complete!");
+                notificationService.success(t('dashboard.sync.success'));
                 this.parent.render(); // Refresh UI with merged data
             } catch (e) { notificationService.error(e.message); }
         };
@@ -262,9 +263,9 @@ export class VocabActions {
             if (!confirm("Are you ABSOLUTELY sure? This deletes cloud data permanently.")) return;
             modal.remove();
             try {
-                notificationService.toast("Overwriting Cloud...", "warning");
+                notificationService.toast(t('settings.sync.syncing'), "warning");
                 await SyncService.manager.resolveChoice('OVERWRITE');
-                notificationService.success("Cloud Overwritten.");
+                notificationService.success(t('settings.sync.completed'));
             } catch (e) { notificationService.error(e.message); }
         };
 
@@ -274,6 +275,7 @@ export class VocabActions {
         cancelBtn.className = navStyles.btnSecondary;
         cancelBtn.onclick = async () => {
             modal.remove();
+            notificationService.toast(t('settings.expert.cancelSave'), 'info');
             await SyncService.manager.resolveChoice('CANCEL');
         };
 

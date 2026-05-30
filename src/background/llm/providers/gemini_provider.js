@@ -2,6 +2,7 @@ import { FetchUtils } from '../../../utils/fetch_utils.js';
 import { LlmErrorHelper } from '../../../utils/llm_error_helper.js';
 import { logger } from '../../../utils/logger.js';
 import { JsonCleaner } from '../utils/json_cleaner.js';
+import { getGeminiSchema } from '../utils/response_schema.js';
 
 /**
  * GeminiProvider
@@ -13,6 +14,7 @@ export class GeminiProvider {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.apiKey}`;
 
         const fullPrompt = `${systemPrompt}\n\nUser Input:\n${prompt}`;
+        const mode = options.mode || 2;
 
         const payload = {
             contents: [{
@@ -20,7 +22,9 @@ export class GeminiProvider {
             }],
             generationConfig: {
                 temperature: options.temperature || 0.1,
-                maxOutputTokens: 8192
+                maxOutputTokens: 8192,
+                response_mime_type: 'application/json',
+                response_schema: getGeminiSchema(mode)
             }
         };
 
@@ -39,7 +43,8 @@ export class GeminiProvider {
         const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!content) {
-            logger.error('GeminiProvider: Gemini returned empty response', data);
+            const finishReason = data.candidates?.[0]?.finishReason;
+            logger.error(`GeminiProvider: Gemini returned empty response (Reason: ${finishReason})`, data);
             throw await LlmErrorHelper.interpret(data, 'gemini');
         }
 

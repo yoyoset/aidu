@@ -61,13 +61,14 @@ export class AnalysisOverlay {
                     const fill = this.overlay.querySelector('.progress-bar-fill');
                     if (fill) fill.style.width = `${pct}%`;
 
-                    if (draft.status === 'ready' || draft.status === 'error') {
+                    const status = draft.status;
+                    if (status === 'ready' || status === 'error') {
                         this._cleanup();
-                        if (draft.status === 'ready' && this.onComplete) {
+                        if (status === 'ready' && this.onComplete) {
                             setTimeout(() => { this.overlay.remove(); this.onComplete(); }, 500);
                         } else {
                             this.overlay.remove();
-                            if (draft.status === 'error') notificationService.alert(t('creator.error.general'));
+                            if (status === 'error') notificationService.alert(t('creator.error.general'));
                         }
                     }
                 }

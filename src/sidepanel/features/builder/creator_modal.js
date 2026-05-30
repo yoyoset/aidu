@@ -24,11 +24,13 @@ export class CreatorModal extends Component {
         this.textImporter = new TextImporter(this);
         this.jsonImporter = new JsonImporter(this);
         this.analysisOverlay = new AnalysisOverlay(this);
+        this.isManualAction = false;
     }
 
     show(data = null) {
         this.initialData = data; // Keep as null if undefined
         this.activeTab = (this.initialData && this.initialData.mode === 'manual_ai') ? 'manual_ai' : 'text';
+        this.isManualAction = false; // Reset on show
         this.render();
     }
 
@@ -127,6 +129,25 @@ export class CreatorModal extends Component {
     }
 
     close() {
+        if (!this.isManualAction && this.activeTab === 'text') {
+            const titleInput = this.overlay.querySelector('#draft-title');
+            const contentInput = this.overlay.querySelector('#draft-content');
+            const text = contentInput?.value.trim();
+            
+            // Only auto-save if there's actual content
+            if (text && text.length > 5) {
+                console.log('CreatorModal: Auto-saving draft before close...');
+                const data = {
+                    id: this.initialData?.id || null,
+                    title: titleInput?.value.trim() || t('dashboard.draft.untitled'),
+                    text: text
+                };
+                if (this.callbacks.onDraftCreated) {
+                    this.callbacks.onDraftCreated(data, false);
+                }
+            }
+        }
+
         if (this.overlay) {
             this.overlay.remove();
             this.overlay = null;

@@ -69,7 +69,7 @@ export class JsonImporter {
                 status: 'ready',
                 data: data
             };
-            this.parent.callbacks.onDraftCreated(draft, false);
+            this.parent.callbacks.onDraftCreated(draft, true);
             this.parent.close();
         } catch (e) {
             notificationService.alert(t('creator.error.invalidSchema', { error: e.message }));

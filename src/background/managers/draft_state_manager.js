@@ -11,10 +11,12 @@ class DraftStateManager {
      * Creates a new draft and saves it to storage.
      * Enforces the 50-draft limit.
      */
-    async createDraft(text, title, url, chunkCount) {
+    async createDraft(text, title, url, chunkCount, data = null, status = null) {
         return this._saveQueue = this._saveQueue.then(async () => {
             // 1. Init State
             const draft = DraftProcessor.createInitialState(text, title, url, chunkCount);
+            if (data) draft.data = data;
+            if (status) draft.status = status;
 
             // 2. Persistent Storage & Truncation
             let stored = await StorageHelper.get(StorageKeys.BUILDER_DRAFTS);

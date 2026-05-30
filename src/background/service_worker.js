@@ -100,9 +100,9 @@ messageRouter.on(MessageTypes.REQUEST_ANALYSIS, async ({ draftId }) => {
 });
 
 // Handle Draft Creation (New standardized flow)
-messageRouter.on(MessageTypes.CREATE_DRAFT, async ({ text, title, url }) => {
+messageRouter.on(MessageTypes.CREATE_DRAFT, async ({ text, title, url, data, status }) => {
     console.log('SW: Received draft creation request');
-    const draft = await pipelineManager.createDraft(text, title, url);
+    const draft = await pipelineManager.createDraft(text, title, url, data, status);
     return { success: true, draft };
 });
 

@@ -92,6 +92,12 @@ export default {
     'settings.backup.restoreFailed': 'Restore failed: Invalid JSON file.',
     'settings.logger.clearTitle': 'Clear Logs',
     'settings.logger.clearConfirm': 'Are you sure you want to clear all log records?',
+    'settings.logger.on': 'Logging enabled',
+    'settings.logger.off': 'Logging disabled',
+    'settings.logger.empty': 'No log records found',
+    'settings.logger.cleared': 'Logs cleared',
+    'settings.debug.on': 'Debug mode enabled',
+    'settings.debug.off': 'Debug mode disabled',
 
     'settings.deleteProfile': 'Delete Profile',
     'settings.deleteProfile.confirm': 'Are you sure you want to delete this profile?',
@@ -133,6 +139,7 @@ export default {
     'dashboard.sync.now': 'Sync Now',
     'dashboard.sync.success': 'Synced Successfully',
     'dashboard.sync.failed': 'Sync Failed: {error}',
+    'dashboard.sync.start': 'Syncing...',
     'dashboard.sync.notRecent': 'Not synced recently',
     'dashboard.sync.lastSync': 'Last Synced: {time}',
     'dashboard.sync.error': 'Sync Error: {error}',
@@ -152,6 +159,7 @@ export default {
 
     'creator.save': 'Save Draft',
     'creator.saveChanges': 'Save Changes',
+    'creator.saveSuccess.toast': 'Draft saved successfully',
     'creator.bgProcess.hint': 'Process silently in background',
     'creator.bgProcess.toast': 'Analysis started. View progress below.',
     'creator.contentChanged.toast': 'Content modified. Old analysis cleared. Please re-analyze.',
@@ -331,6 +339,7 @@ export default {
     'common.error': 'Error',
     'common.success': 'Success',
     'common.gotIt': 'Got it!',
+    'common.reset': 'Reset Defaults',
 
     // === Error Messages ===
     'error.llm.general': 'LLM Request Failed',
@@ -351,4 +360,33 @@ export default {
     'donate.wechat': 'WeChat Pay',
     'donate.paypal': 'PayPal',
     'donate.scanTip': 'Scan to support',
+
+    // === Storage & Maintenance ===
+    'settings.maintenance.title': 'Storage & Maintenance',
+    'settings.maintenance.dictCache': 'Local Dictionary Cache',
+    'settings.maintenance.words': '{count} words',
+    'settings.maintenance.clear': 'Clear Cache',
+    'settings.maintenance.hint': 'Cache is used to speed up previously looked up words. If you encounter inaccurate translations, try clearing the cache. Currently, there is no storage limit.',
+    'settings.maintenance.clearConfirm': 'Are you sure you want to clear the local dictionary cache? This will not affect your vocabulary notebook, but looking up the same words next time will require a network connection.',
+    'settings.maintenance.clearTitle': 'Clear Cache',
+    'settings.maintenance.cleared': 'Cache cleared',
+
+    // === Expert Mode ===
+    'settings.expert.title': 'Laboratory: Custom Prompts',
+    'settings.expert.warning': '<strong>⚠️ WARNING</strong><br>Modifying prompts may cause parsing failures or invalid responses. Use only after understanding prompt engineering.',
+    'settings.expert.migrated': 'Prompts automatically migrated to latest schema',
+    'settings.expert.invalidSchema': '{key} format is missing required fields: {missing}',
+    'settings.expert.riskConfirm': '⚠️ Modifying prompts may impact system functionality.\n\nPlease type "yes" to confirm save:',
+    'settings.expert.cancelSave': 'Save cancelled',
+    'settings.expert.saveSuccess': 'Custom prompts saved',
+    'settings.expert.resetSuccess': 'Reset to default prompts',
+    'settings.expert.section.analysis': 'Article Analysis Modes',
+    'settings.expert.section.dict': 'Dictionary Lookup',
+    'settings.expert.section.persona': 'Teaching Style',
+    'settings.expert.align.title': 'Prompt Alignment Wizard (Mode {mode})',
+    'settings.expert.align.copied': 'Diagnostic package copied to clipboard!',
+    'settings.expert.align.btn': 'Auto-Align',
+    'settings.maintenance.expert': 'Prompt Laboratory',
+    'settings.maintenance.expert.desc': 'Fine-tune AI definitions, examples, and deep analysis prompts to fit different models, or diagnose and align models.',
+    'settings.maintenance.expert.btn': 'Enter Lab',
 };

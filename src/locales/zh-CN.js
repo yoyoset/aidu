@@ -92,6 +92,12 @@ export default {
     'settings.backup.restoreFailed': '恢复失败：无效的 JSON 文件。',
     'settings.logger.clearTitle': '清空日志',
     'settings.logger.clearConfirm': '确定要清空所有日志记录吗？',
+    'settings.logger.on': '日志已开启',
+    'settings.logger.off': '日志已关闭',
+    'settings.logger.empty': '暂无日志记录',
+    'settings.logger.cleared': '日志已清空',
+    'settings.debug.on': '调试模式已开启',
+    'settings.debug.off': '调试模式已关闭',
 
     'settings.deleteProfile': '删除配置档',
     'settings.deleteProfile.confirm': '确定要删除此配置档吗？',
@@ -139,6 +145,7 @@ export default {
     'dashboard.sync.now': '立即同步',
     'dashboard.sync.success': '同步成功',
     'dashboard.sync.failed': '同步失败: {error}',
+    'dashboard.sync.start': '开始同步...',
     'dashboard.sync.notRecent': '最近未同步',
     'dashboard.sync.lastSync': '上次同步: {time}',
     'dashboard.sync.error': '同步错误: {error}',
@@ -158,6 +165,7 @@ export default {
 
     'creator.save': '保存草稿',
     'creator.saveChanges': '保存更改',
+    'creator.saveSuccess.toast': '草稿已保存',
     'creator.bgProcess.hint': '后台静默处理',
     'creator.bgProcess.toast': '分析已启动，请在下表中查看进度',
     'creator.contentChanged.toast': '内容已修改。旧分析数据已清理，请重新进行分析。',
@@ -335,6 +343,7 @@ export default {
     'common.error': '错误',
     'common.success': '成功',
     'common.gotIt': '知道了',
+    'common.reset': '恢复默认',
 
     // === 错误提示 ===
     'error.llm.general': 'LLM 请求失败',
@@ -355,4 +364,33 @@ export default {
     'donate.wechat': '微信支付',
     'donate.paypal': 'PayPal',
     'donate.scanTip': '扫码支持',
+
+    // === 存储与维护 ===
+    'settings.maintenance.title': '存储与维护',
+    'settings.maintenance.dictCache': '本地字典缓存',
+    'settings.maintenance.words': '{count} 个单词',
+    'settings.maintenance.clear': '清空缓存',
+    'settings.maintenance.hint': '缓存用于加速已查询过的单词。如果您遇到释义不准确，可以尝试清空缓存。目前存储空间无上限限制。',
+    'settings.maintenance.clearConfirm': '确定要清空本地查词缓存吗？这不会影响您的生词本，但下次查询相同单词时需要重新联网。',
+    'settings.maintenance.clearTitle': '清空缓存',
+    'settings.maintenance.cleared': '缓存已清空',
+
+    // === 专家模式 ===
+    'settings.expert.title': '实验室：自定义提示词',
+    'settings.expert.warning': '<strong>⚠️ 警告</strong><br>修改提示词可能导致解析失败或返回格式错误。仅在充分理解提示词工程后使用此功能。',
+    'settings.expert.migrated': '提示词已自动升级至最新架构',
+    'settings.expert.invalidSchema': '{key} 格式不包含必填字段: {missing}',
+    'settings.expert.riskConfirm': '⚠️ 修改提示词可能影响系统功能（如阅读器白屏）。\n\n请输入 "yes" 确认保存：',
+    'settings.expert.cancelSave': '保存已取消',
+    'settings.expert.saveSuccess': '自定义提示词已保存',
+    'settings.expert.resetSuccess': '已恢复默认提示词',
+    'settings.expert.section.analysis': '文章分析模式',
+    'settings.expert.section.dict': '词典查询',
+    'settings.expert.section.persona': '教学风格',
+    'settings.expert.align.title': '提示词对齐工作台 (模式 {mode})',
+    'settings.expert.align.copied': '诊断包已复制到剪贴板！',
+    'settings.expert.align.btn': '自动对齐',
+    'settings.maintenance.expert': '提示词实验室',
+    'settings.maintenance.expert.desc': '微调 AI 释义、例句与深度分析 Prompt，适配不同模型，或诊断对齐数据',
+    'settings.maintenance.expert.btn': '进入实验室',
 };

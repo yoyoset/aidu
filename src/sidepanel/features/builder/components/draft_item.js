@@ -18,6 +18,14 @@ export class DraftItem {
             onToggleSelection,
             isSelected
         } = handlers;
+        
+        // Defensive check for null/invalid draft
+        if (!draft || !draft.status) {
+            console.warn('DraftItem: Received null or invalid draft object', draft);
+            const errorItem = document.createElement('div');
+            errorItem.style.display = 'none'; // Hide corrupted items
+            return errorItem;
+        }
 
         // Card Container Structure
         const item = document.createElement('div');
@@ -70,6 +78,7 @@ export class DraftItem {
                 const chunkGrid = document.createElement('div');
                 chunkGrid.className = itemStyles['chunk-grid'];
                 chunks.forEach(chunk => {
+                    if (!chunk) return;
                     const block = document.createElement('div');
                     block.className = `${itemStyles['chunk-block']} ${itemStyles[`chunk-${chunk.status}`] || itemStyles['chunk-pending']}`;
                     chunkGrid.appendChild(block);
@@ -79,7 +88,7 @@ export class DraftItem {
                 // Overflow mode: Summary line
                 const summary = document.createElement('div');
                 summary.className = itemStyles['chunk-summary'];
-                const doneCount = chunks.filter(c => c.status === 'done').length;
+                const doneCount = chunks.filter(c => c && c.status === 'done').length;
                 summary.textContent = `Progress: ${doneCount}/${chunks.length} chunks analyzed`;
                 progressSlot.appendChild(summary);
             }

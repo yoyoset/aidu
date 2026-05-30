@@ -15,6 +15,7 @@ import { AppearanceSection } from './sections/appearance_section.js';
 import { ExpertSection } from './sections/expert_section.js';
 import { LoggingSection } from './sections/logging_section.js';
 import { BackupSection } from './sections/backup_section.js';
+import { MaintenanceSection } from './sections/maintenance_section.js';
 
 export class SettingsModal extends Component {
     constructor(element) {
@@ -30,6 +31,7 @@ export class SettingsModal extends Component {
             new SyncSection(this),
             new AppearanceSection(this),
             new BackupSection(this),
+            new MaintenanceSection(this),
             new LoggingSection(this)
         ];
     }
@@ -38,9 +40,6 @@ export class SettingsModal extends Component {
         // Load data via domain service
         this.settings = await profileManager.load();
         this.activeProfile = profileManager.getActiveProfile();
-
-        // Load Expert UI defaults
-        this.expertPrompts = await StorageHelper.get(StorageKeys.EXPERT_PROMPTS) || {};
 
         this.render();
     }
@@ -176,17 +175,10 @@ export class SettingsModal extends Component {
         profileManager.updateActiveProfile(profileUpdates);
         profileManager.updateGlobalSettings(globalSettings);
 
-        // 4. Expert Prompts (UI-specific storage)
-        if (allData.expertPrompts) {
-            this.expertPrompts = allData.expertPrompts;
-        }
     }
 
     async save() {
         this.updateSettingsFromDOM();
-
-        // Persist Expert Prompts
-        await StorageHelper.set(StorageKeys.EXPERT_PROMPTS, this.expertPrompts);
 
         // Domain Save
         await profileManager.save();

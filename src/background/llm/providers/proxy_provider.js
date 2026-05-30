@@ -70,6 +70,10 @@ export class ProxyProvider {
             throw await LlmErrorHelper.interpret(data, config.provider);
         }
 
+        if (options.responseFormat === 'text') {
+            return content.trim();
+        }
+
         return JsonCleaner.clean(content);
     }
 

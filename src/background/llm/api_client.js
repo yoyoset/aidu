@@ -31,15 +31,18 @@ export class ApiClient {
 
         const providerConfig = profile.providerConfig?.[providerName];
         const apiKey = providerConfig?.apiKey || profile.apiKey;
+        const proxyUrl = providerConfig?.proxyUrl;
 
-        if (!apiKey) throw new Error(`Missing API Key for provider: ${providerName}`);
+        if (!apiKey && !proxyUrl) {
+            throw new Error(`Missing API Key for provider: ${providerName}`);
+        }
 
         const config = {
             provider: providerName,
-            apiKey: apiKey,
+            apiKey: apiKey || '',
             model: providerConfig?.model || profile.model,
             baseUrl: providerConfig?.baseUrl || profile.baseUrl,
-            proxyUrl: providerConfig?.proxyUrl
+            proxyUrl: proxyUrl
         };
 
         this._configCache = config;
@@ -53,25 +56,28 @@ export class ApiClient {
     async streamCompletion(textChunk, systemPrompt, options = {}) {
         const config = await this.getConfig();
         const prompt = `${textChunk}`;
+        
+        // Ensure mode is passed in options
+        const providerOptions = { ...options };
 
         logger.info(`[ApiClient] Routing request for ${config.provider} via ${config.proxyUrl ? 'Proxy' : 'Direct'}`);
 
         // 1. Delegate to Proxy if configured
         if (config.proxyUrl) {
-            return ProxyProvider.call(config, prompt, systemPrompt, options);
+            return ProxyProvider.call(config, prompt, systemPrompt, providerOptions);
         }
 
         // 2. Delegate to specific Direct providers
         switch (config.provider) {
             case 'gemini':
-                return GeminiProvider.call(config, prompt, systemPrompt, options);
+                return GeminiProvider.call(config, prompt, systemPrompt, providerOptions);
 
             case 'deepseek':
             case 'openai':
             case 'custom':
             case 'glm':
             case 'glm-free':
-                return OpenAICompatibleProvider.call(config, prompt, systemPrompt, options);
+                return OpenAICompatibleProvider.call(config, prompt, systemPrompt, providerOptions);
 
             default:
                 throw new Error(`Unsupported provider: ${config.provider}`);

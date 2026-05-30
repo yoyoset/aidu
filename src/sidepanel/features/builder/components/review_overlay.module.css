@@ -1,45 +1,90 @@
-/* Vocab Review Overlay */
+/* Quiet Study — Vocab Review (Flashcards) */
+
 .reviewOverlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: var(--md-sys-color-surface);
+    background: var(--paper);
     z-index: 1000;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    animation: screen-in 0.35s var(--ease);
 }
 
 .reviewContainer {
-    width: 90%;
-    max-width: 400px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
     position: relative;
-    padding: 20px;
-    height: 500px;
+    padding: 16px var(--pad-screen);
 }
 
 .closeReviewBtn {
     position: absolute;
-    top: -20px;
-    right: 0;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
     background: none;
     border: none;
-    font-size: 2rem;
+    font-size: 1.4rem;
     cursor: pointer;
-    color: var(--md-sys-color-on-surface-variant);
+    color: var(--ink-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-sm);
+    transition: all 0.2s var(--ease);
+}
+
+.closeReviewBtn:hover {
+    background: var(--surface-2);
+    color: var(--primary);
+}
+
+/* Progress Bar */
+.reviewTop {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 0 16px;
+    margin-bottom: 12px;
+}
+
+.reviewProgTrack {
+    flex: 1;
+    height: 6px;
+    border-radius: 99px;
+    background: var(--surface-2);
+    overflow: hidden;
+}
+
+.reviewProgFill {
+    height: 100%;
+    border-radius: 99px;
+    background: var(--primary);
+    transition: width 0.4s var(--ease);
+}
+
+.reviewCount {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 /* Flashcard 3D Flip */
 .flashcard {
-    width: 100%;
-    height: 100%;
-    perspective: 1000px;
+    flex: 1;
+    perspective: 1400px;
     cursor: pointer;
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.6s;
+    transition: transform 0.55s var(--ease);
 }
 
 .flashcard.flipped {
@@ -49,16 +94,20 @@
 .cardFront,
 .cardBack {
     position: absolute;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     backface-visibility: hidden;
-    background: var(--md-sys-color-surface);
-    border-radius: var(--md-sys-radius-lg);
-    box-shadow: var(--md-sys-elevation-3);
-    border: 1px solid var(--md-sys-color-outline-variant);
-    padding: 30px;
+    -webkit-backface-visibility: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    box-shadow: var(--sh-2);
+    padding: 28px 24px;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+}
+
+.cardFront {
     align-items: center;
     justify-content: center;
     text-align: center;
@@ -66,119 +115,190 @@
 
 .cardBack {
     transform: rotateY(180deg);
+    align-items: flex-start;
     justify-content: flex-start;
 }
 
 .cardWord {
-    font-size: 2.5rem;
-    font-weight: 800;
-    color: var(--md-sys-color-on-surface);
-    margin-bottom: 8px;
+    font-family: var(--font-read);
+    font-weight: 700;
+    font-size: 2.3rem;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    line-height: 1.1;
 }
 
 .cardPhonetic {
-    font-family: monospace;
-    color: var(--md-sys-color-on-surface-variant);
-    font-size: 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    color: var(--ink-3);
+    margin-top: 10px;
 }
 
 .cardHint {
-    margin-top: auto;
-    color: #94a3b8;
-    font-size: 0.9rem;
+    position: absolute;
+    bottom: 18px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 0.76rem;
+    color: var(--ink-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
 
+.cardHint i {
+    animation: tap-pulse 1.6s infinite;
+}
+
+@keyframes tap-pulse {
+    0%, 100% { transform: translateY(0); opacity: 0.6; }
+    50% { transform: translateY(-3px); opacity: 1; }
+}
+
+/* Back side */
 .cardHeader {
     width: 100%;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--md-sys-color-outline-variant);
-    padding-bottom: 12px;
+    gap: 9px;
     margin-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 12px;
 }
 
 .cardWordSmall {
+    font-family: var(--font-read);
     font-weight: 700;
-    font-size: 1.2rem;
-    color: var(--md-sys-color-on-surface);
+    font-size: 1.4rem;
 }
 
 .cardPos {
-    background: var(--md-sys-color-surface-variant);
+    background: var(--surface-2);
     padding: 2px 8px;
-    border-radius: var(--md-sys-radius-xs);
+    border-radius: var(--r-xs);
     font-size: 0.8rem;
-    color: var(--md-sys-color-on-surface-variant);
+    color: var(--ink-3);
 }
 
 .cardMeaning {
     font-size: 1.1rem;
     line-height: 1.5;
-    color: var(--md-sys-color-on-surface);
+    color: var(--ink);
     margin-bottom: 20px;
 }
 
 .cardContext {
+    font-family: var(--font-read);
     font-style: italic;
-    color: var(--md-sys-color-on-surface-variant);
     font-size: 0.95rem;
-    background: var(--md-sys-color-surface-container-low);
-    padding: 12px;
-    border-radius: var(--md-sys-radius-md);
-    width: 100%;
+    color: var(--ink-2);
+    line-height: 1.6;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border-radius: var(--r-md);
+    border-left: 3px solid var(--primary);
     margin-bottom: auto;
+    width: 100%;
+}
+
+.cardContext b {
+    font-style: normal;
+    font-weight: 700;
+    background: var(--amber-wash);
+    box-shadow: inset 0 -2px 0 var(--amber);
+    padding: 0 2px;
 }
 
 .cardActions {
     width: 100%;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: repeat(4, 1fr);
     gap: 8px;
-    margin-top: 20px;
+    padding: 12px 0 6px;
 }
 
 .srsBtn {
-    padding: 8px;
-    border-radius: 6px;
+    height: 58px;
+    border-radius: var(--r-md);
     border: none;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: #fff;
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: transform 0.1s;
+    transition: all 0.18s var(--ease-spring);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+
+.srsBtn .gk {
+    font-size: 0.62rem;
+    opacity: 0.8;
+    font-weight: 600;
+    font-family: var(--font-mono);
+}
+
+.srsBtn:hover {
+    filter: brightness(1.08);
 }
 
 .srsBtn:active {
-    transform: scale(0.95);
+    transform: scale(0.94);
 }
 
 .srsFail {
-    background: var(--md-sys-color-error);
-    color: var(--md-sys-color-on-error, white);
+    background: var(--red);
 }
 
 .srsHard {
-    background: #ffedd5;
-    color: #ea580c;
+    background: var(--amber);
 }
 
 .srsGood {
-    background: #dcfce7;
-    color: #16a34a;
+    background: var(--blue);
 }
 
 .srsEasy {
-    background: #dbeafe;
-    color: #2563eb;
+    background: var(--green);
 }
 
 .masterBtn {
-    margin-top: 12px;
-    width: 100%;
-    background: transparent;
-    border: 1px dashed #cbd5e1;
-    color: #64748b;
+    display: block;
+    margin: 4px auto 14px;
     font-size: 0.8rem;
+    color: var(--ink-3);
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: var(--r-pill);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s var(--ease);
+}
+
+.masterBtn:hover {
+    color: var(--primary);
+    background: var(--surface-2);
+}
+
+/* Cloze blank styling */
+.blank {
+    color: var(--primary);
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+/* Grade key label */
+.gk {
+    font-size: 0.62rem;
+    opacity: 0.8;
+    font-weight: 600;
+    font-family: var(--font-mono);
 }
 
 /* Loading Dots Animation */

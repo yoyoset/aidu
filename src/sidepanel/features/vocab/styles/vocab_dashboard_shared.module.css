@@ -1,14 +1,14 @@
-/* vocab_dashboard_shared.module.css - Vocab item styles as rendered in builder dashboard */
+/* Quiet Study — Vocab Actions & Dashboard List */
 
 .vocab-actions-header {
-    padding: 10px 16px;
+    padding: 12px var(--pad-screen);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--md-sys-color-outline-variant);
-    margin-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 14px;
     gap: 10px;
-    background: var(--md-sys-color-surface);
+    background: var(--surface);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -22,50 +22,69 @@
 }
 
 .vocab-filter-select {
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: 1px solid var(--md-sys-color-outline-variant);
-    background: var(--md-sys-color-surface);
-    color: var(--md-sys-color-on-surface);
+    padding: 6px 10px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.9rem;
+    font-family: var(--font-ui);
+    cursor: pointer;
+    transition: all 0.2s var(--ease);
+}
+
+.vocab-filter-select:hover {
+    border-color: var(--primary);
+    background: var(--surface-2);
+}
+
+.vocab-filter-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: inset 0 0 0 1px var(--primary);
 }
 
 .vocab-count-badge {
-    color: var(--md-sys-color-secondary);
-    font-size: 0.85em;
+    color: var(--ink-3);
+    font-size: 0.8rem;
+    font-weight: 500;
 }
 
 .vocab-selection-count {
-    font-weight: bold;
-    color: var(--md-sys-color-primary);
+    font-weight: 600;
+    color: var(--primary);
     margin-right: 4px;
+    font-size: 0.9rem;
 }
 
 .vocab-select-all-label {
     display: flex;
     align-items: center;
-    gap: 4px;
-    font-size: 0.9em;
-    color: var(--md-sys-color-on-surface-variant);
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--ink-3);
     cursor: pointer;
+    font-weight: 500;
 }
 
-/* Vocab Item Card In Dashboard */
+/* Vocab Item Card (List variant) */
 .vocab-item-card {
-    padding: 16px 20px;
-    background: var(--md-sys-color-surface-container-low);
-    margin-bottom: 12px;
-    border-radius: var(--md-sys-radius-md);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    padding: 13px 15px;
+    background: var(--surface);
+    margin-bottom: var(--gap-list);
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     gap: 12px;
-    transition: all 300ms ease;
+    transition: all 0.2s var(--ease);
 }
 
 .vocab-item-card:hover {
-    background: var(--md-sys-color-surface-container-high);
-    border-color: var(--md-sys-color-primary);
+    background: var(--surface-2);
+    border-color: var(--primary);
+    box-shadow: var(--sh-1);
 }
 
 .vocab-item-content {
@@ -73,59 +92,73 @@
 }
 
 .vocab-item-title-row {
-    font-weight: bold;
-    font-size: 1.1rem;
-    color: var(--md-sys-color-primary);
-    margin-bottom: 2px;
+    font-family: var(--font-read);
+    font-weight: 700;
+    font-size: 1.08rem;
+    color: var(--ink);
+    margin-bottom: 4px;
     display: flex;
     align-items: baseline;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
 .vocab-item-phonetic {
-    font-weight: normal;
-    font-size: 0.85em;
-    color: var(--md-sys-color-outline);
-    margin-left: 6px;
-    font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    color: var(--ink-3);
 }
 
 .vocab-item-pos {
-    font-weight: normal;
-    font-size: 0.85em;
-    color: var(--md-sys-color-on-surface-variant);
-    margin-left: 6px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: var(--r-pill);
+    background: var(--blue-soft);
+    color: var(--blue-ink);
 }
 
 .vocab-item-mastered-badge {
-    font-size: 0.75em;
-    background: var(--md-sys-color-secondary-container);
-    color: var(--md-sys-color-on-secondary-container);
-    padding: 1px 8px;
-    border-radius: 100px;
-    margin-left: 8px;
-    font-weight: 600;
+    font-size: 0.66rem;
+    background: var(--primary-soft);
+    color: var(--primary-ink);
+    padding: 2px 6px;
+    border-radius: var(--r-pill);
+    font-weight: 700;
+    text-transform: uppercase;
 }
 
 .vocab-item-meaning {
-    font-size: 0.95em;
-    color: var(--md-sys-color-on-surface);
-    margin-bottom: 4px;
+    font-size: 0.93rem;
+    color: var(--ink);
+    line-height: 1.4;
+    margin-bottom: 6px;
 }
 
 .vocab-item-context {
-    font-size: 0.85em;
-    color: var(--md-sys-color-on-surface-variant);
+    font-family: var(--font-read);
+    font-size: 0.85rem;
+    color: var(--ink-2);
     font-style: italic;
-    border-left: 3px solid var(--md-sys-color-primary-container);
-    padding-left: 8px;
-    margin-bottom: 4px;
+    border-left: 2px solid var(--line-strong);
+    padding-left: 10px;
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+
+.vocab-item-context b {
+    font-style: normal;
+    font-weight: 600;
+    background: var(--amber-wash);
+    box-shadow: inset 0 -2px 0 var(--amber);
+    padding: 0 1px;
 }
 
 .vocab-item-date {
-    font-size: 0.75em;
-    color: var(--md-sys-color-outline);
+    font-size: 0.72rem;
+    color: var(--ink-3);
     margin-top: 4px;
+    font-weight: 500;
 }
 
 .vocab-item-actions-col {

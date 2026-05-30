@@ -35,30 +35,34 @@ export class VocabReview extends Component {
         const wrapper = document.createElement('div');
         wrapper.className = reviewStyles.reviewContainer;
 
-        // Close Button
-        const header = document.createElement('div');
-        header.style.display = 'flex';
-        header.style.justifyContent = 'space-between';
-        header.style.alignItems = 'center';
-        header.style.marginBottom = '10px';
-        header.style.padding = '0 4px';
+        // Progress bar header
+        const topBar = document.createElement('div');
+        topBar.className = reviewStyles.reviewTop || 'reviewTop';
+
+        const progressTrack = document.createElement('div');
+        progressTrack.className = reviewStyles.reviewProgTrack || 'reviewProgTrack';
+        const progressFill = document.createElement('div');
+        progressFill.className = reviewStyles.reviewProgFill || 'reviewProgFill';
+        const completed = this.totalCount - this.queue.length;
+        const progressPct = this.totalCount > 0 ? (completed / this.totalCount) * 100 : 0;
+        progressFill.style.width = progressPct + '%';
+        progressTrack.appendChild(progressFill);
 
         const counter = document.createElement('span');
-        counter.style.color = 'var(--md-sys-color-on-surface-variant)';
-        counter.style.fontSize = '0.9em';
-        counter.style.fontWeight = 'bold';
-        // Calculate progress: 1-based index
-        const current = this.totalCount - this.queue.length + 1;
-        counter.textContent = t('vocab.card', { current, total: this.totalCount });
+        counter.className = reviewStyles.reviewCount || 'reviewCount';
+        const current = completed + 1;
+        counter.textContent = `${current} / ${this.totalCount}`;
 
+        topBar.appendChild(progressTrack);
+        topBar.appendChild(counter);
+        wrapper.appendChild(topBar);
+
+        // Close Button
         const closeBtn = document.createElement('button');
         closeBtn.className = reviewStyles.closeReviewBtn;
         closeBtn.innerHTML = '<i class="ri-close-line"></i>';
         closeBtn.onclick = () => this.finish();
-
-        header.appendChild(counter);
-        header.appendChild(closeBtn);
-        wrapper.appendChild(header);
+        wrapper.appendChild(closeBtn);
 
         // Content
         if (this.queue.length === 0) {
@@ -72,17 +76,72 @@ export class VocabReview extends Component {
     }
 
     renderEmpty(container) {
-        container.innerHTML += `
-            <div style="text-align:center; padding: 40px;">
-                <h2 style="font-size: 2em; margin-bottom: 20px;">${t('review.allDone')}</h2>
-                <div style="font-size: 1.1em; color: var(--md-sys-color-on-surface-variant); margin-bottom: 30px;">
-                    <p>${t('review.summary', { reviewed: this.stats.reviewed })}</p>
-                    <p>${t('review.stats', { mastered: this.stats.mastered, forgotten: this.stats.forgotten })}</p>
-                </div>
-                <button class="${navStyles.btnPrimary}" id="close-review" style="padding: 10px 24px; font-size: 1.2em;">${t('common.close')}</button>
-            </div>
-        `;
-        container.querySelector('#close-review').onclick = () => this.finish();
+        const done = document.createElement('div');
+        done.className = reviewStyles.reviewDone || 'reviewDone';
+        done.style.textAlign = 'center';
+        done.style.flex = '1';
+        done.style.display = 'flex';
+        done.style.flexDirection = 'column';
+        done.style.alignItems = 'center';
+        done.style.justifyContent = 'center';
+        done.style.padding = '30px';
+
+        const trophy = document.createElement('div');
+        trophy.style.width = '84px';
+        trophy.style.height = '84px';
+        trophy.style.borderRadius = '99px';
+        trophy.style.background = 'var(--primary-soft)';
+        trophy.style.color = 'var(--primary)';
+        trophy.style.display = 'grid';
+        trophy.style.placeItems = 'center';
+        trophy.style.fontSize = '2.6rem';
+        trophy.style.marginBottom = '12px';
+        trophy.innerHTML = '<i class="ri-medal-2-line"></i>';
+
+        const title = document.createElement('h2');
+        title.style.fontFamily = 'var(--font-display)';
+        title.style.fontWeight = '800';
+        title.style.fontSize = '1.6rem';
+        title.style.color = 'var(--ink)';
+        title.style.marginBottom = '18px';
+        title.textContent = t('review.allDone');
+
+        const stats = document.createElement('div');
+        stats.style.display = 'flex';
+        stats.style.gap = '24px';
+        stats.style.margin = '18px 0 24px';
+        stats.style.justifyContent = 'center';
+
+        const statReviewed = document.createElement('div');
+        const numReviewed = document.createElement('div');
+        numReviewed.style.fontFamily = 'var(--font-display)';
+        numReviewed.style.fontWeight = '800';
+        numReviewed.style.fontSize = '1.8rem';
+        numReviewed.style.color = 'var(--ink)';
+        numReviewed.textContent = this.stats.reviewed.toString();
+        const capReviewed = document.createElement('div');
+        capReviewed.style.fontSize = '0.72rem';
+        capReviewed.style.color = 'var(--ink-3)';
+        capReviewed.style.fontWeight = '600';
+        capReviewed.style.marginTop = '2px';
+        capReviewed.textContent = t('review.summary', { reviewed: this.stats.reviewed });
+        statReviewed.appendChild(numReviewed);
+        statReviewed.appendChild(capReviewed);
+
+        stats.appendChild(statReviewed);
+        done.appendChild(trophy);
+        done.appendChild(title);
+        done.appendChild(stats);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = navStyles.btnPrimary;
+        closeBtn.style.padding = '12px 28px';
+        closeBtn.style.marginTop = 'auto';
+        closeBtn.textContent = t('common.close');
+        closeBtn.onclick = () => this.finish();
+        done.appendChild(closeBtn);
+
+        container.appendChild(done);
     }
 
     renderCard(container) {
@@ -96,34 +155,103 @@ export class VocabReview extends Component {
         // Front (Question)
         const front = document.createElement('div');
         front.className = reviewStyles.cardFront;
-        front.innerHTML = `
-            <div class="${reviewStyles.cardWord}">${word.word}</div>
-            <div class="${reviewStyles.cardPhonetic}">${word.phonetic || ''}</div>
-            <div class="${reviewStyles.cardContext}" style="margin-top:20px; font-size:1.1em; color:var(--md-sys-color-on-surface-variant);">
-                ${this.createCloze(word.context, word.word)}
-            </div>
-            <div class="${reviewStyles.cardHint}">${t('review.flip')}</div>
-        `;
+
+        const frontWord = document.createElement('div');
+        frontWord.className = reviewStyles.cardWord;
+        frontWord.textContent = word.word;
+        front.appendChild(frontWord);
+
+        if (word.phonetic) {
+            const frontPhon = document.createElement('div');
+            frontPhon.className = reviewStyles.cardPhonetic;
+            frontPhon.textContent = word.phonetic;
+            front.appendChild(frontPhon);
+        }
+
+        const frontCloze = document.createElement('div');
+        frontCloze.className = reviewStyles['fc-cloze'] || 'fc-cloze';
+        frontCloze.style.marginTop = '26px';
+        frontCloze.style.maxWidth = '320px';
+        frontCloze.innerHTML = this.createCloze(word.context, word.word);
+        front.appendChild(frontCloze);
+
+        const frontHint = document.createElement('div');
+        frontHint.className = reviewStyles.cardHint;
+        frontHint.innerHTML = '<i class="ri-arrow-up-line"></i>' + t('review.flip');
+        front.appendChild(frontHint);
 
         // Back (Answer)
         const back = document.createElement('div');
         back.className = reviewStyles.cardBack;
-        back.innerHTML = `
-            <div class="${reviewStyles.cardHeader}">
-                <span class="${reviewStyles.cardWordSmall}">${word.word}</span>
-                <span class="${reviewStyles.cardPos}">${word.pos}</span>
-                <button class="${navStyles.iconBtn}" id="edit-btn" title="${t('dashboard.draft.edit')}"><i class="ri-edit-line"></i></button>
-            </div>
-            <div class="${reviewStyles.cardMeaning}">${word.meaning}</div>
-            <div class="${reviewStyles.cardContext}">"${word.context}"</div>
-            <div class="${reviewStyles.cardActions}">
-                <button class="${reviewStyles.srsBtn} ${reviewStyles.srsFail}" data-grade="0">${t('review.forgot')}</button>
-                <button class="${reviewStyles.srsBtn} ${reviewStyles.srsHard}" data-grade="1">${t('review.hard')}</button>
-                <button class="${reviewStyles.srsBtn} ${reviewStyles.srsGood}" data-grade="2">${t('review.good')}</button>
-                <button class="${reviewStyles.srsBtn} ${reviewStyles.srsEasy}" data-grade="3">${t('review.easy')}</button>
-            </div>
-            <button class="${navStyles.btnDestructive || reviewStyles.masterBtn} ${reviewStyles.masterBtn}" id="master-btn">${t('review.masterRemove')}</button>
-        `;
+
+        // Header
+        const backHeader = document.createElement('div');
+        backHeader.className = reviewStyles.cardHeader;
+
+        const backWord = document.createElement('span');
+        backWord.className = reviewStyles.cardWordSmall;
+        backWord.textContent = word.word;
+        backHeader.appendChild(backWord);
+
+        const backPos = document.createElement('span');
+        backPos.className = reviewStyles.cardPos;
+        backPos.textContent = word.pos;
+        backHeader.appendChild(backPos);
+
+        const editBtn = document.createElement('button');
+        editBtn.className = navStyles.iconBtn;
+        editBtn.id = 'edit-btn';
+        editBtn.title = t('dashboard.draft.edit');
+        editBtn.innerHTML = '<i class="ri-edit-line"></i>';
+        editBtn.style.marginLeft = 'auto';
+        backHeader.appendChild(editBtn);
+
+        back.appendChild(backHeader);
+
+        // Meaning
+        const backMeaning = document.createElement('div');
+        backMeaning.className = reviewStyles.cardMeaning;
+        backMeaning.textContent = word.meaning;
+        back.appendChild(backMeaning);
+
+        // Context
+        const backContext = document.createElement('div');
+        backContext.className = reviewStyles.cardContext;
+        backContext.innerHTML = word.context ? `"${word.context}"` : '';
+        back.appendChild(backContext);
+
+        // Spacer
+        const spacer = document.createElement('div');
+        spacer.style.flex = '1';
+        back.appendChild(spacer);
+
+        // Actions
+        const backActions = document.createElement('div');
+        backActions.className = reviewStyles.cardActions;
+
+        const grades = [
+            { grade: 0, label: t('review.forgot'), class: reviewStyles.srsFail },
+            { grade: 1, label: t('review.hard'), class: reviewStyles.srsHard },
+            { grade: 2, label: t('review.good'), class: reviewStyles.srsGood },
+            { grade: 3, label: t('review.easy'), class: reviewStyles.srsEasy }
+        ];
+
+        grades.forEach(g => {
+            const btn = document.createElement('button');
+            btn.className = `${reviewStyles.srsBtn} ${g.class}`;
+            btn.dataset.grade = g.grade;
+            btn.innerHTML = `${g.label}<span class="${reviewStyles.gk || ''}">(${g.grade})</span>`;
+            backActions.appendChild(btn);
+        });
+
+        back.appendChild(backActions);
+
+        // Master button
+        const masterBtn = document.createElement('button');
+        masterBtn.className = reviewStyles.masterBtn;
+        masterBtn.id = 'master-btn';
+        masterBtn.textContent = t('review.masterRemove');
+        back.appendChild(masterBtn);
 
         card.appendChild(front);
         card.appendChild(back);
@@ -168,16 +296,11 @@ export class VocabReview extends Component {
 
     createCloze(context, word) {
         if (!context) return t('review.noContext');
-        // Simple case-insensitive replacement
-        // Note: Ideally this would handle lemmas/inflections, but for now exact match or simple substring
         try {
             const regex = new RegExp(`\\b${word}\\b`, 'gi');
             if (regex.test(context)) {
-                return context.replace(regex, '______');
+                return context.replace(regex, '<span class="blank">______</span>');
             }
-            // Fallback: if exact match not found (e.g. inflected), show as is or try looser match?
-            // Let's just return the context for now if regex fails, user still gets context.
-            // Or maybe partial masking? No, keep it simple.
             return context;
         } catch (e) {
             return context;

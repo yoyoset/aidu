@@ -4,3 +4,14 @@ dist
 .DS_Store
 *.local
 coverage
+
+# Build artifacts & dependencies
+*.zip
+proxy-worker/out/
+proxy-worker/out2/
+
+# Workspace logs
+deploy_log.txt
+file_counts.txt
+large_files_list.txt
+

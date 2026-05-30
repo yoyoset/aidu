@@ -129,8 +129,13 @@ export class ReaderDictionary {
 
     updatePopover(data, onPlayAudio, contextText, onStatusChange) {
         if (!this.popover) return;
-        this.popover.innerHTML = ''; // Clear
-        this.renderContent(this.popover, data, onPlayAudio, contextText, onStatusChange);
+
+        // Clear scroll container (preserve grip)
+        const scroll = this.popover.querySelector(`.${styles['sheet-scroll']}`) || this.popover.querySelector('.sheet-scroll');
+        if (scroll) {
+            scroll.innerHTML = '';
+            this.renderContent(scroll, data, onPlayAudio, contextText, onStatusChange);
+        }
     }
 
     renderContent(container, data, onPlayAudio, contextText, onStatusChange) {

@@ -59,7 +59,7 @@ export class ReaderHeader {
         transBtn.onclick = () => {
             this.parent.showTranslations = !this.parent.showTranslations;
             transBtn.innerHTML = this.parent.showTranslations ? '<i class="ri-eye-line"></i>' : '<i class="ri-eye-off-line"></i>';
-            this.parent.updateTranslationVisibility();
+            this.parent.updateTranslationVisibility(this.parent.showTranslations);
         };
 
         // TTS Button

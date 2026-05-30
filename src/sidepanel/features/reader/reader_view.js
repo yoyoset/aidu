@@ -111,6 +111,11 @@ export class ReaderView extends Component {
         this.state.stopTimer();
     }
 
+    updateTranslationVisibility(show) {
+        this.showTranslations = show;
+        if (this.renderer) this.renderer.updateTranslationVisibility(show);
+    }
+
     async render() {
         this.element.innerHTML = '';
         this.dictionary = new ReaderDictionary(this.element);

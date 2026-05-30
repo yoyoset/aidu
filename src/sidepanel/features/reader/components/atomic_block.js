@@ -215,7 +215,6 @@ export class AtomicBlock {
         const row = document.createElement('div');
         const isTranslation = rowClass === styles.translationRow || rowClass === 'translationRow';
         const jsClass = isTranslation ? 'js-trans-text' : 'js-exp-text';
-        const toggleClass = isTranslation ? 'js-trans-toggle' : 'js-exp-toggle';
 
         row.className = rowClass || '';
         row.style.marginTop = '7px';

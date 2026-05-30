@@ -137,10 +137,6 @@ export class ReaderRenderer {
         // Update Text
         this.root.querySelectorAll('.js-trans-text').forEach(el => el.classList[method](cls));
         this.root.querySelectorAll('.js-exp-text').forEach(el => el.classList[method](cls));
-
-        // Update Buttons
-        this.root.querySelectorAll('.js-trans-toggle').forEach(btn => btn.innerHTML = icon);
-        this.root.querySelectorAll('.js-exp-toggle').forEach(btn => btn.innerHTML = icon);
     }
 
     updateHighlights(savedSet) {

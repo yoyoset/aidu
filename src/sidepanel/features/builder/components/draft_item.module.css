@@ -1,10 +1,11 @@
 /* Draft Item Container (Bento Card) */
 .draftItem {
-    background: var(--md-sys-color-surface-container-low);
-    border: 1px solid var(--md-sys-color-outline-variant);
-    border-radius: var(--md-sys-radius-md);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--line-strong);
+    border-radius: var(--r-md);
     padding: 16px;
-    transition: all 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.2s var(--ease);
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -15,15 +16,30 @@
 }
 
 .draftItem:hover {
-    background: var(--md-sys-color-surface-container-low);
-    box-shadow: var(--md-sys-elevation-1);
+    background: var(--surface);
+    box-shadow: var(--sh-1);
+}
+
+/* Status-based spine coloring */
+.draftItem.statusReading,
+.draftItem.statusProcessing {
+    border-left-color: var(--primary);
+}
+
+.draftItem.statusReady,
+.draftItem.statusDone {
+    border-left-color: var(--green);
+}
+
+.draftItem.statusError {
+    border-left-color: var(--red);
 }
 
 /* Checkbox (Top Left Overlay) */
 .draftCheckbox {
     width: 20px;
     height: 20px;
-    accent-color: var(--md-sys-color-primary);
+    accent-color: var(--primary);
     cursor: pointer;
     flex-shrink: 0;
     margin: 0;
@@ -72,9 +88,10 @@
 }
 
 .draftTitle {
+    font-family: var(--font-read);
     font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--md-sys-color-on-surface);
+    font-weight: 600;
+    color: var(--ink);
     line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -86,7 +103,7 @@
 
 .draftPreview {
     font-size: 0.85rem;
-    color: var(--md-sys-color-on-surface-variant);
+    color: var(--ink-2);
     line-height: 1.5;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -104,31 +121,38 @@
     margin-top: auto;
     /* Push to bottom of card */
     padding-top: 12px;
-    border-top: 1px solid var(--md-sys-color-outline-variant);
+    border-top: 1px solid var(--line);
 }
 
 .badge {
     display: inline-flex;
     align-items: center;
-    padding: 2px 8px;
-    border-radius: var(--md-sys-radius-xs);
+    padding: 3px 10px;
+    border-radius: var(--r-pill);
     font-size: 0.65rem;
-    font-weight: 800;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    background: var(--md-sys-color-secondary-container);
-    color: var(--md-sys-color-on-secondary-container);
+    background: var(--surface-2);
+    color: var(--ink-2);
 }
 
-/* Note: .statusReady needs to be handled in JS or parent */
-.statusReady .badge {
-    background: var(--md-sys-color-primary-container);
-    color: var(--md-sys-color-on-primary-container);
+/* Status-based badge colors */
+.draftItem.statusReading .badge,
+.draftItem.statusProcessing .badge {
+    background: var(--primary-soft);
+    color: var(--primary-ink);
+}
+
+.draftItem.statusReady .badge,
+.draftItem.statusDone .badge {
+    background: var(--green-soft);
+    color: var(--green-ink);
 }
 
 .progressText {
     font-size: 0.75rem;
-    color: var(--md-sys-color-on-surface-variant);
+    color: var(--ink-2);
     font-variant-numeric: tabular-nums;
 }
 
@@ -140,15 +164,15 @@
 }
 
 .btnPrimary {
-    background: var(--md-sys-color-primary);
-    color: var(--md-sys-color-on-primary);
+    background: var(--primary);
+    color: white;
     border: none;
-    border-radius: var(--md-sys-radius-pill);
+    border-radius: var(--r-pill);
     padding: 8px 20px;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.2s var(--ease);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -158,9 +182,8 @@
 }
 
 .btnPrimary:hover {
-    transform: scale(1.05);
-    box-shadow: var(--md-sys-elevation-2);
-    filter: brightness(1.05);
+    box-shadow: var(--sh-2);
+    filter: brightness(1.08);
 }
 
 .btnPrimary:active {
@@ -181,26 +204,26 @@
     height: 8px;
     border-radius: 50%;
     /* Circle dots */
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.2s var(--ease);
 }
 
 .chunkPending {
-    background-color: var(--md-sys-color-outline-variant);
+    background-color: var(--line-strong);
     opacity: 0.3;
 }
 
 .chunkProcessing {
-    background-color: var(--md-sys-color-primary);
+    background-color: var(--primary);
     animation: pulse 1.5s infinite ease-in-out;
-    box-shadow: 0 0 8px var(--md-sys-color-primary);
+    box-shadow: 0 0 8px var(--primary);
 }
 
 .chunkDone {
-    background-color: var(--md-sys-color-primary);
+    background-color: var(--primary);
 }
 
 .chunkError {
-    background-color: var(--md-sys-color-error);
+    background-color: var(--red);
 }
 
 @keyframes pulse {

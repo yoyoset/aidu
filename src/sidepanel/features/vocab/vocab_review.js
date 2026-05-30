@@ -172,7 +172,12 @@ export class VocabReview extends Component {
         frontCloze.className = reviewStyles['fc-cloze'] || 'fc-cloze';
         frontCloze.style.marginTop = '26px';
         frontCloze.style.maxWidth = '320px';
-        frontCloze.innerHTML = this.createCloze(word.context, word.word);
+        const clozeFrag = this.createCloze(word.context, word.word);
+        if (clozeFrag instanceof DocumentFragment) {
+            frontCloze.appendChild(clozeFrag);
+        } else {
+            frontCloze.appendChild(clozeFrag);
+        }
         front.appendChild(frontCloze);
 
         const frontHint = document.createElement('div');
@@ -295,15 +300,45 @@ export class VocabReview extends Component {
     }
 
     createCloze(context, word) {
-        if (!context) return t('review.noContext');
+        if (!context) {
+            const span = document.createElement('span');
+            span.textContent = t('review.noContext');
+            return span;
+        }
         try {
             const regex = new RegExp(`\\b${word}\\b`, 'gi');
-            if (regex.test(context)) {
-                return context.replace(regex, '<span class="blank">______</span>');
+            const frag = document.createDocumentFragment();
+            let lastIdx = 0;
+            let match;
+
+            while ((match = regex.exec(context)) !== null) {
+                // Text before match
+                if (match.index > lastIdx) {
+                    frag.appendChild(document.createTextNode(context.substring(lastIdx, match.index)));
+                }
+                // Blank span with hashed class
+                const blank = document.createElement('span');
+                blank.className = reviewStyles.blank;
+                blank.textContent = '______';
+                frag.appendChild(blank);
+                lastIdx = regex.lastIndex;
             }
-            return context;
+
+            // Remaining text
+            if (lastIdx < context.length) {
+                frag.appendChild(document.createTextNode(context.substring(lastIdx)));
+            }
+
+            // If no matches, return plain text
+            if (lastIdx === 0) {
+                frag.appendChild(document.createTextNode(context));
+            }
+
+            return frag;
         } catch (e) {
-            return context;
+            const span = document.createElement('span');
+            span.textContent = context;
+            return span;
         }
     }
 

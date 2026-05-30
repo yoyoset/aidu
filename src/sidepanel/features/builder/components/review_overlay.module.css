@@ -301,6 +301,14 @@
     font-family: var(--font-mono);
 }
 
+/* Cloze context container (front of card) */
+.fc-cloze {
+    font-family: var(--font-read);
+    font-size: 1.12rem;
+    line-height: 1.85;
+    color: var(--ink-2);
+}
+
 /* Loading Dots Animation */
 @keyframes loadingDots {
     0% {

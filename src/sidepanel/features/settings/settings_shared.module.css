@@ -143,7 +143,7 @@
 .select:focus {
     outline: none;
     border-color: var(--md-sys-color-primary);
-    background: white;
+    background: var(--surface);
     box-shadow: 0 0 0 3px var(--md-sys-state-focus);
 }
 
@@ -174,25 +174,25 @@
 }
 
 .btnSecondary {
-    background: #FFFFFF;
-    color: #475569;
+    background: var(--surface);
+    color: var(--ink-2);
     font-weight: 500;
     padding: 10px 20px;
     border-radius: 8px;
-    border: 1px solid #CBD5E1;
+    border: 1px solid var(--line);
     cursor: pointer;
     transition: all 0.15s;
 }
 
 .btnSecondary:hover {
-    background: #F8FAFC;
-    color: #0F172A;
-    border-color: #94A3B8;
+    background: var(--surface-2);
+    color: var(--ink);
+    border-color: var(--ink-3);
 }
 
 .btnDestructive {
     background: transparent;
-    color: #EF4444;
+    color: var(--red);
     border: none;
     font-size: 0.85rem;
     cursor: pointer;
@@ -202,8 +202,8 @@
 }
 
 .btnDestructive:hover {
-    background: #FEF2F2;
-    color: #DC2626;
+    background: color-mix(in srgb, var(--red) 12%, var(--surface));
+    color: color-mix(in srgb, var(--red) 80%, var(--ink));
 }
 
 /* Footer */

@@ -1,10 +1,10 @@
 /* settings_expert.module.css - Expert Section Styles */
 
 .expertSection {
-    border: 1px dashed #ef4444;
+    border: 1px dashed var(--red);
     border-radius: var(--md-sys-radius-md);
     margin: 10px 0;
-    background: #fef2f2;
+    background: color-mix(in srgb, var(--red) 8%, var(--surface));
     overflow: hidden;
     transition: all 0.3s ease;
 }
@@ -15,19 +15,19 @@
     align-items: center;
     justify-content: space-between;
     cursor: pointer;
-    background: #fee2e2;
-    color: #991b1b;
+    background: color-mix(in srgb, var(--red) 12%, var(--surface));
+    color: color-mix(in srgb, var(--red) 70%, var(--ink));
     font-weight: 700;
     font-size: 0.9rem;
     user-select: none;
-    border-bottom: 1px solid #fca5a5;
+    border-bottom: 1px solid color-mix(in srgb, var(--red) 40%, transparent);
     min-height: 48px;
     box-sizing: border-box;
     transition: background 0.2s;
 }
 
 .expertHeader:hover {
-    background: #fecaca;
+    background: color-mix(in srgb, var(--red) 16%, var(--surface));
 }
 
 .expertContent {
@@ -49,7 +49,7 @@
     justify-content: space-between;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #7f1d1d;
+    color: color-mix(in srgb, var(--red) 70%, var(--ink));
     margin-bottom: 8px;
 }
 
@@ -57,12 +57,12 @@
     width: 100%;
     min-height: 100px;
     padding: 10px;
-    border: 1px solid #fca5a5;
+    border: 1px solid color-mix(in srgb, var(--red) 40%, transparent);
     border-radius: 4px;
     font-family: 'Cascadia Code', 'Fira Code', monospace;
     font-size: 0.8rem;
-    background: white;
-    color: #450a0a;
+    background: var(--surface);
+    color: var(--ink);
     resize: vertical;
     line-height: 1.4;
     box-sizing: border-box;
@@ -70,14 +70,14 @@
 
 .promptTextarea:focus {
     outline: none;
-    border-color: #ef4444;
-    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+    border-color: var(--red);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--red) 20%, transparent);
 }
 
 .resetMiniBtn {
     background: transparent;
     border: none;
-    color: #b91c1c;
+    color: color-mix(in srgb, var(--red) 65%, var(--ink));
     font-size: 0.75rem;
     cursor: pointer;
     text-decoration: underline;
@@ -85,13 +85,13 @@
 }
 
 .resetMiniBtn:hover {
-    color: #ef4444;
+    color: var(--red);
 }
 
 .btnGhost {
-    background: rgba(239, 68, 68, 0.05);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #dc2626;
+    background: color-mix(in srgb, var(--red) 8%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+    color: var(--red);
     border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
@@ -99,8 +99,8 @@
 }
 
 .btnGhost:hover {
-    background: #fee2e2;
-    border-color: #ef4444;
-    color: #991b1b;
+    background: color-mix(in srgb, var(--red) 12%, var(--surface));
+    border-color: var(--red);
+    color: color-mix(in srgb, var(--red) 70%, var(--ink));
     transform: translateY(-0.5px);
 }

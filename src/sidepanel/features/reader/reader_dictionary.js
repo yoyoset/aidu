@@ -17,13 +17,29 @@ export class ReaderDictionary {
     }
 
     close() {
-        if (this.popover) {
-            this.popover.remove();
-            this.popover = null;
-        }
         if (this.activeBubble) {
             this.activeBubble.classList.remove(styles.active || 'active');
             this.activeBubble = null;
+        }
+
+        // Exit animation
+        if (this.scrim) {
+            this.scrim.classList.remove(styles.show || 'show');
+            this.scrim = null;
+        }
+        if (this.popover) {
+            this.popover.classList.remove(styles.show || 'show');
+            // Remove after animation (.4s)
+            setTimeout(() => {
+                if (this.popover) {
+                    this.popover.remove();
+                    this.popover = null;
+                }
+                if (this.scrim && this.scrim.parentNode) {
+                    this.scrim.remove();
+                    this.scrim = null;
+                }
+            }, 400);
         }
     }
 
@@ -74,17 +90,41 @@ export class ReaderDictionary {
     }
 
     showPopover(data, onPlayAudio, contextText, onStatusChange) {
-        if (this.popover) this.popover.remove();
+        if (this.popover) this.close();
 
-        const popover = document.createElement('div');
-        popover.className = styles.popover || 'popover';
+        // Create scrim (overlay)
+        const scrim = document.createElement('div');
+        scrim.className = styles['sheet-scrim'] || 'sheet-scrim';
+        scrim.onclick = () => this.close();
+        this.container.appendChild(scrim);
+        this.scrim = scrim;
 
-        // Render Content
-        this.renderContent(popover, data, onPlayAudio, contextText, onStatusChange);
+        // Create sheet container
+        const sheet = document.createElement('div');
+        sheet.className = styles.popover || 'popover';
 
-        this.container.appendChild(popover);
-        this.popover = popover;
-        popover.onclick = (e) => e.stopPropagation();
+        // Create grip handle
+        const grip = document.createElement('div');
+        grip.className = styles['sheet-grip'] || 'sheet-grip';
+        sheet.appendChild(grip);
+
+        // Create scrollable content area
+        const scroll = document.createElement('div');
+        scroll.className = styles['sheet-scroll'] || 'sheet-scroll';
+        sheet.appendChild(scroll);
+
+        // Render content into scroll area
+        this.renderContent(scroll, data, onPlayAudio, contextText, onStatusChange);
+
+        this.container.appendChild(sheet);
+        this.popover = sheet;
+        sheet.onclick = (e) => e.stopPropagation();
+
+        // Trigger enter animation (use setTimeout, NOT requestAnimationFrame)
+        setTimeout(() => {
+            scrim.classList.add(styles.show || 'show');
+            sheet.classList.add(styles.show || 'show');
+        }, 30);
     }
 
     updatePopover(data, onPlayAudio, contextText, onStatusChange) {
@@ -93,140 +133,151 @@ export class ReaderDictionary {
         this.renderContent(this.popover, data, onPlayAudio, contextText, onStatusChange);
     }
 
-    renderContent(popover, data, onPlayAudio, contextText, onStatusChange) {
-        const pHeader = styles.popoverHeader || 'popoverHeader';
-        const pWord = styles.popoverWord || 'popoverWord';
-        const pPhonetic = styles.popoverPhonetic || 'popoverPhonetic';
-        const pMeaning = styles.popoverMeaning || 'popoverMeaning';
-        const pActions = styles.popoverActions || 'popoverActions';
-        const btnClass = styles.iconBtn || 'iconBtn';
-        const actionBtn = styles.actionBtn || 'actionBtn';
-        const addBtnClass = styles.addBtn || 'addBtn';
+    renderContent(container, data, onPlayAudio, contextText, onStatusChange) {
+        // Clear container
+        container.innerHTML = '';
 
-        const closeBtnClass = styles.closeBtn || 'closeBtn';
+        // Dict head: word + phonetic + POS + speak button
+        const dictHead = document.createElement('div');
+        dictHead.className = styles['dict-head'] || 'dict-head';
+
+        const dictWord = document.createElement('span');
+        dictWord.className = styles['dict-word'] || 'dict-word';
+        dictWord.textContent = (data.lemma || data.word).toLowerCase();
+        dictHead.appendChild(dictWord);
+
+        if (data.phonetic) {
+            const dictPhon = document.createElement('span');
+            dictPhon.className = styles['dict-phon'] || 'dict-phon';
+            dictPhon.textContent = `[${data.phonetic}]`;
+            dictHead.appendChild(dictPhon);
+        }
+
+        const dictPos = document.createElement('span');
+        dictPos.className = styles['dict-pos'] || 'dict-pos';
+        dictPos.textContent = data.pos || '';
+        dictHead.appendChild(dictPos);
+
+        const dictSpeak = document.createElement('button');
+        dictSpeak.className = styles['dict-speak'] || 'dict-speak';
+        dictSpeak.innerHTML = '<i class="ri-volume-up-line"></i>';
+        dictSpeak.title = t('dict.pronounce');
+        if (onPlayAudio) dictSpeak.onclick = () => onPlayAudio(data.word);
+        dictHead.appendChild(dictSpeak);
+
+        container.appendChild(dictHead);
+
+        // Meaning
+        const dictMeaning = document.createElement('div');
+        dictMeaning.className = styles['dict-meaning'] || 'dict-meaning';
+        dictMeaning.textContent = data.meaning || t('dict.noDef');
+        container.appendChild(dictMeaning);
+
+        // Context with highlight
+        if (contextText) {
+            const dictContext = document.createElement('div');
+            dictContext.className = styles['dict-context'] || 'dict-context';
+            // Highlight the lemma in context with <b> tags (CSS handles amber-wash + underline)
+            const highlighted = contextText.replace(
+                new RegExp(`\\b${data.lemma}\\b`, 'gi'),
+                `<b>${data.lemma}</b>`
+            );
+            dictContext.innerHTML = highlighted;
+            container.appendChild(dictContext);
+        }
+
+        // Actions
+        const dictActions = document.createElement('div');
+        dictActions.className = styles['dict-actions'] || 'dict-actions';
+
+        const addBtn = document.createElement('button');
+        addBtn.className = styles.addBtn || 'addBtn';
+        addBtn.textContent = t('dict.add');
+        addBtn.dataset.role = 'add-vocab';
+
+        const deepDiveBtn = document.createElement('button');
+        deepDiveBtn.className = styles.addBtn || 'addBtn';
+        deepDiveBtn.textContent = t('dict.expand') || '展开';
+        deepDiveBtn.dataset.role = 'deep-dive';
+
+        dictActions.appendChild(addBtn);
+        dictActions.appendChild(deepDiveBtn);
+        container.appendChild(dictActions);
+
+        // ===== EVENT BINDING (unchanged logic) =====
+        const addBtnClass = styles.addBtn || 'addBtn';
         const savedBtnClass = styles.savedBtn || 'savedBtn';
 
-        popover.innerHTML = `
-            <div class="${pHeader}">
-                <div style="display:flex; align-items:center;">
-                    <span class="${pWord}" style="text-transform: capitalize;">${data.lemma || data.word}</span>
-                    <button class="${btnClass}" data-role="word-tts" title="${t('dict.pronounce')}" style="font-size:1.1em; margin-left:8px; color:#7c4dff;"><i class="ri-volume-up-line"></i></button>
-                    <span class="${pPhonetic}">${data.phonetic ? `[${data.phonetic}]` : ''}</span>
-                    ${data.level ? `<span style="font-size:0.75em; color:#64748b; background:#f1f5f9; padding:2px 6px; border-radius:4px; margin-left:8px; font-weight:600;">${data.level}</span>` : ''}
-                </div>
-                <div style="display:flex; align-items:center;">
-                    <div style="font-style:italic; color:#94a3b8; font-size:0.85em; margin-right:12px;">${data.pos}</div>
-                    <button class="${closeBtnClass}" data-role="close-popover" title="${t('common.close')}"><i class="ri-close-line"></i></button>
-                </div>
-            </div>
-            <div class="${pMeaning}">
-                ${data.meaning}
-            </div>
-            ${data.collocations && data.collocations.length ? `
-            <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">
-                ${data.collocations.map(c => `<span style="font-size:0.75em; color:var(--md-sys-color-primary); background:var(--md-sys-color-primary-container); padding:2px 8px; border-radius:12px;">${c}</span>`).join('')}
-            </div>
-            ` : ''}
-            <div class="${pActions}">
-                 <button class="${actionBtn} ${addBtnClass}" data-role="add-vocab">${t('dict.add')}</button>
-                 <button class="${actionBtn} ${savedBtnClass}" data-role="deep-dive" style="margin-left:8px; display:flex; align-items:center; gap:4px; min-width:auto; padding:8px 16px;" title="${t('dict.deepDive')}"><span>${t('dict.expand') || '展开'}</span></button>
-            </div>
-        `;
+        // Add to vocab button
+        const checkStatus = async () => {
+            const entry = await vocabService.getEntry(data.lemma);
+            const isSaved = !!entry;
+            const isMastered = entry && entry.stage === 'mastered';
+            updateBtnState(isSaved, isMastered);
+        };
+        checkStatus();
 
-        // Bind Events
-        const closeBtn = popover.querySelector('[data-role="close-popover"]');
-        if (closeBtn) closeBtn.onclick = (e) => {
-            e.stopPropagation();
-            this.close();
+        const updateBtnState = (isSaved, isMastered) => {
+            addBtn.classList.remove(savedBtnClass, addBtnClass, 'masteredBtn');
+            if (isMastered) {
+                addBtn.textContent = t('dict.mastered');
+                addBtn.classList.add(savedBtnClass);
+                addBtn.style.background = 'var(--green)';
+                addBtn.title = t('dict.masteredHint');
+            } else if (isSaved) {
+                addBtn.textContent = t('dict.saved');
+                addBtn.classList.add(savedBtnClass);
+                addBtn.title = t('dict.savedHint');
+                addBtn.style.background = '';
+            } else {
+                addBtn.textContent = t('dict.add');
+                addBtn.classList.add(addBtnClass);
+                addBtn.title = t('dict.addHint');
+                addBtn.style.background = '';
+            }
         };
 
-        const wordTtsBtn = popover.querySelector('[data-role="word-tts"]');
-        if (wordTtsBtn && onPlayAudio) wordTtsBtn.onclick = () => onPlayAudio(data.word);
-
-        const addBtn = popover.querySelector('[data-role="add-vocab"]');
-        if (addBtn) {
-            // Initial State
-            const checkStatus = async () => {
-                const entry = await vocabService.getEntry(data.lemma);
-                const isSaved = !!entry;
-                const isMastered = entry && entry.stage === 'mastered';
-                updateBtnState(isSaved, isMastered);
-            };
-            checkStatus();
-
-            const updateBtnState = (isSaved, isMastered) => {
-                // Clear old classes
-                addBtn.classList.remove(savedBtnClass, addBtnClass, 'masteredBtn');
-
-                if (isMastered) {
-                    addBtn.textContent = t('dict.mastered');
-                    addBtn.classList.add(savedBtnClass);
-                    addBtn.style.background = '#16a34a'; // Green override
-                    addBtn.title = t('dict.masteredHint');
-                } else if (isSaved) {
-                    addBtn.textContent = t('dict.saved');
-                    addBtn.classList.add(savedBtnClass);
-                    addBtn.title = t('dict.savedHint');
-                    addBtn.style.background = ''; // Reset
-                } else {
+        addBtn.onclick = async () => {
+            const entry = await vocabService.getEntry(data.lemma);
+            if (entry) {
+                await vocabService.remove(data.lemma);
+                updateBtnState(false, false);
+                if (onStatusChange) onStatusChange(false);
+            } else {
+                addBtn.textContent = t('dict.saving');
+                try {
+                    await vocabService.add({
+                        word: data.word,
+                        lemma: data.lemma,
+                        pos: data.pos,
+                        meaning: data.meaning,
+                        phonetic: data.phonetic,
+                        context: contextText.substring(0, 300),
+                        level: data.level,
+                        collocations: this.currentDef?.collocations || []
+                    });
+                    updateBtnState(true, false);
+                    if (onStatusChange) onStatusChange(true);
+                } catch (err) {
+                    console.error('Add failed', err);
+                    notificationService.error(t('dict.saveFailed'));
                     addBtn.textContent = t('dict.add');
-                    addBtn.classList.add(addBtnClass);
-                    addBtn.title = t('dict.addHint');
-                    addBtn.style.background = ''; // Reset
                 }
-            };
+            }
+        };
 
-            addBtn.onclick = async () => {
-                const entry = await vocabService.getEntry(data.lemma);
-
-                if (entry) {
-                    await vocabService.remove(data.lemma);
-                    updateBtnState(false, false);
-                    if (onStatusChange) onStatusChange(false);
-                } else {
-                    addBtn.textContent = t('dict.saving');
-                    try {
-                        await vocabService.add({
-                            word: data.word,
-                            lemma: data.lemma,
-                            pos: data.pos,
-                            meaning: data.meaning,
-                            phonetic: data.phonetic,
-                            context: contextText.substring(0, 300),
-                            level: data.level,
-                            collocations: this.currentDef?.collocations || []
-                        });
-                        updateBtnState(true, false);
-                        if (onStatusChange) onStatusChange(true);
-                    } catch (err) {
-                        console.error('Add failed', err);
-                        notificationService.error(t('dict.saveFailed'));
-                        addBtn.textContent = t('dict.add');
-                    };
-                }
-
-            };
-        }
-
-        // Deep Dive Logic (On-demand)
-        const deepDiveBtn = popover.querySelector('[data-role="deep-dive"]');
-        if (deepDiveBtn) {
-            deepDiveBtn.onclick = async () => {
-                const lemma = data.lemma.toLowerCase();
-
-                // Always call push to notify AnalysisTray (via subscription)
-                analysisQueue.push(data.word, data.lemma, contextText);
-
-                const entry = await vocabService.getEntry(lemma);
-                const deepData = (entry && entry.deepData) ? entry.deepData : analysisQueue.getCache(lemma);
-
-                if (deepData) {
-                    showDeepDiveModal({ word: data.word }, deepData);
-                } else {
-                    notificationService.info(t('vocab.deepDive.queued') || '已加入深度解析队列');
-                    this.close();
-                }
-            };
-        }
+        // Deep Dive button
+        deepDiveBtn.onclick = async () => {
+            const lemma = data.lemma.toLowerCase();
+            analysisQueue.push(data.word, data.lemma, contextText);
+            const entry = await vocabService.getEntry(lemma);
+            const deepData = (entry && entry.deepData) ? entry.deepData : analysisQueue.getCache(lemma);
+            if (deepData) {
+                showDeepDiveModal({ word: data.word }, deepData);
+            } else {
+                notificationService.info(t('vocab.deepDive.queued') || '已加入深度解析队列');
+                this.close();
+            }
+        };
     }
 }

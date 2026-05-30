@@ -314,8 +314,8 @@
     background: color-mix(in srgb, var(--primary) 8%, transparent) !important;
 }
 
-.w.active,
-.active {
+.bubble.active,
+.w.active {
     background: var(--primary-soft);
     color: var(--primary-ink);
     box-shadow: inset 0 0 0 1.5px var(--primary);

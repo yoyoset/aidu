@@ -26,10 +26,37 @@ export class ReaderRenderer {
         if (components.header) components.header.render(container);
         if (components.typography) components.typography.render(container);
 
-        // 3. Content Area
+        // 3. Progress bar
+        const progressBar = document.createElement('div');
+        progressBar.className = styles.readerProgress || 'readerProgress';
+        const progressFill = document.createElement('div');
+        progressFill.style.width = '0%';
+        progressBar.appendChild(progressFill);
+        this.progressFill = progressFill;
+        container.appendChild(progressBar);
+
+        // 4. Content Area
         const content = document.createElement('div');
         content.className = styles.readerContent || 'readerContent';
         this.contentArea = content;
+
+        // 4a. Byline (title + metadata)
+        const byline = document.createElement('div');
+        byline.className = styles.readerByline || 'readerByline';
+        const bylineTitle = document.createElement('h1');
+        bylineTitle.textContent = draft?.title || 'Untitled';
+        byline.appendChild(bylineTitle);
+
+        const bylineMeta = document.createElement('div');
+        bylineMeta.className = 'meta';
+        const sentenceCount = sentences?.length || 0;
+        const estimatedMinutes = Math.ceil(sentenceCount / 10) || 0;
+        bylineMeta.innerHTML = `
+            <span>${sentenceCount} ${sentenceCount === 1 ? 'sentence' : 'sentences'}</span>
+            <span>${estimatedMinutes} min read</span>
+        `;
+        byline.appendChild(bylineMeta);
+        content.appendChild(byline);
 
         // 4. Empty State or Content Loop
         if (!sentences || sentences.length === 0) {
@@ -40,6 +67,16 @@ export class ReaderRenderer {
 
         container.appendChild(content);
         this.root.appendChild(container);
+
+        // 5. Progress bar scroll tracking
+        content.addEventListener('scroll', () => {
+            if (this.progressFill) {
+                const scrollTop = content.scrollTop;
+                const scrollHeight = content.scrollHeight - content.clientHeight;
+                const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+                this.progressFill.style.width = progress + '%';
+            }
+        });
 
         return { contentArea: content };
     }

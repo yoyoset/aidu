@@ -50,19 +50,27 @@ export class AtomicBlock {
             }
         };
 
-        // --- 1. Original Text Row ---
-        const originalDiv = document.createElement('div');
-        originalDiv.className = `${styles.originalRow || 'originalRow'} ${styles.controlRow || 'controlRow'}`;
+        // --- Tools bar (left spine) ---
+        const toolsBar = document.createElement('div');
+        toolsBar.className = styles['ablock-tools'] || 'ablock-tools';
 
+        // Play button (now in left spine)
         const playBtn = document.createElement('button');
-        playBtn.className = `${styles.controlBtn || 'controlBtn'} ${styles.playBtn || 'playBtn'} js-play-btn`;
+        playBtn.className = styles.atool || 'atool';
+        playBtn.className += ' js-play-btn';
         playBtn.title = t('reader.play') || 'Play';
         playBtn.innerHTML = '<i class="ri-play-mini-line"></i>';
         playBtn.onclick = (e) => {
             e.stopPropagation();
             onPlay(index);
         };
-        originalDiv.appendChild(playBtn);
+        toolsBar.appendChild(playBtn);
+
+        block.appendChild(toolsBar);
+
+        // --- 1. Original Text Row ---
+        const originalDiv = document.createElement('div');
+        originalDiv.className = styles.sentence || 'sentence';
 
         // --- Debug Button (Visible only in Debug Mode) ---
         if (debugMode) {
@@ -205,35 +213,27 @@ export class AtomicBlock {
 
     static _addObscurableRow(block, text, rowClass, isVisible, isLightbulb = false) {
         const row = document.createElement('div');
-        row.className = `${rowClass || ''} ${styles.controlRow || 'controlRow'}`;
-        row.style.marginTop = '4px';
+        const isTranslation = rowClass === styles.translationRow || rowClass === 'translationRow';
+        const jsClass = isTranslation ? 'js-trans-text' : 'js-exp-text';
+        const toggleClass = isTranslation ? 'js-trans-toggle' : 'js-exp-toggle';
 
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = `${styles.controlBtn || 'controlBtn'} ${styles.transBtn || 'transBtn'}`;
-        toggleBtn.innerHTML = isVisible ? '<i class="ri-eye-line"></i>' : '<i class="ri-eye-off-line"></i>';
+        row.className = rowClass || '';
+        row.style.marginTop = '7px';
 
         const textEl = document.createElement('span');
-        textEl.className = 'js-obscurable-text';
+        textEl.className = jsClass;
         textEl.style.flex = '1';
+
         if (isLightbulb) {
-            textEl.style.color = '#795548';
+            // Explanation with lightbulb
             textEl.innerHTML = `<i class="ri-lightbulb-line" style="margin-right:4px;"></i>${text}`;
         } else {
+            // Translation or other text
             textEl.textContent = text;
         }
 
         if (!isVisible) textEl.classList.add(styles.obscured || 'obscured');
 
-        const toggle = (e) => {
-            e.stopPropagation();
-            const obscured = textEl.classList.toggle(styles.obscured || 'obscured');
-            toggleBtn.innerHTML = obscured ? '<i class="ri-eye-off-line"></i>' : '<i class="ri-eye-line"></i>';
-        };
-
-        toggleBtn.onclick = toggle;
-        // Removed textEl.onclick = toggle; to allow clicking text to bubble up for block selection.
-
-        row.appendChild(toggleBtn);
         row.appendChild(textEl);
         block.appendChild(row);
     }

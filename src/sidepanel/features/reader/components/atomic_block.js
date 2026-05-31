@@ -233,6 +233,13 @@ export class AtomicBlock {
 
         if (!isVisible) textEl.classList.add(styles.obscured || 'obscured');
 
+        // Click-to-reveal: toggle blur on this specific row (matches .obscured cursor:pointer affordance).
+        // Global header eye toggle still controls show/hide all.
+        textEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            textEl.classList.toggle(styles.obscured || 'obscured');
+        });
+
         row.appendChild(textEl);
         block.appendChild(row);
     }

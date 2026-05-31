@@ -70,7 +70,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
             await profileManager.load();
             const settings = profileManager.settings;
 
-            if (settings?.sync?.provider) {
+            if (settings?.sync?.customUrl && settings?.sync?.customToken) {
                 const profileId = settings.activeProfileId || 'default';
                 console.log(`SW: Syncing profile '${profileId}'`);
 

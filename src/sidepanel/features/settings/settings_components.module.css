@@ -70,8 +70,8 @@
 }
 
 .radioLabel:hover {
-    border-color: #94A3B8;
-    background: #FFFFFF;
+    border-color: var(--ink-3);
+    background: var(--surface);
 }
 
 .radioLabel:has(input:checked) {
@@ -88,11 +88,11 @@
 .radioText strong {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #334155;
+    color: var(--ink);
 }
 
 .radioText small {
     font-size: 0.75rem;
-    color: #64748B;
+    color: var(--ink-3);
     margin-top: 2px;
 }

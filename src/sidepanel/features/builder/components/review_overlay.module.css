@@ -333,7 +333,7 @@
 }
 
 .processingIndicator {
-    color: #3B82F6;
+    color: var(--blue);
     font-weight: 600;
     display: inline-flex;
     align-items: center;

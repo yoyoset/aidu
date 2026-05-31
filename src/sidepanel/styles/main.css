@@ -58,6 +58,8 @@
     --shadow-rgb: 40, 33, 24;
 
     --green: #5C8A69;
+    --green-soft: #DDEAE0;
+    --green-ink: #244A30;
     --red: #C0553E;
     --blue: #3E5B74;
     --blue-soft: #E3EAF1;
@@ -82,6 +84,8 @@
     --shadow-rgb: 0, 0, 0;
 
     --green: #7DAE89;
+    --green-soft: #1C2E22;
+    --green-ink: #BFE0C8;
     --red: #DA7A63;
     --blue: #93B5CF;
     --blue-soft: #20303C;
@@ -156,6 +160,20 @@
     --md-sys-color-outline-variant: var(--line);
     --md-sys-color-error: var(--red);
     --md-sys-color-scrim: var(--ink);
+    --md-sys-color-secondary: var(--primary);
+    --md-sys-color-on-secondary: #ffffff;
+    --md-sys-color-secondary-container: var(--primary-soft);
+    --md-sys-color-on-secondary-container: var(--primary-ink);
+    --md-sys-color-tertiary: var(--primary);
+    --md-sys-color-on-tertiary: #ffffff;
+    --md-sys-color-primary-container: var(--primary-soft);
+    --md-sys-color-on-primary-container: var(--primary-ink);
+    --md-sys-color-surface-container-low: var(--surface-2);
+    --md-sys-color-surface-container-high: var(--surface-3);
+    --md-sys-color-error-container: color-mix(in srgb, var(--red) 14%, var(--surface));
+    --md-sys-color-on-error: #ffffff;
+    --md-sys-state-hover: color-mix(in srgb, var(--ink) 6%, transparent);
+    --md-sys-state-focus: color-mix(in srgb, var(--primary) 22%, transparent);
 
     --md-sys-elevation-1: var(--sh-1);
     --md-sys-elevation-2: var(--sh-2);

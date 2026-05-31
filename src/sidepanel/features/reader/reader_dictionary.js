@@ -22,25 +22,25 @@ export class ReaderDictionary {
             this.activeBubble = null;
         }
 
-        // Exit animation
-        if (this.scrim) {
-            this.scrim.classList.remove(styles.show || 'show');
-            this.scrim = null;
-        }
-        if (this.popover) {
-            this.popover.classList.remove(styles.show || 'show');
-            // Remove after animation (.4s)
-            setTimeout(() => {
-                if (this.popover) {
-                    this.popover.remove();
-                    this.popover = null;
-                }
-                if (this.scrim && this.scrim.parentNode) {
-                    this.scrim.remove();
-                    this.scrim = null;
-                }
-            }, 400);
-        }
+        // Capture refs locally and clear instance state immediately, so a new
+        // showPopover() can't collide with this pending teardown.
+        const scrim = this.scrim;
+        const popover = this.popover;
+        this.scrim = null;
+        this.popover = null;
+
+        const showCls = styles.show || 'show';
+        if (scrim) scrim.classList.remove(showCls);
+        if (popover) popover.classList.remove(showCls);
+
+        // Remove BOTH from the DOM after the exit animation (.4s). Using the
+        // local refs guarantees the full-screen scrim is always detached —
+        // previously this.scrim was nulled before the timeout, so the scrim
+        // element leaked and kept capturing clicks/scroll (page froze).
+        setTimeout(() => {
+            if (popover && popover.parentNode) popover.remove();
+            if (scrim && scrim.parentNode) scrim.remove();
+        }, 400);
     }
 
     async handleBubbleClick(element, segment, contextText, onPlayAudio, onStatusChange) {

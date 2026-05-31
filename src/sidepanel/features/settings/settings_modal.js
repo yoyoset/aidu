@@ -168,7 +168,8 @@ export class SettingsModal extends Component {
         const globalSettings = {
             teachingStyle: allData.teachingStyle,
             sync: allData.sync,
-            debugMode: allData.debugMode
+            debugMode: allData.debugMode,
+            appearance: allData.appearance
         };
 
         // Delegate to Domain Service

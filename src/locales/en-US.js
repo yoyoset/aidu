@@ -49,6 +49,13 @@ export default {
     'settings.persona.label': 'Explanation Style',
 
     'settings.appearance': 'Appearance',
+    'settings.appearance.theme': 'Theme',
+    'settings.appearance.light': 'Light',
+    'settings.appearance.dark': 'Dark',
+    'settings.appearance.accent': 'Accent Color',
+    'settings.appearance.density': 'Density',
+    'settings.appearance.comfortable': 'Comfortable',
+    'settings.appearance.compact': 'Compact',
     'settings.theme.reset': 'Reset Defaults',
     'settings.theme.hint': 'Customize reader colors. Changes take effect immediately.',
     'settings.theme.saved': 'Color configuration saved',

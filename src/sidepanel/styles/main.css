@@ -45,7 +45,7 @@
   }
 
   /* --- Light Theme --- */
-  [data-theme="light"] {
+  :root, [data-theme="light"] {
     --paper: #F4EFE6;
     --surface: #FDFBF6;
     --surface-2: #EFE8DB;

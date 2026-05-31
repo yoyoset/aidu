@@ -49,6 +49,13 @@ export default {
     'settings.persona.label': '讲解风格',
 
     'settings.appearance': '外观自定义',
+    'settings.appearance.theme': '主题',
+    'settings.appearance.light': '浅色',
+    'settings.appearance.dark': '深色',
+    'settings.appearance.accent': '强调色',
+    'settings.appearance.density': '密度',
+    'settings.appearance.comfortable': '舒适',
+    'settings.appearance.compact': '紧凑',
     'settings.theme.reset': '恢复默认颜色',
     'settings.theme.hint': '自定义阅读器颜色，修改后实时生效。',
     'settings.theme.saved': '颜色配置已保存',

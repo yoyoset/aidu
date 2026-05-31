@@ -9,6 +9,7 @@ import { PreparationDashboard } from './features/builder/preparation_dashboard.j
 import { MessageRouter, MessageTypes } from '../utils/message_router.js';
 import { Toast } from './components/toast.js';
 import { ThemeModal } from './features/settings/theme_modal.js';
+import { StorageHelper, StorageKeys } from '../utils/storage.js';
 
 let dashboard;
 const messageRouter = new MessageRouter();
@@ -33,6 +34,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load User Theme (Global Persistence Fix)
     await new ThemeModal().initTheme();
+
+    // Bootstrap QS Theme System (Quiet Study appearance)
+    const userSettings = await StorageHelper.get(StorageKeys.USER_SETTINGS) || {};
+    const appearance = userSettings.appearance || {};
+    const theme = appearance.theme || 'light';
+    const accent = appearance.accent || 'clay';
+    const density = appearance.density || 'comfortable';
+
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.accent = accent;
+    document.documentElement.dataset.density = density;
 
     init();
 });

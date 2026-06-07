@@ -62,11 +62,11 @@ export class MaintenanceSection {
 
         // 1. Synchronously bind event handlers immediately so they are responsive
         if (openExpertBtn) {
-            openExpertBtn.onclick = () => {
+            openExpertBtn.onclick = async () => {
                 try {
                     // Update profileManager with unsaved UI inputs first!
                     if (this.parent && typeof this.parent.updateSettingsFromDOM === 'function') {
-                        this.parent.updateSettingsFromDOM();
+                        await this.parent.updateSettingsFromDOM();
                     }
 
                     const modal = new ExpertPromptsModal();

@@ -129,7 +129,7 @@ export class SettingsModal extends Component {
 
     async switchProfile(profileId) {
         // Capture current state before switching
-        this.updateSettingsFromDOM();
+        await this.updateSettingsFromDOM();
 
         await profileManager.switchProfile(profileId);
         this.activeProfile = profileManager.getActiveProfile();
@@ -145,13 +145,17 @@ export class SettingsModal extends Component {
         }
     }
 
-    updateSettingsFromDOM() {
+    async updateSettingsFromDOM() {
         if (!this.overlay) return;
 
         // 1. Collect Data via Sections
-        const allData = this.sections.reduce((acc, section) => {
-            return { ...acc, ...section.collectData(this.overlay) };
-        }, {});
+        // NOTE: some sections (e.g. AppearanceSection) have async collectData.
+        // We must await each result, otherwise spreading a Promise yields no
+        // properties and that section's settings (theme/teachingStyle) are lost.
+        const results = await Promise.all(
+            this.sections.map(section => section.collectData(this.overlay))
+        );
+        const allData = results.reduce((acc, data) => ({ ...acc, ...data }), {});
 
         // 2. Map to Profile Data
         const profileUpdates = {
@@ -179,7 +183,7 @@ export class SettingsModal extends Component {
     }
 
     async save() {
-        this.updateSettingsFromDOM();
+        await this.updateSettingsFromDOM();
 
         // Domain Save
         await profileManager.save();

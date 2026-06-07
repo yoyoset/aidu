@@ -148,6 +148,10 @@ export class ProfileManager {
             this.settings.debugMode = !!updates.debugMode;
         }
 
+        if (updates.teachingStyle !== undefined) {
+            this.settings.teachingStyle = updates.teachingStyle;
+        }
+
         // 处理其他可能的全局字段
         const reserved = ['profiles', 'activeProfileId', 'sync', 'teachingStyle', 'debugMode'];
         Object.keys(updates).forEach(key => {
